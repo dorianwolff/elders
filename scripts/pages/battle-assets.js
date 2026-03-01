@@ -261,6 +261,27 @@ window.BattleAssets = {
         return null;
     },
 
+    getRecoveryAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'zero_two' && skillId === 'heartbreak_harvest') {
+            return [
+                'assets/animations/zero_two/zero_two_recovery_1.png'
+            ];
+        }
+        return null;
+    },
+
+    getUtilityAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'frieren' && (skillId === 'frieren_copycat_glyph' || skillId === 'frieren_rotating_page')) {
+            return [
+                'assets/animations/frieren/frieren_utility_1.png',
+                'assets/animations/frieren/frieren_utility_1.png'
+            ];
+        }
+        return null;
+    },
+
     getSkillPreviewAnimationFramesForCharacterSkill(character, skillId, skillType) {
         if (!character || !skillId) return null;
 
@@ -270,6 +291,14 @@ window.BattleAssets = {
 
         if (skillType === 'debuff') {
             return this.getDebuffAnimationForCharacterSkill(character, skillId);
+        }
+
+        if (skillType === 'recovery') {
+            return this.getRecoveryAnimationForCharacterSkill(character, skillId);
+        }
+
+        if (skillType === 'utility') {
+            return this.getUtilityAnimationForCharacterSkill(character, skillId);
         }
 
         if (skillType === 'stance') {
