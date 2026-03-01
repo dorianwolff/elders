@@ -26,13 +26,51 @@ class WebSocketManager {
             } catch (e) {}
         }
 
-        let resolvedUrl = serverUrl || configuredUrl || 'ws://localhost:8080';
+        const isLocalHost = (() => {
+            try {
+                const h = window && window.location ? String(window.location.hostname || '') : '';
+                return h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0';
+            } catch (e) {
+                return false;
+            }
+        })();
+
+        const defaultUrl = isLocalHost ? 'ws://localhost:8080' : null;
+
+        let resolvedUrl = serverUrl || configuredUrl || defaultUrl;
+        if (!resolvedUrl) {
+            throw new Error(
+                'No WebSocket server configured. Set ?ws=wss://<host>/ws or localStorage.setItem(\'ELDERS_WS_URL\', \'wss://<host>/ws\').'
+            );
+        }
+
+        // If the user provided a bare host (no scheme), assume ws/wss based on page protocol.
+        if (!resolvedUrl.includes('://')) {
+            const isHttps = (() => {
+                try {
+                    return window && window.location && window.location.protocol === 'https:';
+                } catch (e) {
+                    return false;
+                }
+            })();
+            resolvedUrl = (isHttps ? 'wss://' : 'ws://') + resolvedUrl;
+        }
 
         // Allow providing an https/http URL and convert it to wss/ws.
         if (resolvedUrl.startsWith('https://')) {
             resolvedUrl = 'wss://' + resolvedUrl.slice('https://'.length);
         } else if (resolvedUrl.startsWith('http://')) {
             resolvedUrl = 'ws://' + resolvedUrl.slice('http://'.length);
+        }
+
+        // Hard guard: an HTTPS page generally cannot connect to ws:// (mixed content).
+        // We keep this as a clear error instead of a noisy reconnect loop.
+        try {
+            if (window && window.location && window.location.protocol === 'https:' && resolvedUrl.startsWith('ws://')) {
+                throw new Error('This page is HTTPS, so you must use wss:// for the WebSocket server URL.');
+            }
+        } catch (e) {
+            throw e;
         }
 
         return new Promise((resolve, reject) => {
