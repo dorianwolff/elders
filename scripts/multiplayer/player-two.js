@@ -21,6 +21,7 @@ class PlayerTwo {
 
         try {
             const liveCharacter = this.gameState.players.get('player2')?.character;
+            const liveSkill = liveCharacter && Array.isArray(liveCharacter.skills) ? liveCharacter.skills[skillIndex] : null;
 
             // Execute skill locally (IMMEDIATE LOGIC)
             const result = await this.gameState.useSkill('player2', skillIndex);
@@ -28,9 +29,10 @@ class PlayerTwo {
             // Notify game coordinator (IMMEDIATE SYNC)
             await this.gameCoordinator.handlePlayerAction('player2', 'skill', {
                 skillIndex,
-                skillName: liveCharacter && Array.isArray(liveCharacter.skills) && liveCharacter.skills[skillIndex]
-                    ? liveCharacter.skills[skillIndex].name
-                    : 'Skill',
+                skillId: liveSkill?.id,
+                skillType: liveSkill?.type,
+                skillName: liveSkill?.name || 'Skill',
+                actorCharacterId: liveCharacter?.id,
                 result
             });
 

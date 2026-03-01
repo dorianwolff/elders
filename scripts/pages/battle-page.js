@@ -47,27 +47,10 @@ class BattlePage extends BasePage {
     }
 
     getArenaBackgroundUrlForGameId(gameId) {
-        const choices = [
-            '/assets/backgrounds/desert.png',
-            '/assets/backgrounds/forest.png',
-            '/assets/backgrounds/ice.png',
-            '/assets/backgrounds/beach.png',
-            '/assets/backgrounds/radioactive.png',
-            '/assets/backgrounds/space.png',
-            '/assets/backgrounds/wasteland_sun.png',
-            '/assets/backgrounds/wasteland.png'
-        ];
-
-        if (!gameId || !choices.length) return choices[0];
-
-        let hash = 0;
-        const str = String(gameId);
-        for (let i = 0; i < str.length; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash |= 0;
+        if (window.BattleAssets && typeof window.BattleAssets.getArenaBackgroundUrlForGameId === 'function') {
+            return window.BattleAssets.getArenaBackgroundUrlForGameId(gameId);
         }
-        const idx = Math.abs(hash) % choices.length;
-        return choices[idx];
+        return null;
     }
 
     applyArenaBackgroundIfNeeded() {
@@ -90,39 +73,8 @@ class BattlePage extends BasePage {
     }
 
     getUltimateVideoForCharacter(character) {
-        const id = character && character.id;
-        if (id === 'gojo_satoru') {
-            return 'assets/animations/gojo_satoru/gojo_satoru_ultimate.mp4';
-        }
-        else if (id === 'naruto') {
-            return 'assets/animations/naruto_uzumaki/naruto_uzumaki_ultimate.mp4';
-        }
-        else if (id === 'naruto_sage') {
-            return 'assets/animations/naruto_uzumaki/naruto_uzumaki_sage_ultimate.mp4';
-        }
-        else if (id === 'saitama') {
-            return 'assets/animations/saitama/saitama_ultimate.mp4';
-        }
-        else if (id === 'saitama_serious') {
-            return 'assets/animations/saitama/saitama_serious_ultimate.mp4';
-        }
-        else if (id === 'edward_elric') {
-            return 'assets/animations/edward_elric/edward_elric_ultimate.mp4';
-        }
-        else if (id === 'trafalgar_law') {
-            return 'assets/animations/trafalgar_law/trafalgar_law_ultimate.mp4';
-        }
-        else if (id === 'rimuru_tempest') {
-            return 'assets/animations/rimuru_tempest/rimuru_tempest_ultimate.mp4';
-        }
-        else if (id === 'lloyd_frontera') {
-            return 'assets/animations/lloyd_frontera/lloyd_frontera_ultimate.mp4';
-        }
-        else if (id === 'zero_two') {
-            return 'assets/animations/zero_two/zero_two_ultimate.mp4';
-        }
-        else if (id === 'frieren') {
-            return 'assets/animations/frieren/frieren_ultimate.mp4';
+        if (window.BattleAssets && typeof window.BattleAssets.getUltimateVideoForCharacter === 'function') {
+            return window.BattleAssets.getUltimateVideoForCharacter(character);
         }
         return null;
     }
@@ -399,108 +351,15 @@ class BattlePage extends BasePage {
     }
 
     getIdleFramesForCharacter(character) {
-        const id = character && character.id;
-        if (id === 'trafalgar_law') {
-            return [
-                'assets/animations/trafalgar_law/trafalgar_law_idle_1.png',
-                'assets/animations/trafalgar_law/trafalgar_law_idle_2.png'
-            ];
+        if (window.BattleAssets && typeof window.BattleAssets.getIdleFramesForCharacter === 'function') {
+            return window.BattleAssets.getIdleFramesForCharacter(character);
         }
-
-        else if (id === 'frieren') {
-            return [
-                'assets/animations/frieren/frieren_idle_1.png',
-                'assets/animations/frieren/frieren_idle_2.png'
-            ];
-        }
-
-        else if (id === 'lloyd_frontera') {
-            return [
-                'assets/animations/lloyd_frontera/lloyd_frontera_idle_1.png',
-                'assets/animations/lloyd_frontera/lloyd_frontera_idle_2.png.png'
-            ];
-        }
-
-        else if (id === 'rimuru_tempest') {
-            return [
-                'assets/animations/rimuru_tempest/rimuru_tempest_idle_1.png',
-                'assets/animations/rimuru_tempest/rimuru_tempest_idle_2.png'
-            ];
-        }
-
-        else if (id === 'saitama') {
-            return [
-                'assets/animations/saitama/saitama_idle_1.png',
-                'assets/animations/saitama/saitama_idle_2.png'
-            ];
-        }
-
-        else if (id === 'saitama_serious') {
-            return [
-                'assets/animations/saitama/saitama_serious_idle_1.png',
-                'assets/animations/saitama/saitama_serious_idle_2.png'
-            ];
-        }
-
-        else if (id === 'gojo_satoru') {
-            return [
-                'assets/animations/gojo_satoru/gojo_satoru_idle_1.png',
-                'assets/animations/gojo_satoru/gojo_satoru_idle_2.png'
-            ];
-        }
-
-        else if (id === 'naruto') {
-            return [
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_idle_1.png',
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_idle_2.png'
-            ];
-        }
-
-        else if (id === 'naruto_sage') {
-            return [
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_sage_idle_1.png',
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_sage_idle_2.png',
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_sage_idle_3.png',
-                'assets/animations/naruto_uzumaki/naruto_uzumaki_sage_idle_4.png'
-            ];
-        }
-
-        else if (id === 'edward_elric') {
-            return [
-                'assets/animations/edward_elric/edward_elric_idle_1.png',
-                'assets/animations/edward_elric/edward_elric_idle_2.png',
-                'assets/animations/edward_elric/edward_elric_idle_3.png',
-                'assets/animations/edward_elric/edward_elric_idle_4.png'
-            ];
-        }
-
-        return [
-            'assets/animations/zero_two/zero_two_idle_1.png',
-            'assets/animations/zero_two/zero_two_idle_2.png'
-        ];
+        return [];
     }
 
     getStanceFramesForCharacter(character, stanceEffect) {
-        const id = character && character.id;
-        if (id === 'rimuru_tempest') {
-            return [
-                'assets/animations/rimuru_tempest/rimuru_tempest_stance_1.png',
-                'assets/animations/rimuru_tempest/rimuru_tempest_stance_2.png',
-                'assets/animations/rimuru_tempest/rimuru_tempest_stance_3.png'
-            ];
-        }
-        else if (id === 'edward_elric') {
-            return [
-                'assets/animations/edward_elric/edward_elric_stance_1.png',
-                'assets/animations/edward_elric/edward_elric_stance_2.png'
-            ];
-        }
-        else if (id === 'saitama') {
-            return [
-                'assets/animations/saitama/saitama_stance_1.png',
-                'assets/animations/saitama/saitama_stance_2.png',
-                'assets/animations/saitama/saitama_stance_3.png'
-            ];
+        if (window.BattleAssets && typeof window.BattleAssets.getStanceFramesForCharacter === 'function') {
+            return window.BattleAssets.getStanceFramesForCharacter(character, stanceEffect);
         }
         return null;
     }
@@ -596,6 +455,15 @@ class BattlePage extends BasePage {
             }, ms);
         }
         this.spriteAnimation.override[side] = entry;
+    }
+
+    getSpriteElementForSide(side) {
+        return this.querySelector(side === 'player' ? '#player-sprite' : '#opponent-sprite');
+    }
+
+    getSpriteWrapperForSide(side) {
+        const sprite = this.getSpriteElementForSide(side);
+        return sprite ? sprite.closest('.battle-sprite') : null;
     }
 
     getHTML() {
@@ -894,6 +762,22 @@ class BattlePage extends BasePage {
         this.autoSkipIfNoActions();
     }
 
+    updateCharacterInfo() {
+        if (!this.gameState) return;
+
+        const playerNameEl = this.querySelector('#player-name');
+        if (playerNameEl && this.gameState.player && this.gameState.player.character) {
+            playerNameEl.textContent = this.gameState.player.character.name || 'Your Character';
+        }
+
+        const opponentNameEl = this.querySelector('#opponent-name');
+        if (opponentNameEl && this.gameState.opponent && this.gameState.opponent.character) {
+            opponentNameEl.textContent = this.gameState.opponent.character.name || 'Opponent';
+        }
+
+        this.setupSprites();
+    }
+
     updateDomainIndicator() {
         const leftDock = this.querySelector('#domain-dock-left');
         const rightDock = this.querySelector('#domain-dock-right');
@@ -1051,20 +935,31 @@ class BattlePage extends BasePage {
         turnCounter.textContent = Math.floor(this.gameState.turnCount / 2) + 1;
     }
 
-    updateCharacterInfo() {
-        this.updateElement('#player-name', this.gameState.player.character.name);
-        this.updateElement('#opponent-name', this.gameState.opponent.character.name);
+    setupSprites() {
+        if (!this.gameState) return;
 
         const playerImage = this.querySelector('#player-image');
         if (playerImage) {
-            playerImage.src = `assets/final/${this.gameState.player.character.images[0]}`;
-            playerImage.onerror = () => playerImage.src = 'assets/images/characters/placeholder.png';
+            const src = window.BattleAssets && typeof window.BattleAssets.getCharacterPortraitSrc === 'function'
+                ? window.BattleAssets.getCharacterPortraitSrc(this.gameState.player.character)
+                : null;
+            const fallback = window.BattleAssets && typeof window.BattleAssets.getCharacterPortraitFallbackSrc === 'function'
+                ? window.BattleAssets.getCharacterPortraitFallbackSrc()
+                : 'assets/images/characters/placeholder.png';
+            if (src) playerImage.src = src;
+            playerImage.onerror = () => playerImage.src = fallback;
         }
 
         const opponentImage = this.querySelector('#opponent-image');
         if (opponentImage) {
-            opponentImage.src = `assets/final/${this.gameState.opponent.character.images[0]}`;
-            opponentImage.onerror = () => opponentImage.src = 'assets/images/characters/placeholder.png';
+            const src = window.BattleAssets && typeof window.BattleAssets.getCharacterPortraitSrc === 'function'
+                ? window.BattleAssets.getCharacterPortraitSrc(this.gameState.opponent.character)
+                : null;
+            const fallback = window.BattleAssets && typeof window.BattleAssets.getCharacterPortraitFallbackSrc === 'function'
+                ? window.BattleAssets.getCharacterPortraitFallbackSrc()
+                : 'assets/images/characters/placeholder.png';
+            if (src) opponentImage.src = src;
+            opponentImage.onerror = () => opponentImage.src = fallback;
         }
 
         const playerSprite = this.querySelector('#player-sprite');
@@ -1077,14 +972,20 @@ class BattlePage extends BasePage {
             playerSprite.src = playerFrames[0];
             playerSprite.onerror = () => {
                 playerSprite.onerror = null;
-                playerSprite.src = 'assets/animations/zero_two/zero_two_idle_1.png';
+                const fb = window.BattleAssets && typeof window.BattleAssets.getDefaultIdleFallbackFrame === 'function'
+                    ? window.BattleAssets.getDefaultIdleFallbackFrame()
+                    : 'assets/animations/zero_two/zero_two_idle_1.png';
+                playerSprite.src = fb;
             };
         }
         if (opponentSprite) {
             opponentSprite.src = opponentFrames[0];
             opponentSprite.onerror = () => {
                 opponentSprite.onerror = null;
-                opponentSprite.src = 'assets/animations/zero_two/zero_two_idle_1.png';
+                const fb = window.BattleAssets && typeof window.BattleAssets.getDefaultIdleFallbackFrame === 'function'
+                    ? window.BattleAssets.getDefaultIdleFallbackFrame()
+                    : 'assets/animations/zero_two/zero_two_idle_1.png';
+                opponentSprite.src = fb;
             };
         }
     }
@@ -1636,6 +1537,16 @@ class BattlePage extends BasePage {
         this.startIdleSpriteAnimation();
         
         if (actionResult) {
+            const actorSide = actionResult._actionSource === 'opponent' ? 'opponent' : 'player';
+            const actorId = typeof actionResult.actorCharacterId === 'string'
+                ? actionResult.actorCharacterId
+                : (actorSide === 'player' ? this.gameState?.player?.character?.id : this.gameState?.opponent?.character?.id);
+            const skillType = typeof actionResult.skillType === 'string' ? actionResult.skillType : null;
+            const skillId = typeof actionResult.skillId === 'string' ? actionResult.skillId : null;
+            const adjustedActionResult = (window.BattleAnimations && typeof window.BattleAnimations.withCloseAttackCombatTextOffset === 'function')
+                ? window.BattleAnimations.withCloseAttackCombatTextOffset(actionResult, actorId, skillType)
+                : actionResult;
+
             if (actionResult._actionSource === 'opponent' && actionResult.actionType === 'ultimate') {
                 const actorCharacterId = actionResult.actorCharacterId;
                 if (actorCharacterId) {
@@ -1645,9 +1556,34 @@ class BattlePage extends BasePage {
                 }
             }
 
-            this.pendingHealthAnimation = this.buildHealthAnimationFromCombatText(actionResult, newGameState);
+            this.pendingHealthAnimation = this.buildHealthAnimationFromCombatText(adjustedActionResult, newGameState);
 
-            this.scheduleCombatTextAnimations(actionResult);
+            this.scheduleCombatTextAnimations(adjustedActionResult);
+
+            // Character-specific attack animations (synced to combat_text delayMs).
+            try {
+                if (skillType === 'attack') {
+                    const actorChar = actorId ? { id: actorId } : null;
+                    const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
+                        ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar))
+                        : false;
+
+                    if (hasClose) {
+                        if (window.BattleAnimations && typeof window.BattleAnimations.playCloseAttackAnimationForSide === 'function') {
+                            window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId);
+                        }
+                    }
+                }
+            } catch (e) {}
+
+            // Character-specific domain skill animations (simple frame sequence).
+            try {
+                if (skillType === 'domain' && skillId) {
+                    if (window.BattleAnimations && typeof window.BattleAnimations.playDomainSkillAnimationForSide === 'function') {
+                        window.BattleAnimations.playDomainSkillAnimationForSide(this, actorSide, actorId, skillId);
+                    }
+                }
+            } catch (e) {}
 
             // Only log opponent actions here. Local actions are logged in useSkill/useUltimate.
             if (actionResult._actionSource === 'opponent') {

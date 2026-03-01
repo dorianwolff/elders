@@ -166,12 +166,20 @@ class GameCoordinator {
             this.updateGameUI({
                 ...actionData.result,
                 actionType,
+                skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                skillType: (actionType === 'skill') ? actionData.skillType : undefined,
+                actorCharacterId: actionData.actorCharacterId,
                 _actionSource: 'local'
             });
 
             this.lastActionResult = {
                 ...actionData.result,
                 actionType,
+                skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                skillType: (actionType === 'skill') ? actionData.skillType : undefined,
+                actorCharacterId: actionData.actorCharacterId,
                 _actionSource: 'local'
             };
 
@@ -209,6 +217,9 @@ class GameCoordinator {
             const resultWithActionInfo = {
                 ...result,
                 actionType,
+                skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                skillType: (actionType === 'skill') ? actionData.skillType : undefined,
                 skillName: actionData.skillName,
                 ultimateName: actionData.ultimateName,
                 actorCharacterId: actionData.actorCharacterId,
