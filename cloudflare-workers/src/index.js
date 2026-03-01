@@ -27,8 +27,20 @@ export class Lobby {
       ws: serverSocket,
       sessionId,
       isSearching: false,
-      character: null
+      character: null,
+      pingIntervalId: null
     });
+
+    {
+      const entry = this.clients.get(sessionId);
+      if (entry) {
+        entry.pingIntervalId = setInterval(() => {
+          try {
+            serverSocket.send(JSON.stringify({ type: 'ping', t: Date.now() }));
+          } catch (e) {}
+        }, 25000);
+      }
+    }
 
     serverSocket.addEventListener('message', (event) => {
       this.handleMessage(sessionId, event.data);
@@ -211,6 +223,13 @@ export class Lobby {
 
   handleDisconnect(sessionId) {
     const client = this.clients.get(sessionId);
+
+    if (client && client.pingIntervalId) {
+      try {
+        clearInterval(client.pingIntervalId);
+      } catch (e) {}
+      client.pingIntervalId = null;
+    }
 
     const waitingIndex = this.waitingPlayers.indexOf(sessionId);
     if (waitingIndex > -1) {

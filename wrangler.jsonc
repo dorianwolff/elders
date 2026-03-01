@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "elders",
+  "main": "cloudflare-workers/src/index.js",
   "compatibility_date": "2025-09-27",
   "observability": {
     "enabled": true
@@ -8,6 +9,22 @@
   "assets": {
     "directory": "."
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LOBBY",
+        "class_name": "Lobby"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Lobby"
+      ]
+    }
+  ],
   "compatibility_flags": [
     "nodejs_compat"
   ]

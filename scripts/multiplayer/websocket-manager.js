@@ -4,6 +4,8 @@ class WebSocketManager {
         this.sessionId = null;
         this.isConnected = false;
         this.messageHandlers = new Map();
+        this._onOpenHandlers = new Set();
+        this._onCloseHandlers = new Set();
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 1000;
@@ -103,6 +105,11 @@ class WebSocketManager {
                     this.isConnected = true;
                     this.reconnectAttempts = 0;
                     console.log('WebSocket connected');
+                    for (const fn of this._onOpenHandlers) {
+                        try {
+                            fn();
+                        } catch (e) {}
+                    }
                     resolve();
                 };
 
@@ -113,6 +120,11 @@ class WebSocketManager {
                 this.socket.onclose = () => {
                     this.isConnected = false;
                     console.log('WebSocket disconnected');
+                    for (const fn of this._onCloseHandlers) {
+                        try {
+                            fn();
+                        } catch (e) {}
+                    }
                     this.attemptReconnect();
                 };
 
@@ -154,6 +166,10 @@ class WebSocketManager {
                 return;
             }
 
+            if (message.type === 'ping') {
+                return;
+            }
+
             const handler = this.messageHandlers.get(message.type);
             if (handler) {
                 handler(message);
@@ -167,6 +183,24 @@ class WebSocketManager {
 
     onMessage(type, handler) {
         this.messageHandlers.set(type, handler);
+    }
+
+    onOpen(handler) {
+        if (typeof handler !== 'function') return;
+        this._onOpenHandlers.add(handler);
+    }
+
+    offOpen(handler) {
+        this._onOpenHandlers.delete(handler);
+    }
+
+    onClose(handler) {
+        if (typeof handler !== 'function') return;
+        this._onCloseHandlers.add(handler);
+    }
+
+    offClose(handler) {
+        this._onCloseHandlers.delete(handler);
     }
 
     offMessage(type) {

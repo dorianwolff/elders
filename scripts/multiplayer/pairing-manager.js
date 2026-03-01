@@ -6,6 +6,35 @@ class PairingManager {
         this.onPairingFound = null;
         this.onPairingFailed = null;
         this.onPairingCancelled = null;
+
+        this._handleWsOpen = () => {
+            if (!this.isSearching) return;
+            if (!this.selectedCharacter) return;
+            this._resumeSearchAfterReconnect().catch(() => {});
+        };
+
+        if (this.wsManager && typeof this.wsManager.onOpen === 'function') {
+            this.wsManager.onOpen(this._handleWsOpen);
+        }
+    }
+
+    async _resumeSearchAfterReconnect() {
+        if (!this.isSearching) return;
+        if (!this.selectedCharacter) return;
+        if (!this.wsManager.isSocketConnected()) return;
+
+        await this.wsManager.send('search_match', {
+            character: {
+                id: this.selectedCharacter.id,
+                name: this.selectedCharacter.name,
+                metaPoints: this.selectedCharacter.metaPoints,
+                stats: this.selectedCharacter.stats,
+                skills: this.selectedCharacter.skills,
+                ultimate: this.selectedCharacter.ultimate,
+                passive: this.selectedCharacter.passive,
+                images: this.selectedCharacter.images
+            }
+        });
     }
 
     async startSearching(character) {
