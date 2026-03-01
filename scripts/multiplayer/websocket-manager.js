@@ -35,7 +35,29 @@ class WebSocketManager {
             }
         })();
 
-        const defaultUrl = isLocalHost ? 'ws://localhost:8080' : null;
+        const defaultUrl = (() => {
+            if (isLocalHost) return 'ws://localhost:8080';
+
+            // GitHub Pages is static hosting and will not provide a WS endpoint.
+            // Require explicit configuration there.
+            try {
+                const host = window && window.location ? String(window.location.hostname || '') : '';
+                if (host.endsWith('github.io')) return null;
+            } catch (e) {
+                return null;
+            }
+
+            // For deployments where the frontend is served from the same origin as the WS endpoint
+            // (ex: Cloudflare Worker serving both HTTP and WebSocket on /ws), default to same-host /ws.
+            try {
+                const isHttps = window && window.location && window.location.protocol === 'https:';
+                const host = window && window.location ? String(window.location.host || window.location.hostname || '') : '';
+                if (!host) return null;
+                return `${isHttps ? 'wss' : 'ws'}://${host}/ws`;
+            } catch (e) {
+                return null;
+            }
+        })();
 
         let resolvedUrl = serverUrl || configuredUrl || defaultUrl;
         if (!resolvedUrl) {
