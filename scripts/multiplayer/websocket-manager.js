@@ -31,7 +31,7 @@ class WebSocketManager {
         const isLocalHost = (() => {
             try {
                 const h = window && window.location ? String(window.location.hostname || '') : '';
-                return h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0';
+                return h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h === '::1';
             } catch (e) {
                 return false;
             }

@@ -19,6 +19,13 @@ class BattlePage extends BasePage {
         this.pendingHealthLoss = { player: null, opponent: null };
         this.displayedHealthPercent = { player: null, opponent: null };
         this.pendingHealthAnimation = null;
+
+        this.spriteAnimation = {
+            intervalId: null,
+            frameIndex: { player: 0, opponent: 0 },
+            lastFramesKey: { player: null, opponent: null },
+            override: { player: null, opponent: null }
+        };
     }
 
     ensureUltimateOverlayDonePromise() {
@@ -471,6 +478,124 @@ class BattlePage extends BasePage {
             'assets/animations/zero_two/zero_two_idle_1.png',
             'assets/animations/zero_two/zero_two_idle_2.png'
         ];
+    }
+
+    getStanceFramesForCharacter(character, stanceEffect) {
+        const id = character && character.id;
+        if (id === 'rimuru_tempest') {
+            return [
+                'assets/animations/rimuru_tempest/rimuru_tempest_stance_1.png',
+                'assets/animations/rimuru_tempest/rimuru_tempest_stance_2.png',
+                'assets/animations/rimuru_tempest/rimuru_tempest_stance_3.png'
+            ];
+        }
+        else if (id === 'edward_elric') {
+            return [
+                'assets/animations/edward_elric/edward_elric_stance_1.png',
+                'assets/animations/edward_elric/edward_elric_stance_2.png'
+            ];
+        }
+        else if (id === 'saitama') {
+            return [
+                'assets/animations/saitama/saitama_stance_1.png',
+                'assets/animations/saitama/saitama_stance_2.png',
+                'assets/animations/saitama/saitama_stance_3.png'
+            ];
+        }
+        return null;
+    }
+
+    getSkillSystem() {
+        return this.gameCoordinator && this.gameCoordinator.gameState
+            ? this.gameCoordinator.gameState.skillSystem
+            : null;
+    }
+
+    getActiveStanceEffectForPlayerId(playerId) {
+        const skillSystem = this.getSkillSystem();
+        const effects = skillSystem ? skillSystem.activeEffects : null;
+        if (!effects) return null;
+
+        const consider = (eff) => {
+            if (!eff) return null;
+            const effType = typeof eff.type === 'string' ? eff.type : '';
+            if (effType !== 'stance' && effType !== 'grit_stance') return null;
+            if (eff.target !== playerId) return null;
+            if (effType === 'stance' && (Number(eff.turnsLeft) || 0) <= 0) return null;
+            return eff;
+        };
+
+        if (effects && typeof effects.entries === 'function') {
+            for (const [, eff] of effects.entries()) {
+                const found = consider(eff);
+                if (found) return found;
+            }
+        } else if (Array.isArray(effects)) {
+            for (const eff of effects) {
+                const found = consider(eff);
+                if (found) return found;
+            }
+        } else if (effects && typeof effects === 'object') {
+            for (const eff of Object.values(effects)) {
+                const found = consider(eff);
+                if (found) return found;
+            }
+        }
+
+        return null;
+    }
+
+    getSpriteFramesForSide(side) {
+        if (!this.gameState) return null;
+
+        if (this.spriteAnimation.override[side] && Array.isArray(this.spriteAnimation.override[side].frames)) {
+            return this.spriteAnimation.override[side].frames;
+        }
+
+        const playerId = side === 'player'
+            ? this.gameState.playerId
+            : (this.gameState.playerId === 'player1' ? 'player2' : 'player1');
+
+        const character = side === 'player' ? this.gameState.player.character : this.gameState.opponent.character;
+        const stanceEffect = this.getActiveStanceEffectForPlayerId(playerId);
+        if (stanceEffect) {
+            const stanceFrames = this.getStanceFramesForCharacter(character, stanceEffect);
+            if (stanceFrames && stanceFrames.length > 0) return stanceFrames;
+        }
+
+        return this.getIdleFramesForCharacter(character);
+    }
+
+    getSpriteFramesKey(side, frames) {
+        const playerId = side === 'player'
+            ? this.gameState?.playerId
+            : (this.gameState?.playerId === 'player1' ? 'player2' : 'player1');
+        const stance = playerId ? this.getActiveStanceEffectForPlayerId(playerId) : null;
+        const stanceKey = stance && (stance.stanceKey || stance.key) ? String(stance.stanceKey || stance.key) : '';
+        const overrideKey = this.spriteAnimation.override[side] ? String(this.spriteAnimation.override[side].key || 'override') : '';
+        const len = Array.isArray(frames) ? frames.length : 0;
+        return `${overrideKey}|${playerId || ''}|${stanceKey}|${len}`;
+    }
+
+    playSpriteOverride(side, frames, durationMs, key = 'action') {
+        if (!Array.isArray(frames) || frames.length === 0) return;
+        const ms = Math.max(0, Math.floor(Number(durationMs) || 0));
+
+        if (this.spriteAnimation.override[side] && this.spriteAnimation.override[side].timeoutId) {
+            try {
+                clearTimeout(this.spriteAnimation.override[side].timeoutId);
+            } catch (e) {}
+        }
+
+        const entry = { frames, key, timeoutId: null };
+        if (ms > 0) {
+            entry.timeoutId = setTimeout(() => {
+                if (this.spriteAnimation.override[side] === entry) {
+                    this.spriteAnimation.override[side] = null;
+                }
+            }, ms);
+        }
+        this.spriteAnimation.override[side] = entry;
     }
 
     getHTML() {
@@ -965,37 +1090,53 @@ class BattlePage extends BasePage {
     }
 
     startIdleSpriteAnimation() {
-        if (this.idleAnimationIntervalId) {
-            clearInterval(this.idleAnimationIntervalId);
-            this.idleAnimationIntervalId = null;
+        if (this.spriteAnimation.intervalId) {
+            clearInterval(this.spriteAnimation.intervalId);
+            this.spriteAnimation.intervalId = null;
         }
 
         if (!this.gameState) return;
-
-        const playerFrames = this.getIdleFramesForCharacter(this.gameState.player.character);
-        const opponentFrames = this.getIdleFramesForCharacter(this.gameState.opponent.character);
 
         const playerSprite = this.querySelector('#player-sprite');
         const opponentSprite = this.querySelector('#opponent-sprite');
 
         if (!playerSprite && !opponentSprite) return;
 
-        // Ensure initial state
-        this.idleAnimationFrameIndex = 0;
-        if (playerSprite) playerSprite.src = playerFrames[0];
-        if (opponentSprite) opponentSprite.src = opponentFrames[0];
+        this.spriteAnimation.frameIndex.player = 0;
+        this.spriteAnimation.frameIndex.opponent = 0;
+        this.spriteAnimation.lastFramesKey.player = null;
+        this.spriteAnimation.lastFramesKey.opponent = null;
 
-        const cycleLength = Math.max(playerFrames.length, opponentFrames.length, 1);
+        const tick = () => {
+            const playerFrames = this.getSpriteFramesForSide('player') || [];
+            const opponentFrames = this.getSpriteFramesForSide('opponent') || [];
 
-        this.idleAnimationIntervalId = setInterval(() => {
-            this.idleAnimationFrameIndex = (this.idleAnimationFrameIndex + 1) % cycleLength;
+            const pKey = this.getSpriteFramesKey('player', playerFrames);
+            const oKey = this.getSpriteFramesKey('opponent', opponentFrames);
 
-            const playerSrc = playerFrames[this.idleAnimationFrameIndex % playerFrames.length];
-            const opponentSrc = opponentFrames[this.idleAnimationFrameIndex % opponentFrames.length];
+            if (pKey !== this.spriteAnimation.lastFramesKey.player) {
+                this.spriteAnimation.lastFramesKey.player = pKey;
+                this.spriteAnimation.frameIndex.player = 0;
+            }
+            if (oKey !== this.spriteAnimation.lastFramesKey.opponent) {
+                this.spriteAnimation.lastFramesKey.opponent = oKey;
+                this.spriteAnimation.frameIndex.opponent = 0;
+            }
 
-            if (playerSprite) playerSprite.src = playerSrc;
-            if (opponentSprite) opponentSprite.src = opponentSrc;
-        }, 450);
+            if (playerSprite && playerFrames.length > 0) {
+                const idx = this.spriteAnimation.frameIndex.player % playerFrames.length;
+                playerSprite.src = playerFrames[idx];
+                this.spriteAnimation.frameIndex.player += 1;
+            }
+            if (opponentSprite && opponentFrames.length > 0) {
+                const idx = this.spriteAnimation.frameIndex.opponent % opponentFrames.length;
+                opponentSprite.src = opponentFrames[idx];
+                this.spriteAnimation.frameIndex.opponent += 1;
+            }
+        };
+
+        tick();
+        this.spriteAnimation.intervalId = setInterval(tick, 450);
     }
 
     updateHealthBars() {
@@ -1764,9 +1905,9 @@ class BattlePage extends BasePage {
     }
 
     async cleanup() {
-        if (this.idleAnimationIntervalId) {
-            clearInterval(this.idleAnimationIntervalId);
-            this.idleAnimationIntervalId = null;
+        if (this.spriteAnimation.intervalId) {
+            clearInterval(this.spriteAnimation.intervalId);
+            this.spriteAnimation.intervalId = null;
         }
 
         this.gameCoordinator = null;
