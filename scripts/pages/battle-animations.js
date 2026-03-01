@@ -190,6 +190,56 @@
                 battlePage.spriteAnimation.override[side] = null;
             }
         }
+
+        ,
+
+        async playSkillSequenceAnimationForSide(battlePage, side, actorCharacterId, skillId, skillType) {
+            if (!battlePage) return;
+            if (!skillId) return;
+
+            const spriteEl = typeof battlePage.getSpriteElementForSide === 'function'
+                ? battlePage.getSpriteElementForSide(side)
+                : null;
+            if (!spriteEl) return;
+
+            const actorChar = actorCharacterId ? { id: actorCharacterId } : null;
+            const frames = (window.BattleAssets && typeof window.BattleAssets.getSkillPreviewAnimationFramesForCharacterSkill === 'function')
+                ? window.BattleAssets.getSkillPreviewAnimationFramesForCharacterSkill(actorChar, skillId, skillType)
+                : null;
+            if (!Array.isArray(frames) || frames.length === 0) return;
+
+            const sleep = async (ms) => {
+                const t = Math.max(0, Math.floor(Number(ms) || 0));
+                if (t > 0) await battlePage.sleep(t);
+            };
+
+            const msPerFrame = 170;
+            const endHoldMs = 200;
+            const totalDurationMs = frames.length * msPerFrame + endHoldMs;
+
+            battlePage.playSpriteOverride(side, [frames[0]], totalDurationMs, `skill_seq_${actorCharacterId || 'unknown'}_${skillId}`);
+            spriteEl.src = frames[0];
+
+            for (let i = 1; i < frames.length; i++) {
+                await sleep(msPerFrame);
+                battlePage.playSpriteOverride(side, [frames[i]], totalDurationMs - (i * msPerFrame), `skill_seq_${actorCharacterId || 'unknown'}_${skillId}_${i}`);
+                spriteEl.src = frames[i];
+            }
+
+            await sleep(endHoldMs);
+
+            const prev = battlePage.spriteAnimation && battlePage.spriteAnimation.override
+                ? battlePage.spriteAnimation.override[side]
+                : null;
+            if (prev && prev.timeoutId) {
+                try {
+                    clearTimeout(prev.timeoutId);
+                } catch (e) {}
+            }
+            if (battlePage.spriteAnimation && battlePage.spriteAnimation.override) {
+                battlePage.spriteAnimation.override[side] = null;
+            }
+        }
     };
 
     window.BattleAnimations = BattleAnimations;

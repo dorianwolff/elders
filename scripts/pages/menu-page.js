@@ -4,10 +4,15 @@ class MenuPage extends BasePage {
         this.characterSystem = new CharacterSystem();
         this.selectedCharacter = null;
         this.characters = [];
+        this.allCharacters = [];
         this.currentCharacterIndex = -1;
         this.selectedSkillIds = [];
         this.viewMode = 'menu';
         this.dataManager = null;
+
+        this.transformLinks = {};
+        this.precombatBaseCharacterId = null;
+        this.skillPreviewToken = 0;
 
         this.idleAnimationIntervalId = null;
         this.idleAnimationFrameIndex = 0;
@@ -67,6 +72,14 @@ class MenuPage extends BasePage {
 
                     <div class="precombat-main">
                         <div class="precombat-stage" id="precombat-stage">
+                            <button class="precombat-transform-toggle" id="precombat-transform-toggle" type="button" aria-label="Transform" style="display:none">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M7 7h7a4 4 0 1 1 0 8H8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M7 7l2-2M7 7l2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M17 17H10a4 4 0 1 1 0-8h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M17 17l-2-2M17 17l-2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
                             <button class="stage-arrow stage-arrow-left" id="stage-arrow-left" aria-label="Previous character">
                                 &laquo;
                             </button>
@@ -122,6 +135,7 @@ class MenuPage extends BasePage {
         this.addEventListener('#stage-arrow-left', 'click', () => this.cycleCharacter(-1));
         this.addEventListener('#stage-arrow-right', 'click', () => this.cycleCharacter(1));
         this.addEventListener('#find-match-button', 'click', this.handleFindMatch.bind(this));
+        this.addEventListener('#precombat-transform-toggle', 'click', this.toggleTransformPreview.bind(this));
     }
 
     async onPageLoad() {
@@ -137,9 +151,11 @@ class MenuPage extends BasePage {
 
     async loadCharacters() {
         const characters = await this.characterSystem.getAllCharacters();
+        this.allCharacters = Array.isArray(characters) ? characters.filter(Boolean) : [];
         this.characters = Array.isArray(characters)
             ? characters.filter(c => c && c.selectable !== false)
             : [];
+        this.buildTransformLinksFromCharacters(this.allCharacters);
         const grid = this.querySelector('#characters-grid');
         
         grid.innerHTML = '';
@@ -148,6 +164,27 @@ class MenuPage extends BasePage {
             const characterCard = this.createCharacterCard(character);
             grid.appendChild(characterCard);
         });
+    }
+
+    buildTransformLinksFromCharacters(characters) {
+        const links = {};
+        const list = Array.isArray(characters) ? characters : [];
+        for (const c of list) {
+            const eff = c && c.ultimate && c.ultimate.effect ? c.ultimate.effect : null;
+            if (!eff || eff.type !== 'transform_self') continue;
+            const to = typeof eff.transform_to === 'string' ? eff.transform_to : null;
+            if (!to) continue;
+            if (c && c.id) {
+                links[c.id] = to;
+                if (!links[to]) links[to] = c.id;
+            }
+        }
+        this.transformLinks = links;
+    }
+
+    getTransformTargetId(characterId) {
+        if (!characterId) return null;
+        return this.transformLinks && this.transformLinks[characterId] ? this.transformLinks[characterId] : null;
     }
 
     createCharacterCard(character) {
@@ -318,13 +355,38 @@ class MenuPage extends BasePage {
         ];
     }
 
+    hasSelectedStanceSkill(character) {
+        if (!character) return false;
+        const skills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+        for (const id of this.selectedSkillIds) {
+            const s = skills.find(x => x && x.id === id);
+            if (s && s.type === 'stance') return true;
+        }
+        return false;
+    }
+
+    getStanceFramesForCharacter(character) {
+        if (window.BattleAssets && typeof window.BattleAssets.getStanceFramesForCharacter === 'function') {
+            return window.BattleAssets.getStanceFramesForCharacter(character, { stanceKey: 'stance', key: 'stance' });
+        }
+        return null;
+    }
+
+    getIdleOrStanceFramesForCharacter(character) {
+        if (this.hasSelectedStanceSkill(character)) {
+            const stanceFrames = this.getStanceFramesForCharacter(character);
+            if (Array.isArray(stanceFrames) && stanceFrames.length > 0) return stanceFrames;
+        }
+        return this.getIdleFramesForCharacter(character);
+    }
+
     startIdleSpriteAnimation(character) {
         if (this.idleAnimationIntervalId) {
             clearInterval(this.idleAnimationIntervalId);
             this.idleAnimationIntervalId = null;
         }
 
-        const frames = this.getIdleFramesForCharacter(character);
+        const frames = this.getIdleOrStanceFramesForCharacter(character);
         const sprite = this.querySelector('#precombat-sprite');
         if (!sprite || !frames || frames.length <= 0) return;
 
@@ -352,6 +414,7 @@ class MenuPage extends BasePage {
         if (!full) return;
 
         this.selectedCharacter = full;
+        this.precombatBaseCharacterId = full.id;
         this.currentCharacterIndex = next;
 
         this.querySelectorAll('.character-card').forEach(card => {
@@ -383,6 +446,13 @@ class MenuPage extends BasePage {
 
     renderPrecombatUI(character) {
         if (!character) return;
+
+        const transformBtn = this.querySelector('#precombat-transform-toggle');
+        if (transformBtn) {
+            const curId = character && character.id;
+            const target = this.getTransformTargetId(curId);
+            transformBtn.style.display = target ? '' : 'none';
+        }
 
         const profileImg = this.querySelector('#precombat-profile-image');
         if (profileImg) {
@@ -478,6 +548,7 @@ class MenuPage extends BasePage {
         if (!allIds.includes(skillId)) return;
 
         const idx = this.selectedSkillIds.indexOf(skillId);
+        let playedPreview = false;
         if (idx >= 0) {
             this.selectedSkillIds.splice(idx, 1);
         } else {
@@ -485,9 +556,70 @@ class MenuPage extends BasePage {
                 return;
             }
             this.selectedSkillIds.push(skillId);
+
+            const skill = skills.find(s => s && s.id === skillId);
+            if (skill) {
+                this.playSkillPreviewAnimationOnce(skill);
+                playedPreview = true;
+            }
         }
 
         this.renderPrecombatUI(this.selectedCharacter);
+
+        // If we didn't trigger a one-shot preview (or we're removing), restart the idle loop so
+        // stance selection immediately reflects in the displayed animation.
+        if (!playedPreview) {
+            this.startIdleSpriteAnimation(this.selectedCharacter);
+        }
+    }
+
+    async playSkillPreviewAnimationOnce(skill) {
+        if (!this.selectedCharacter || !skill) return;
+        const sprite = this.querySelector('#precombat-sprite');
+        if (!sprite) return;
+
+        const frames = (window.BattleAssets && typeof window.BattleAssets.getSkillPreviewAnimationFramesForCharacterSkill === 'function')
+            ? window.BattleAssets.getSkillPreviewAnimationFramesForCharacterSkill(this.selectedCharacter, skill.id, skill.type)
+            : null;
+        if (!Array.isArray(frames) || frames.length === 0) return;
+
+        const token = ++this.skillPreviewToken;
+
+        if (this.idleAnimationIntervalId) {
+            clearInterval(this.idleAnimationIntervalId);
+            this.idleAnimationIntervalId = null;
+        }
+
+        const msPerFrame = 160;
+        for (let i = 0; i < frames.length; i++) {
+            if (token !== this.skillPreviewToken) return;
+            sprite.src = frames[i];
+            await new Promise(r => setTimeout(r, msPerFrame));
+        }
+
+        if (token !== this.skillPreviewToken) return;
+        await new Promise(r => setTimeout(r, 160));
+        if (token !== this.skillPreviewToken) return;
+        this.startIdleSpriteAnimation(this.selectedCharacter);
+    }
+
+    async toggleTransformPreview() {
+        if (!this.selectedCharacter) return;
+        const currentId = this.selectedCharacter.id;
+        const targetId = this.getTransformTargetId(currentId);
+        if (!targetId) return;
+
+        const next = await this.characterSystem.getCharacter(targetId);
+        if (!next) return;
+
+        this.skillPreviewToken += 1;
+        this.selectedCharacter = next;
+
+        const skillIds = Array.isArray(next.skills) ? next.skills.map(s => s && s.id).filter(Boolean) : [];
+        this.selectedSkillIds = skillIds.slice(0, 2);
+
+        this.renderPrecombatUI(next);
+        this.startIdleSpriteAnimation(next);
     }
 
     cycleCharacter(delta) {

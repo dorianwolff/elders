@@ -1585,6 +1585,15 @@ class BattlePage extends BasePage {
                 }
             } catch (e) {}
 
+            // Character-specific debuff skill animations (simple frame sequence).
+            try {
+                if (skillType === 'debuff' && skillId) {
+                    if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
+                        window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType);
+                    }
+                }
+            } catch (e) {}
+
             // Only log opponent actions here. Local actions are logged in useSkill/useUltimate.
             if (actionResult._actionSource === 'opponent') {
                 // Log opponent's action with skill name

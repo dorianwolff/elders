@@ -148,8 +148,7 @@ window.BattleAssets = {
         if (id === 'rimuru_tempest') {
             return [
                 'assets/animations/rimuru_tempest/rimuru_tempest_stance_1.png',
-                'assets/animations/rimuru_tempest/rimuru_tempest_stance_2.png',
-                'assets/animations/rimuru_tempest/rimuru_tempest_stance_3.png'
+                'assets/animations/rimuru_tempest/rimuru_tempest_stance_2.png'
             ];
         }
         else if (id === 'edward_elric') {
@@ -215,6 +214,49 @@ window.BattleAssets = {
                 'assets/animations/trafalgar_law/trafalgar_law_domain_3.png'
             ];
         }
+        return null;
+    },
+
+    getDebuffAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'trafalgar_law' && skillId === 'shambles_aid') {
+            return [
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                'assets/animations/trafalgar_law/trafalgar_law_debuff_3.png'
+            ];
+        }
+        return null;
+    },
+
+    getSkillPreviewAnimationFramesForCharacterSkill(character, skillId, skillType) {
+        if (!character || !skillId) return null;
+
+        if (skillType === 'domain') {
+            return this.getDomainAnimationForCharacterSkill(character, skillId);
+        }
+
+        if (skillType === 'debuff') {
+            return this.getDebuffAnimationForCharacterSkill(character, skillId);
+        }
+
+        if (skillType === 'stance') {
+            if (typeof this.getStanceFramesForCharacter === 'function') {
+                const stanceFrames = this.getStanceFramesForCharacter(character, { stanceKey: 'stance', key: 'stance' });
+                if (Array.isArray(stanceFrames) && stanceFrames.length > 0) return stanceFrames;
+            }
+        }
+
+        if (skillType === 'attack') {
+            const close = this.getCloseAttackAnimationForCharacter(character);
+            if (close && close.start && close.end && Array.isArray(close.hits) && close.hits.length > 0) {
+                return [close.start, ...close.hits, close.end];
+            }
+        }
+
         return null;
     },
 
