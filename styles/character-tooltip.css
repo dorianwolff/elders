@@ -1,0 +1,205 @@
+.character-tooltip {
+    position: fixed;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 40, 0.95));
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 280px;
+    max-width: 350px;
+    z-index: 1000;
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.tooltip-header {
+    border-bottom: 2px solid #444;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.tooltip-header h3 {
+    color: #fff;
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.character-class {
+    color: #aaa;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.tooltip-content {
+    color: #fff;
+}
+
+.health-section {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 12px;
+}
+
+.stats-section {
+    background: rgba(68, 68, 255, 0.1);
+    border: 1px solid rgba(68, 68, 255, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 12px;
+}
+
+.effects-section {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.stats-section h4,
+.effects-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 4px 0;
+    padding: 2px 0;
+}
+
+.stat-label {
+    color: #ccc;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.stat-value {
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.stat-positive {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.stat-negative {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.effects-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.effect-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px;
+    margin: 4px 0;
+    border-radius: 6px;
+    font-size: 11px;
+}
+
+.effect-item.effect-buff {
+    background: rgba(33, 150, 243, 0.2);
+    border-left: 3px solid #2196F3;
+}
+
+.effect-item.effect-debuff {
+    background: rgba(156, 39, 176, 0.2);
+    border-left: 3px solid #9C27B0;
+}
+
+.effect-item.effect-poison {
+    background: rgba(76, 175, 80, 0.2);
+    border-left: 3px solid #4CAF50;
+}
+
+.effect-item.effect-conceal {
+    background: rgba(255, 193, 7, 0.2);
+    border-left: 3px solid #FFC107;
+}
+
+.effect-item.effect-stun {
+    background: rgba(96, 125, 139, 0.2);
+    border-left: 3px solid #607D8B;
+}
+
+.effect-item.effect-mark {
+    background: rgba(255, 87, 34, 0.2);
+    border-left: 3px solid #FF5722;
+}
+
+.effect-item.effect-revive {
+    background: rgba(255, 215, 0, 0.2);
+    border-left: 3px solid #FFD700;
+}
+
+.effect-icon {
+    font-size: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.effect-details {
+    flex: 1;
+}
+
+.effect-name {
+    color: #fff;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.effect-description {
+    color: #ccc;
+    font-size: 10px;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.effect-duration {
+    color: #aaa;
+    font-size: 9px;
+    font-style: italic;
+}
+
+.no-effects {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 8px;
+    font-size: 11px;
+}
+
+/* Scrollbar styling for effects list */
+.effects-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.effects-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.effects-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.effects-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}

@@ -1,0 +1,335 @@
+{
+  "lloyd_frontera": {
+    "id": "lloyd_frontera",
+    "name": "Lloyd Frontera",
+    "metaPoints": 140,
+    "stats": {
+      "health": 115,
+      "maxHealth": 115,
+      "attack": 20,
+      "defense": 16,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["lloyd_frontera.jpg"],
+    "passiveId": "development",
+    "skillIds": ["value_over_self", "plannification", "construction_site"],
+    "ultimate": {
+      "id": "greatest_real_estate",
+      "name": "Greatest Real Estate",
+      "description": "Permanently gain +10 attack and deal 180% of attack as damage",
+      "effect": {
+        "type": "damage_and_permanent_stat",
+        "target": "enemy",
+        "value": 1.8,
+        "scaling": "attack",
+        "permanent": {
+          "stat": "attack",
+          "value": 10
+        }
+      }
+    }
+  },
+  "rimuru_tempest": {
+    "id": "rimuru_tempest",
+    "name": "Rimuru Tempest",
+    "metaPoints": 160,
+    "stats": {
+      "health": 100,
+      "maxHealth": 100,
+      "attack": 21,
+      "defense": 16,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["rimuru_tempest.webp"],
+    "passiveId": "gluttony",
+    "skillIds": ["predation", "rimuru_stance", "devour"],
+    "ultimate": {
+      "id": "beelzebub",
+      "name": "Beelzebub",
+      "description": "Deal 80% attack + 80% defense + 20% max health as damage",
+      "effect": {
+        "type": "multi_scaling_damage",
+        "target": "enemy",
+        "multiHit": true,
+        "hitCount": 3,
+        "components": [
+          { "scaling": "attack", "value": 0.8 },
+          { "scaling": "defense", "value": 0.8 },
+          { "scaling": "max_health", "value": 0.2 }
+        ]
+      }
+    }
+  },
+  "trafalgar_law": {
+    "id": "trafalgar_law",
+    "name": "Trafalgar Law",
+    "metaPoints": 150,
+    "stats": {
+      "health": 110,
+      "maxHealth": 110,
+      "attack": 29,
+      "defense": 15,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["trafalgar_law.webp"],
+    "passiveId": "room_surgeon",
+    "skillIds": ["room_incision", "takt_breaker", "shambles_aid", "room_domain"],
+    "ultimate": {
+      "id": "shambles",
+      "name": "Shambles",
+      "description": "Swap current health with the enemy. If the enemy is at 10% or less max health afterward, execute them.",
+      "limit": 3,
+      "effect": {
+        "type": "swap_health_and_execute",
+        "target": "enemy",
+        "execute_threshold": 0.1
+      }
+    }
+  },
+  "saitama": {
+    "id": "saitama",
+    "name": "Saitama",
+    "metaPoints": 170,
+    "stats": {
+      "health": 120,
+      "maxHealth": 120,
+      "attack": 24,
+      "defense": 17,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["saitama_base.jpg"],
+    "passiveId": "push_the_limits",
+    "skillIds": ["slap", "endure", "grit"],
+    "ultimate": {
+      "id": "get_serious",
+      "name": "Get Serious",
+      "description": "Transform into serious form and recover 10% of max health",
+      "effect": {
+        "type": "transform_self",
+        "target": "self",
+        "transform_to": "saitama_serious",
+        "heal_value": 0.1,
+        "heal_scaling": "max_health"
+      }
+    }
+  },
+  "saitama_serious": {
+    "id": "saitama_serious",
+    "name": "Saitama (Serious)",
+    "metaPoints": 999,
+    "selectable": false,
+    "stats": {
+      "health": 120,
+      "maxHealth": 120,
+      "attack": 32,
+      "defense": 20,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["saitama_transformed.jpg"],
+    "passiveId": "serious_growth",
+    "skillIds": ["serious_punch", "serious_side_steps"],
+    "ultimate": {
+      "id": "omnidirectional_serious_punch",
+      "name": "Omnidirectional Serious Punch",
+      "description": "Deal 1000% of attack as damage",
+      "effect": {
+        "type": "damage",
+        "target": "enemy",
+        "value": 10,
+        "scaling": "attack"
+      }
+    }
+  },
+  "gojo_satoru": {
+    "id": "gojo_satoru",
+    "name": "Gojo Satoru",
+    "metaPoints": 180,
+    "stats": {
+      "health": 118,
+      "maxHealth": 118,
+      "attack": 35,
+      "defense": 15,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["gojo_satoru.jpeg"],
+    "passiveId": "blossoming_emotion",
+    "skillIds": ["gojo_strike", "reversed_curse_technique", "infinity_rebound"],
+    "ultimate": {
+      "id": "limitless_dominion",
+      "name": "Limitless Dominion",
+      "description": "For 3 turns, damage becomes recovery and recovery becomes damage. Only one domain can exist at a time.",
+      "effect": {
+        "type": "array_domain",
+        "duration": 3
+      }
+    }
+  },
+  "zero_two": {
+    "id": "zero_two",
+    "name": "Zero Two",
+    "metaPoints": 165,
+    "stats": {
+      "health": 110,
+      "maxHealth": 110,
+      "attack": 32,
+      "defense": 7,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["zero_two.png"],
+    "passiveId": "kiss_of_death_passive",
+    "skillIds": ["darling_bite", "heartbreak_harvest", "dont_hurt_me_baby", "unrivaled_love"],
+    "ultimate": {
+      "id": "kiss_of_death",
+      "name": "KISS OF DEATH",
+      "description": "Deal (120% + 1% per Heartbreak) of attack as damage. Consume all Heartbreak stacks.",
+      "effect": {
+        "type": "heartbreak_finisher",
+        "target": "enemy",
+        "base_percent": 1.2,
+        "per_heartbreak_percent": 0.01,
+        "consume_heartbreak": true
+      }
+    }
+  },
+  "edward_elric": {
+    "id": "edward_elric",
+    "name": "Edward Elric",
+    "metaPoints": 175,
+    "stats": {
+      "health": 107,
+      "maxHealth": 107,
+      "attack": 32,
+      "defense": 16,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["edward_elric.jpg"],
+    "passiveId": "automail_overclock",
+    "skillIds": ["ed_rocket_punch", "ed_coolant_vent", "equivalent_exchange", "alchemy"],
+    "ultimate": {
+      "id": "ed_redline_combo",
+      "name": "Redline Combo",
+      "description": "Deal (100% + 1% per Heat) of attack as damage. Consumes all Heat.",
+      "effect": {
+        "type": "redline_combo",
+        "target": "enemy",
+        "base_percent": 1,
+        "per_heat_percent": 0.01,
+        "consume_heat": true
+      }
+    }
+  },
+  "naruto": {
+    "id": "naruto",
+    "name": "Naruto Uzumaki",
+    "metaPoints": 185,
+    "stats": {
+      "health": 125,
+      "maxHealth": 125,
+      "attack": 30,
+      "defense": 15,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["naruto_uzumaki.jpg"],
+    "passiveId": "naruto_natural_energy",
+    "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
+    "ultimate": {
+      "id": "naruto_enter_sage_mode",
+      "name": "Enter Sage Mode",
+      "description": "Enter Sage Mode until the end of the game.",
+      "effect": {
+        "type": "transform_self",
+        "target": "self",
+        "transform_to": "naruto_sage",
+        "preserve_passive_state": true,
+        "keep_skill_palette": true
+      }
+    }
+  },
+  "naruto_sage": {
+    "id": "naruto_sage",
+    "name": "Naruto (Sage Mode)",
+    "metaPoints": 999,
+    "selectable": false,
+    "stats": {
+      "health": 125,
+      "maxHealth": 125,
+      "attack": 32,
+      "defense": 15,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["naruto_uzumaki_sage.jpg"],
+    "passiveId": "naruto_sage_mode",
+    "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
+    "ultimate": {
+      "id": "naruto_sage_judgement",
+      "name": "Sage Judgement",
+      "description": "Deal 150% of attack as damage.",
+      "cooldown": 0,
+      "effect": {
+        "type": "damage",
+        "target": "enemy",
+        "value": 1.5,
+        "scaling": "attack"
+      }
+    }
+  },
+  "frieren": {
+    "id": "frieren",
+    "name": "Frieren",
+    "metaPoints": 155,
+    "stats": {
+      "health": 112,
+      "maxHealth": 112,
+      "attack": 27,
+      "defense": 17,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["frieren.jpg"],
+    "passiveId": "spell_archive",
+    "skillIds": ["frieren_minor_utility", "frieren_copycat_glyph", "frieren_rotating_page"],
+    "ultimate": {
+      "id": "frieren_archive_release",
+      "name": "An Era of Spells",
+      "description": "Cast Minor Utility Spell 5 times at full power. Cannot be doubled.",
+      "cooldown": 1,
+      "effect": {
+        "type": "frieren_minor_utility_barrage",
+        "target": "enemy",
+        "casts": 5
+      }
+    }
+  }
+}

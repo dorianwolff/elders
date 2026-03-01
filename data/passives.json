@@ -1,0 +1,355 @@
+{
+  "development": {
+    "id": "development",
+    "name": "Development",
+    "description": "Each time Lloyd takes damage, gain 1 Build stack. Each stack grants +1 attack and +1 defense. At 10 stacks, lose all stacks and gain Ultimate.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "buildStacks",
+      "value": 10
+    },
+    "effects": [
+      {
+        "type": "stacking_stat_buff",
+        "timing": "damage_taken",
+        "stackKey": "buildStacks",
+        "maxStacks": 10,
+        "gainPerTrigger": 1,
+        "statsPerStack": {
+          "attack": 1,
+          "defense": 1
+        },
+        "grantUltimateAtMax": true,
+        "resetStacksOnGrant": true
+      }
+    ]
+  },
+  "gluttony": {
+    "id": "gluttony",
+    "name": "Gluttony",
+    "description": "Each time Rimuru deals damage, gain 1 Experience stack. Experience stacks permanently grant +1 attack, +1 defense, and +1 max health. When reaching 10 Experience stacks, convert 10 Experience into 1 Raphael stack and gain Ultimate. Raphael stacks grant the same bonuses as 10 Experience stacks and cannot be removed.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "experienceStacks",
+      "value": 10
+    },
+    "stackBadges": [
+      {
+        "counter": "raphaelStacks",
+        "title": "Raphael",
+        "className": "stack-counter-raphael"
+      },
+      {
+        "counter": "experienceStacks",
+        "title": "Experience",
+        "className": "stack-counter-experience"
+      }
+    ],
+    "effects": [
+      {
+        "type": "permanent_stack_growth",
+        "timing": "damage_dealt",
+        "stackKey": "experienceStacks",
+        "maxStacks": 999,
+        "gainPerTrigger": 1,
+        "perStack": {
+          "attack": 1,
+          "defense": 1,
+          "maxHealth": 1,
+          "currentHealth": 1
+        }
+      },
+      {
+        "type": "convert_stacks",
+        "timing": "damage_dealt",
+        "sourceCounter": "experienceStacks",
+        "targetCounter": "raphaelStacks",
+        "sourceCost": 10,
+        "grantUltimate": true
+      },
+      {
+        "type": "permanent_stack_loss",
+        "timing": "damage_taken",
+        "stackKey": "experienceStacks",
+        "losePerTrigger": 1,
+        "minStacks": 0
+      }
+    ]
+  },
+  "room_surgeon": {
+    "id": "room_surgeon",
+    "name": "Room Surgeon",
+    "description": "When Law deals damage, recover 5% of max health. Ultimate becomes available after recovering 80 total health.",
+    "mission": {
+      "type": "total_healing_done",
+      "value": 80,
+      "resetOnReady": true
+    },
+    "effects": [
+      {
+        "type": "heal_on_damage_dealt",
+        "timing": "damage_dealt",
+        "heal_value": 0.05,
+        "heal_scaling": "max_health"
+      }
+    ]
+  },
+  "push_the_limits": {
+    "id": "push_the_limits",
+    "name": "Push The Limits",
+    "description": "Each time Saitama takes damage, gain 1 Annoyed stack. Each stack grants +1 attack. At 7 stacks, Ultimate becomes available. Annoyed stacks are lost when transforming.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "annoyedStacks",
+      "value": 7
+    },
+    "stackBadges": [
+      {
+        "counter": "annoyedStacks",
+        "title": "Annoyed"
+      }
+    ],
+    "effects": [
+      {
+        "type": "stacking_stat_buff",
+        "timing": "damage_taken",
+        "stackKey": "annoyedStacks",
+        "maxStacks": 7,
+        "gainPerTrigger": 1,
+        "statsPerStack": {
+          "attack": 1
+        },
+        "grantUltimateAtMax": true,
+        "resetStacksOnGrant": false
+      }
+    ]
+  },
+  "serious_growth": {
+    "id": "serious_growth",
+    "name": "Serious Growth",
+    "description": "At the start of each of your turns, permanently gain +15 attack. Ultimate becomes available after attacking 2 times.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "seriousAttacks",
+      "value": 2
+    },
+    "stackBadges": [
+      {
+        "counter": "seriousAttacks",
+        "title": "Attacks"
+      }
+    ],
+    "effects": [
+      {
+        "type": "permanent_stat_delta",
+        "timing": "turn_start",
+        "deltas": {
+          "attack": 15
+        }
+      },
+      {
+        "type": "counter_growth",
+        "timing": "damage_dealt",
+        "stackKey": "seriousAttacks",
+        "gainPerTrigger": 1,
+        "maxStacks": 2
+      }
+    ]
+  },
+  "automail_overclock": {
+    "id": "automail_overclock",
+    "name": "Overclocked Automail",
+    "description": "Generate Heat with Automail attacks and vent it with coolant. Heat makes you stronger but unstable: every 5 Heat grants +1 true damage on your attacks, and every 10 Heat makes you take +1 true damage when you take damage. At 50 Heat, Ultimate becomes available. Upon taking lethal damage, revive once at 50% health in a weakened form.",
+    "type": "dual_passive",
+    "ultimate_condition": {
+      "type": "stack_threshold",
+      "counter": "heat",
+      "value": 50
+    },
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "heat",
+      "value": 50
+    },
+    "stackBadges": [
+      {
+        "counter": "heat",
+        "title": "Heat",
+        "className": "stack-counter-heat"
+      }
+    ],
+    "ongoing_effect": {
+      "type": "revive",
+      "max_revives": 1,
+      "revive_health": 0.5,
+      "weakened_multiplier": 0.8
+    }
+  },
+  "blossoming_emotion": {
+    "id": "blossoming_emotion",
+    "name": "Blossoming Emotion",
+    "description": "At the start of each of your turns, your opponent recovers 10 health. Ultimate becomes available after your opponent recovers 50 health.",
+    "mission": {
+      "type": "total_healing_done",
+      "value": 50,
+      "resetOnReady": true
+    },
+    "effects": [
+      {
+        "type": "heal_opponent_flat",
+        "timing": "turn_start",
+        "amount": 10
+      }
+    ]
+  },
+  "kiss_of_death_passive": {
+    "id": "kiss_of_death_passive",
+    "name": "Partner Killer",
+    "description": "Gain Heartbreak based on your opponent's actions. Heartbreak is capped at 100. At 66 Heartbreak, Ultimate becomes available.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "heartbreak",
+      "value": 66
+    },
+    "stackBadges": [
+      {
+        "counter": "heartbreak",
+        "title": "Heartbreak"
+      }
+    ],
+    "effects": [
+      {
+        "type": "heartbreak_meter",
+        "timing": "opponent_healing_done_kiss_mark",
+        "counter": "heartbreak",
+        "max": 100,
+        "perAmount": 1
+      },
+      {
+        "type": "heartbreak_meter",
+        "timing": "opponent_skill_used",
+        "counter": "heartbreak",
+        "max": 100,
+        "gainBySkillType": {
+          "attack": 5,
+          "debuff": 10,
+          "buff": 1,
+          "recovery": 1,
+          "heal": 1
+        }
+      }
+    ]
+  },
+  "naruto_natural_energy": {
+    "id": "naruto_natural_energy",
+    "name": "Natural Energy Balance",
+    "description": "Balance ranges from -3 to +3. Yang skills shifts Balance by +1, Yin skills shifts Balance by -1. Ultimate unlocks when you reach either extremity.",
+    "mission": {
+      "type": "counter_extremity",
+      "counter": "balance",
+      "value": 3
+    },
+    "stackBadges": [
+      {
+        "counter": "balance",
+        "title": "Balance",
+        "className": "stack-counter"
+      }
+    ],
+    "effects": [
+      {
+        "type": "balance_meter",
+        "timing": "skill_used",
+        "counter": "balance",
+        "min": -3,
+        "max": 3,
+        "shieldOnValue": -3,
+        "shieldAmount": 15,
+        "deltaBySkillId": {
+          "naruto_yang_strike": 1,
+          "naruto_yang_meteor_rain": 1,
+          "naruto_yin_guard": -1,
+          "naruto_yin_serenity": -1
+        }
+      }
+    ]
+  },
+  "naruto_sage_mode": {
+    "id": "naruto_sage_mode",
+    "name": "Six Paths Sage Mode",
+    "description": "Stay in Sage Mode until the end of the game. Each time you use a different skill than the last one you used, gain 1 Sage Orb (max 5). At the start of each of your turns, recover 2 health per Sage Orb. Sage Orbs also grant +1 permanent attack per orb gained.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "sageOrbs",
+      "value": 5,
+      "keepReadyAfterUse": true
+    },
+    "stackBadges": [
+      {
+        "counter": "balance",
+        "title": "Balance",
+        "className": "stack-counter"
+      },
+      {
+        "counter": "sageOrbs",
+        "title": "Sage Orbs",
+        "className": "stack-counter-sage"
+      }
+    ],
+    "effects": [
+      {
+        "type": "balance_meter",
+        "timing": "skill_used",
+        "counter": "balance",
+        "min": -3,
+        "max": 3,
+        "shieldOnValue": -3,
+        "shieldAmount": 15,
+        "deltaBySkillId": {
+          "naruto_yang_strike": 3,
+          "naruto_yang_meteor_rain": 3,
+          "naruto_yin_guard": -3,
+          "naruto_yin_serenity": -3
+        }
+      },
+      {
+        "type": "sage_orbs",
+        "timing": "skill_used",
+        "counter": "sageOrbs",
+        "max": 5,
+        "onlyWhenDifferentSkill": true,
+        "permanentAttackPerOrbGained": 1
+      },
+      {
+        "type": "sage_orbs",
+        "timing": "turn_start",
+        "counter": "sageOrbs",
+        "healPerOrb": 2
+      }
+    ]
+  },
+  "spell_archive": {
+    "id": "spell_archive",
+    "name": "Spell Archive",
+    "description": "Whenever your opponent uses a skill, record its type as a Page (max 5). Pages empower your spells. At 5 Pages, Ultimate becomes available.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "archivePages",
+      "value": 5
+    },
+    "stackBadges": [
+      {
+        "counter": "archivePages",
+        "title": "Pages"
+      }
+    ],
+    "effects": [
+      {
+        "type": "spell_archive_pages",
+        "timing": "opponent_skill_used",
+        "counter": "archivePages",
+        "maxPages": 5
+      }
+    ]
+  }
+}

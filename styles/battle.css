@@ -1,0 +1,887 @@
+.battle-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ultimate-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.ultimate-overlay.is-visible {
+    display: flex;
+}
+
+.ultimate-overlay-video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+}
+
+.battle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.skip-animations-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.skip-animations-button:hover {
+    transform: translateY(-1px);
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.2);
+}
+
+.skip-animations-button.is-active {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.28);
+    color: #000;
+}
+
+.surrender-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.0);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.surrender-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.surrender-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.surrender-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.turn-indicator span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.turn-indicator .your-turn {
+    background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.turn-indicator .opponent-turn {
+    background: linear-gradient(135deg, #f44336 0%, #e57373 100%);
+    color: white;
+}
+
+.turn-indicator .game-over {
+    background: linear-gradient(135deg, #9C27B0 0%, #E1BEE7 100%);
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+.game-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.turn-counter {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+}
+
+.battle-arena {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 2rem;
+    gap: 2rem;
+    overflow: hidden;
+    position: relative;
+ }
+
+ .battle-arena::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image: var(--arena-bg-url, none);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    transform: none;
+ }
+
+ .battle-arena.is-bg-mirrored::before {
+    transform: scaleX(-1);
+ }
+
+ .battle-arena > * {
+    position: relative;
+    z-index: 1;
+}
+
+.battle-top-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 2rem;
+    position: relative;
+}
+
+.battle-sprite-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(3rem, 10vw, 10rem);
+    padding: 1rem 0;
+    position: relative;
+}
+
+.battle-sprite {
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.battle-sprite img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.battle-sprite-player img {
+    transform: scaleX(-1);
+}
+
+.health-bar {
+    position: relative;
+    overflow: hidden;
+}
+
+.health-damage-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background: rgba(200, 55, 55, 0.55);
+    z-index: 1;
+    opacity: 1;
+    pointer-events: none;
+    border-radius: 14px;
+}
+
+.health-fill {
+    position: relative;
+    z-index: 2;
+}
+
+.health-text {
+    z-index: 3;
+}
+
+ .domain-dock {
+    position: fixed;
+    top: 50vh;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: min(360px, 28vw);
+    pointer-events: none;
+ }
+
+ .domain-dock-left {
+    left: 0;
+ }
+
+ .domain-dock-right {
+    right: 0;
+ }
+
+ .domain-dock-inner {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+ }
+
+ .domain-dock-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.92);
+    margin-bottom: 0.35rem;
+ }
+
+ .domain-dock-desc {
+    font-size: 0.95rem;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.82);
+    margin-bottom: 0.5rem;
+ }
+
+ .domain-dock-turns {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.88);
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.18);
+ }
+
+ @keyframes domainGlow {
+    0%, 100% {
+        box-shadow:
+            0 18px 55px rgba(0, 0, 0, 0.45),
+            0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+            0 0 22px rgba(124, 210, 255, 0.14);
+        transform: translateY(0);
+    }
+    50% {
+        box-shadow:
+            0 18px 55px rgba(0, 0, 0, 0.45),
+            0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+            0 0 34px rgba(124, 210, 255, 0.22);
+        transform: translateY(-2px);
+    }
+ }
+
+.opponent-section,
+.player-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+}
+
+.opponent-section {
+    justify-content: flex-start;
+}
+
+.player-section {
+    justify-content: flex-end;
+}
+
+.opponent-character,
+.player-character {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+}
+
+.player-character {
+    flex-direction: row-reverse;
+    text-align: right;
+    justify-content: flex-end;
+}
+
+.opponent-character {
+    justify-content: flex-start;
+}
+
+.character-sprite {
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.character-sprite img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.character-sprite-player img {
+    transform: scaleX(-1);
+}
+
+.character-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.player-character .character-header {
+    justify-content: flex-end;
+}
+
+.opponent-character .character-header {
+    justify-content: flex-start;
+}
+
+.character-info h3 {
+    font-size: 1.3rem;
+    margin: 0;
+    color: white;
+    line-height: 1.2;
+}
+
+.opponent-effects,
+.player-effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    min-width: 120px;
+}
+
+.battle-actions {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem 2rem;
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.skills-section h4,
+.ultimate-section h4,
+.passive-section h4 {
+    color: #ffd700;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.skill-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    text-align: left;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.skill-button:hover:not(:disabled) {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.skill-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.skill-button.skill-on-cooldown {
+    background: rgba(128, 128, 128, 0.1);
+    border-color: rgba(128, 128, 128, 0.3);
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Effect Indicators */
+.effect-indicators {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    min-height: 20px;
+}
+
+.character-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.character-image img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.effect-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+    transition: transform 0.2s ease;
+}
+
+.effect-indicator::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+    pointer-events: none;
+    /* Darken the elapsed portion as a radial "pizza slice" from the center */
+    background: conic-gradient(
+        rgba(0, 0, 0, 0.65) 0deg,
+        rgba(0, 0, 0, 0.65) var(--shade, 0deg),
+        rgba(255, 255, 255, 0.12) var(--shade, 0deg),
+        rgba(255, 255, 255, 0.12) 360deg
+    );
+}
+
+.effect-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.effect-indicator.stack-counter {
+    background: rgba(160, 160, 160, 0.35);
+    border-color: rgba(220, 220, 220, 0.6);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.effect-indicator.stack-counter.stack-counter-raphael {
+    background: rgba(120, 120, 120, 0.45);
+    border-color: rgba(230, 230, 230, 0.7);
+}
+
+.effect-indicator.stack-counter.stack-counter-experience {
+    background: rgba(170, 170, 170, 0.30);
+    border-color: rgba(215, 215, 215, 0.55);
+}
+
+.effect-indicator.stack-counter.stack-counter-sage {
+    background: rgba(155, 155, 155, 0.32);
+    border-color: rgba(180, 225, 255, 0.75);
+}
+
+.effect-indicator.stack-counter.stack-counter-heat {
+    background: rgba(160, 160, 160, 0.35);
+    border-color: rgba(220, 220, 220, 0.6);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.effect-indicator:hover {
+    transform: scale(1.2);
+}
+
+/* Fallback so unknown effect types don't render as an uncolored grey box */
+.effect-indicator {
+    background: rgba(160, 160, 160, 0.25);
+}
+
+.effect-indicator.buff {
+    background: linear-gradient(135deg, #4a90e2, #357abd);
+    border: 1px solid #2c5aa0;
+}
+
+.effect-indicator.debuff {
+    background: linear-gradient(135deg, #8e44ad, #732d91);
+    border: 1px solid #5d1a7b;
+}
+
+.effect-indicator.poison {
+    background: linear-gradient(135deg, #8e44ad, #732d91);
+    border: 1px solid #5d1a7b;
+}
+
+.effect-indicator.bleed {
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    border: 1px solid #7e241b;
+}
+
+.effect-indicator.stun {
+    background: linear-gradient(135deg, #2c3e50, #1f2d3a);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.effect-indicator.mark {
+    background: linear-gradient(135deg, #16a085, #0e7f69);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.effect-indicator.revive {
+    background: linear-gradient(135deg, #f1c40f, #d4ac0d);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.effect-indicator.conceal {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border: 1px solid #d35400;
+}
+
+.effect-indicator.stance {
+    background: linear-gradient(135deg, #f1c40f, #d4ac0d);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.effect-indicator.grit_stance {
+    background: linear-gradient(135deg, #f1c40f, #d4ac0d);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Avatar Borders */
+.player-character .character-image {
+    border: 3px solid #4caf50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.opponent-character .character-image {
+    border: 3px solid #f44336;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+}
+
+/* Effect Tooltip */
+.effect-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    max-width: 200px;
+    z-index: 1000;
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.effect-tooltip .effect-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.effect-tooltip .effect-description {
+    opacity: 0.9;
+}
+
+.skill-button.skill-on-cooldown .skill-name {
+    color: #999;
+}
+
+.skill-button.skill-on-cooldown .skill-description {
+    color: rgba(153, 153, 153, 0.8);
+}
+
+.skill-name {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: #ffd700;
+}
+
+.skill-description {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.3;
+}
+
+.skill-cooldown {
+    font-size: 0.75rem;
+    color: #ff6b6b;
+    font-weight: bold;
+    margin-top: 0.25rem;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.ultimate-button {
+    background: rgba(138, 43, 226, 0.3);
+    border: 2px solid rgba(138, 43, 226, 0.6);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+    text-align: left;
+    width: 100%;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.ultimate-button:hover:not(:disabled) {
+    border-color: #9b59b6;
+    background: rgba(155, 89, 182, 0.4);
+    transform: translateY(-2px);
+}
+
+.ultimate-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: rgba(138, 43, 226, 0.3);
+}
+
+.ultimate-name {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: #e74c3c;
+}
+
+.ultimate-description {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+}
+
+.ultimate-status {
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.ultimate-ready {
+    color: #4CAF50;
+}
+
+.ultimate-not-ready {
+    color: #ff6b6b;
+}
+
+.passive-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.passive-name {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: #3498db;
+}
+
+.passive-description {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+}
+
+.passive-progress {
+    font-size: 0.7rem;
+    color: #ffd700;
+    font-weight: 600;
+}
+
+.battle-log {
+    position: fixed;
+    top: 5.25rem;
+    right: 1rem;
+    width: 300px;
+    max-height: 200px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.log-header {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #ffd700;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.log-content {
+    padding: 0.5rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.log-message {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .battle-header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .battle-arena {
+        padding: 1rem;
+        gap: 1rem;
+    }
+    
+    .opponent-section,
+    .player-section {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .player-section {
+        flex-direction: column;
+    }
+    
+    .player-character {
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .battle-actions {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .skills-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .battle-log {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        width: 100%;
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .battle-header {
+        padding: 0.5rem;
+    }
+    
+    .turn-indicator span {
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .battle-arena {
+        padding: 0.5rem;
+    }
+    
+    .opponent-section,
+    .player-section {
+        padding: 0.75rem;
+    }
+    
+    .character-image {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .battle-actions {
+        padding: 0.75rem;
+    }
+    
+    .skill-button,
+    .ultimate-button {
+        padding: 0.75rem;
+        min-height: 60px;
+    }
+    
+    .skill-name,
+    .ultimate-name {
+        font-size: 0.9rem;
+    }
+    
+    .skill-description,
+    .ultimate-description {
+        font-size: 0.7rem;
+    }
+}

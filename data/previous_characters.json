@@ -1,0 +1,595 @@
+{
+  "warrior": {
+    "id": "warrior",
+    "name": "Warrior",
+    "metaPoints": 100,
+    "stats": {
+      "health": 121,
+      "maxHealth": 121,
+      "attack": 32,
+      "defense": 15,
+      "lifesteal": 0,
+      "damageReduction": 5
+    },
+    "images": ["warrior_idle.png", "warrior_attack.png"],
+    "passive": {
+      "name": "Battle Hardened",
+      "description": "Ultimate becomes available after taking 50 damage",
+      "type": "damage_threshold",
+      "value": 50
+    },
+    "skillIds": ["basic_strike", "defensive_stance"],
+    "ultimate": {
+      "id": "berserker_rage",
+      "name": "Berserker Rage",
+      "description": "Deal damage equal to 150% of damage taken this battle",
+      "effect": {
+        "type": "damage",
+        "target": "enemy",
+        "value": 1,
+        "scaling": "damage_taken"
+      }
+    }
+  },
+  "mage": {
+    "id": "mage",
+    "name": "Mage",
+    "metaPoints": 110,
+    "stats": {
+      "health": 80,
+      "maxHealth": 80,
+      "attack": 35,
+      "defense": 8,
+      "lifesteal": 0,
+      "damageReduction": 5
+    },
+    "images": ["mage_idle.png", "mage_cast.png"],
+    "passive": {
+      "name": "Arcane Power",
+      "description": "Ultimate becomes available after using 3 skills",
+      "type": "skill_count",
+      "value": 3
+    },
+    "skillIds": ["magic_missile", "heal"],
+    "ultimate": {
+      "id": "meteor",
+      "name": "Meteor",
+      "description": "Deal 300% of attack as damage to the enemy",
+      "effect": {
+        "type": "damage",
+        "target": "enemy",
+        "value": 3.0,
+        "scaling": "attack"
+      }
+    }
+  },
+  "assassin": {
+    "id": "assassin",
+    "name": "Assassin",
+    "metaPoints": 85,
+    "stats": {
+      "health": 95,
+      "maxHealth": 95,
+      "attack": 51,
+      "defense": 12,
+      "lifesteal": 15,
+      "damageReduction": 0
+    },
+    "images": ["assassin_idle.png", "assassin_strike.png"],
+    "passive": {
+      "name": "Shadow Strike",
+      "description": "Ultimate becomes available when enemy health is below 30%",
+      "type": "enemy_health_threshold",
+      "value": 0.3
+    },
+    "skillIds": ["conceal", "poison_blade"],
+    "ultimate": {
+      "id": "shadow_execution",
+      "name": "Shadow Execution",
+      "description": "Deal 150% of attack as damage and remove all stacks of poison from the enemy to deal 80% more damage per stack removed",
+      "effect": {
+        "type": "damage_with_poison_consume",
+        "target": "enemy",
+        "value": 1.5,
+        "scaling": "attack",
+        "poison_bonus": 0.8
+      }
+    }
+  },
+  "paladin": {
+    "id": "paladin",
+    "name": "Paladin",
+    "metaPoints": 95,
+    "stats": {
+      "health": 110,
+      "maxHealth": 110,
+      "attack": 20,
+      "defense": 20,
+      "lifesteal": 10,
+      "damageReduction": 15
+    },
+    "images": ["paladin_idle.png", "paladin_blessed.png"],
+    "passive": {
+      "name": "Divine Favor",
+      "description": "Gain 10% damage reduction when below 50% health. Ultimate becomes available after healing 3 times.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "low_health_defense_boost",
+        "health_threshold": 0.5,
+        "defense_bonus": 10
+      },
+      "ultimate_condition": {
+        "type": "heal_count",
+        "value": 3
+      }
+    },
+    "skillIds": ["holy_strike", "blessing"],
+    "ultimate": {
+      "id": "divine_judgment",
+      "name": "Divine Judgment",
+      "description": "Deal 250% of attack as damage and heal for 40% of max health",
+      "effect": {
+        "type": "damage_and_heal",
+        "target": "enemy",
+        "value": 2.5,
+        "scaling": "attack",
+        "heal_value": 0.4,
+        "heal_scaling": "max_health"
+      }
+    }
+  },
+  "dracula": {
+    "id": "dracula",
+    "name": "Dracula",
+    "metaPoints": 120,
+    "stats": {
+      "health": 100,
+      "maxHealth": 100,
+      "attack": 32,
+      "defense": 14,
+      "lifesteal": 25,
+      "damageReduction": 8
+    },
+    "images": ["dracula_idle.png", "dracula_attack.png"],
+    "passive": {
+      "name": "Vampiric Regeneration",
+      "description": "Heal 5% max health at the end of each turn. Ultimate becomes available after dealing 100 damage with lifesteal.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "passive_heal",
+        "value": 0.05
+      },
+      "ultimate_condition": {
+        "type": "lifesteal_damage_dealt",
+        "value": 100
+      }
+    },
+    "skillIds": ["blood_drain", "bat_swarm"],
+    "ultimate": {
+      "id": "blood_moon",
+      "name": "Blood Moon",
+      "description": "Deal 200% attack damage and heal for 100% of damage dealt",
+      "effect": {
+        "type": "damage_with_lifesteal",
+        "target": "enemy",
+        "value": 2.0,
+        "scaling": "attack",
+        "lifesteal": 1.0
+      }
+    }
+  },
+  "zeus": {
+    "id": "zeus",
+    "name": "Zeus",
+    "metaPoints": 140,
+    "stats": {
+      "health": 90,
+      "maxHealth": 90,
+      "attack": 40,
+      "defense": 10,
+      "lifesteal": 0,
+      "damageReduction": 5
+    },
+    "images": ["zeus_idle.png", "zeus_lightning.png"],
+    "passive": {
+      "name": "Thunder Lord",
+      "description": "30% chance to deal bonus lightning damage on any attack. Ultimate becomes available after dealing 200 total damage.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "proc_damage",
+        "chance": 0.3,
+        "bonus_damage": 0.3
+      },
+      "ultimate_condition": {
+        "type": "total_damage_dealt",
+        "value": 200
+      }
+    },
+    "skillIds": ["lightning_bolt", "divine_wrath"],
+    "ultimate": {
+      "id": "thunderstorm",
+      "name": "Thunderstorm",
+      "description": "Deal 350% attack damage and stun enemy for 2 turns",
+      "effect": {
+        "type": "damage_with_stun",
+        "target": "enemy",
+        "value": 3.5,
+        "scaling": "attack",
+        "stun_duration": 2
+      }
+    }
+  },
+  "druid": {
+    "id": "druid",
+    "name": "Druid",
+    "metaPoints": 105,
+    "stats": {
+      "health": 105,
+      "maxHealth": 105,
+      "attack": 28,
+      "defense": 16,
+      "lifesteal": 8,
+      "damageReduction": 12
+    },
+    "images": ["druid_idle.png", "druid_nature.png"],
+    "passive": {
+      "name": "Nature's Blessing",
+      "description": "Immune to poison and heal 3% max health when using skills. Ultimate becomes available after healing 80 health total.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "poison_immunity_and_skill_heal",
+        "heal_value": 0.03
+      },
+      "ultimate_condition": {
+        "type": "total_healing_done",
+        "value": 80
+      }
+    },
+    "skillIds": ["nature_heal", "thorn_volley"],
+    "ultimate": {
+      "id": "forest_wrath",
+      "name": "Forest Wrath",
+      "description": "Deal 250% attack damage and heal to full health",
+      "effect": {
+        "type": "damage_and_full_heal",
+        "target": "enemy",
+        "value": 2.5,
+        "scaling": "attack"
+      }
+    }
+  },
+  "plague_doctor": {
+    "id": "plague_doctor",
+    "name": "Plague Doctor",
+    "metaPoints": 115,
+    "stats": {
+      "health": 85,
+      "maxHealth": 85,
+      "attack": 26,
+      "defense": 12,
+      "lifesteal": 5,
+      "damageReduction": 10
+    },
+    "images": ["plague_doctor_idle.png", "plague_doctor_poison.png"],
+    "passive": {
+      "name": "Toxic Immunity",
+      "description": "Immune to all debuffs and poison damage increased by 50%. Ultimate becomes available after applying 4 poison effects.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "debuff_immunity_and_poison_boost",
+        "poison_bonus": 0.5
+      },
+      "ultimate_condition": {
+        "type": "poison_effects_applied",
+        "value": 4
+      }
+    },
+    "skillIds": ["plague_cloud", "antidote"],
+    "ultimate": {
+      "id": "pandemic",
+      "name": "Pandemic",
+      "description": "Apply massive poison dealing 100% attack damage per turn for 6 turns",
+      "effect": {
+        "type": "massive_poison",
+        "target": "enemy",
+        "poison": {
+          "value": 1.0,
+          "scaling": "attack",
+          "duration": 6
+        }
+      }
+    }
+  },
+  "artemys": {
+    "id": "artemys",
+    "name": "Artemys",
+    "metaPoints": 95,
+    "stats": {
+      "health": 88,
+      "maxHealth": 88,
+      "attack": 35,
+      "defense": 11,
+      "lifesteal": 5,
+      "damageReduction": 8
+    },
+    "images": ["artemys_idle.png", "artemys_bow.png"],
+    "passive": {
+      "name": "Hunter's Instinct",
+      "description": "Critical hits heal for 15% max health. Ultimate becomes available after using 5 skills.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "crit_heal",
+        "heal_ratio": 0.15
+      },
+      "ultimate_condition": {
+        "type": "skill_count",
+        "value": 5
+      }
+    },
+    "skillIds": ["moon_arrow", "hunters_mark"],
+    "ultimate": {
+      "id": "silver_arrow",
+      "name": "Silver Arrow",
+      "description": "Deal 400% attack damage with guaranteed critical hit",
+      "effect": {
+        "type": "critical_damage",
+        "target": "enemy",
+        "value": 4.0,
+        "scaling": "attack",
+        "guaranteed_crit": true
+      }
+    }
+  },
+  "lilith": {
+    "id": "lilith",
+    "name": "Lilith",
+    "metaPoints": 125,
+    "stats": {
+      "health": 92,
+      "maxHealth": 92,
+      "attack": 33,
+      "defense": 13,
+      "lifesteal": 18,
+      "damageReduction": 6
+    },
+    "images": ["lilith_idle.png", "lilith_dark.png"],
+    "passive": {
+      "name": "Demonic Pact",
+      "description": "When below 50% health, gain 40% attack and 20% lifesteal. Ultimate becomes available after taking 120 damage.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "low_health_buff",
+        "health_threshold": 0.5,
+        "attack_bonus": 0.4,
+        "lifesteal_bonus": 20
+      },
+      "ultimate_condition": {
+        "type": "damage_threshold",
+        "value": 120
+      }
+    },
+    "skillIds": ["charm", "dark_magic"],
+    "ultimate": {
+      "id": "soul_harvest",
+      "name": "Soul Harvest",
+      "description": "Deal 280% attack damage and permanently steal 10% of enemy's max health",
+      "effect": {
+        "type": "damage_with_permanent_drain",
+        "target": "enemy",
+        "value": 2.8,
+        "scaling": "attack",
+        "permanent_steal": 0.1
+      }
+    }
+  },
+  "francis": {
+    "id": "francis",
+    "name": "Francis",
+    "metaPoints": 90,
+    "stats": {
+      "health": 115,
+      "maxHealth": 115,
+      "attack": 22,
+      "defense": 18,
+      "lifesteal": 12,
+      "damageReduction": 18
+    },
+    "images": ["francis_idle.png", "francis_holy.png"],
+    "passive": {
+      "name": "Divine Protection",
+      "description": "25% chance to block incoming damage completely. Ultimate becomes available after blocking 3 attacks.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "damage_block",
+        "block_chance": 0.25
+      },
+      "ultimate_condition": {
+        "type": "blocks_performed",
+        "value": 3
+      }
+    },
+    "skillIds": ["divine_punishment", "blessing"],
+    "ultimate": {
+      "id": "martyrdom",
+      "name": "Martyrdom",
+      "description": "Sacrifice 50% current health to deal 500% of sacrificed health as damage",
+      "effect": {
+        "type": "sacrifice_damage",
+        "target": "enemy",
+        "sacrifice_ratio": 0.5,
+        "damage_multiplier": 5.0
+      }
+    }
+  },
+  "cleopatra": {
+    "id": "cleopatra",
+    "name": "Cleopatra",
+    "metaPoints": 130,
+    "stats": {
+      "health": 98,
+      "maxHealth": 98,
+      "attack": 29,
+      "defense": 15,
+      "lifesteal": 10,
+      "damageReduction": 12
+    },
+    "images": ["cleopatra_idle.png", "cleopatra_royal.png"],
+    "passive": {
+      "name": "Royal Bloodline",
+      "description": "Gain 5% damage and 2% damage reduction for each turn survived. Ultimate becomes available after surviving 6 turns.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "escalating_power",
+        "damage_per_turn": 0.05,
+        "defense_per_turn": 2
+      },
+      "ultimate_condition": {
+        "type": "turns_survived",
+        "value": 6
+      }
+    },
+    "skillIds": ["royal_decree", "golden_strike"],
+    "ultimate": {
+      "id": "pharaohs_curse",
+      "name": "Pharaoh's Curse",
+      "description": "Deal 300% attack damage and curse enemy to take 20% max health damage per turn for 4 turns",
+      "effect": {
+        "type": "damage_with_curse",
+        "target": "enemy",
+        "value": 3.0,
+        "scaling": "attack",
+        "curse": {
+          "value": 0.2,
+          "scaling": "max_health",
+          "duration": 4
+        }
+      }
+    }
+  },
+  "kraken": {
+    "id": "kraken",
+    "name": "Kraken",
+    "metaPoints": 135,
+    "stats": {
+      "health": 145,
+      "maxHealth": 145,
+      "attack": 39,
+      "defense": 5,
+      "lifesteal": 8,
+      "damageReduction": 12
+    },
+    "images": ["kraken_idle.png", "kraken_tentacles.png"],
+    "passive": {
+      "name": "Deep Sea Terror",
+      "description": "Immune to stuns and debuffs, regenerate 8% max health per turn. Ultimate becomes available after taking 150 damage.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "immunity_and_regen",
+        "regen_ratio": 0.08
+      },
+      "ultimate_condition": {
+        "type": "damage_threshold",
+        "value": 150
+      }
+    },
+    "skillIds": ["tentacle_slam", "ink_cloud"],
+    "ultimate": {
+      "id": "tidal_wave",
+      "name": "Tidal Wave",
+      "description": "Deal 450% attack damage and reduce enemy stats by 30% for 5 turns",
+      "effect": {
+        "type": "damage_with_stat_reduction",
+        "target": "enemy",
+        "value": 4.5,
+        "scaling": "attack",
+        "stat_reduction": 0.3,
+        "duration": 5
+      }
+    }
+  },
+  "myskitty": {
+    "id": "myskitty",
+    "name": "Myskitty",
+    "metaPoints": 75,
+    "stats": {
+      "health": 70,
+      "maxHealth": 70,
+      "attack": 24,
+      "defense": 8,
+      "lifesteal": 15,
+      "damageReduction": 5
+    },
+    "images": ["myskitty_idle.png", "myskitty_cute.png"],
+    "passive": {
+      "name": "Nine Lives",
+      "description": "Upon death, revive with 30% health (can happen twice per battle). Ultimate becomes available after using 4 skills.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "revive",
+        "revive_health": 0.3,
+        "max_revives": 2
+      },
+      "ultimate_condition": {
+        "type": "skill_count",
+        "value": 4
+      }
+    },
+    "skillIds": ["cute_meow", "mystical_pounce"],
+    "ultimate": {
+      "id": "cosmic_purr",
+      "name": "Cosmic Purr",
+      "description": "Deal 200% attack damage and reduce enemy attack by 50% for 3 turns",
+      "effect": {
+        "type": "damage_and_debuff",
+        "target": "enemy",
+        "value": 2.0,
+        "scaling": "attack",
+        "debuff": {
+          "stat": "attack",
+          "value": -0.5,
+          "duration": 3
+        }
+      }
+    }
+  },
+  "monarch": {
+    "id": "monarch",
+    "name": "Monarch",
+    "metaPoints": 150,
+    "stats": {
+      "health": 110,
+      "maxHealth": 110,
+      "attack": 35,
+      "defense": 22,
+      "lifesteal": 12,
+      "damageReduction": 12
+    },
+    "images": ["monarch_idle.png", "monarch_crown.png"],
+    "passive": {
+      "name": "Royal Authority",
+      "description": "All abilities have 20% chance to not trigger cooldown. Ultimate becomes available after using 7 skills.",
+      "type": "dual_passive",
+      "ongoing_effect": {
+        "type": "cooldown_reset",
+        "reset_chance": 0.2
+      },
+      "ultimate_condition": {
+        "type": "skill_count",
+        "value": 7
+      }
+    },
+    "skillIds": ["royal_command", "monarch_aura"],
+    "ultimate": {
+      "id": "absolute_dominion",
+      "name": "Absolute Dominion",
+      "description": "Deal 350% attack damage, heal to full, and gain immunity to all effects for 3 turns",
+      "effect": {
+        "type": "damage_heal_immunity",
+        "target": "enemy",
+        "value": 2.3,
+        "scaling": "attack",
+        "immunity_duration": 3
+      }
+    }
+  }
+}

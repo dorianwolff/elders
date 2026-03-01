@@ -1,0 +1,1074 @@
+{
+  "basic_strike": {
+    "id": "basic_strike",
+    "name": "Basic Strike",
+    "description": "Deal 100% of attack as damage to the enemy",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 1.0,
+      "scaling": "attack"
+    }
+  },
+  "defensive_stance": {
+    "id": "defensive_stance",
+    "name": "Defensive Stance",
+    "description": "Increase defense by 50% for 2 turns",
+    "type": "buff",
+    "cooldown": 3,
+    "effect": {
+      "type": "buff",
+      "target": "self",
+      "stat": "defense",
+      "value": 0.5,
+      "duration": 2
+    }
+  },
+  "magic_missile": {
+    "id": "magic_missile",
+    "name": "Magic Missile",
+    "description": "Deal 120% of attack as damage to the enemy",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 1.2,
+      "scaling": "attack"
+    }
+  },
+  "heal": {
+    "id": "heal",
+    "name": "Heal",
+    "description": "Recover 30% of max health",
+    "type": "heal",
+    "cooldown": 2,
+    "effect": {
+      "type": "heal",
+      "target": "self",
+      "value": 0.3,
+      "scaling": "max_health"
+    }
+  },
+  "conceal": {
+    "id": "conceal",
+    "name": "Conceal",
+    "description": "Gain conceal for 2 turns (makes the user invincible - cannot take damage nor debuffs)",
+    "type": "buff",
+    "cooldown": 3,
+    "effect": {
+      "type": "buff",
+      "target": "self",
+      "stat": "conceal",
+      "value": 1,
+      "duration": 2
+    }
+  },
+  "poison_blade": {
+    "id": "poison_blade",
+    "name": "Poison Blade",
+    "description": "Deal 90% attack damage and apply poison for 45% attack damage per turn for 3 turns",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_and_poison",
+      "target": "enemy",
+      "value": 0.9,
+      "scaling": "attack",
+      "poison": {
+        "value": 0.45,
+        "scaling": "attack",
+        "duration": 3
+      }
+    }
+  },
+  "holy_strike": {
+    "id": "holy_strike",
+    "name": "Holy Strike",
+    "description": "Deal 110% of attack as damage and recover 10% of damage dealt",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_with_heal",
+      "target": "enemy",
+      "value": 1.1,
+      "scaling": "attack",
+      "heal_ratio": 0.1
+    }
+  },
+  "blessing": {
+    "id": "blessing",
+    "name": "Blessing",
+    "description": "Recover 25% of max health and increase damage reduction by 10% for 2 turns",
+    "type": "heal",
+    "cooldown": 3,
+    "effect": {
+      "type": "heal_and_buff",
+      "target": "self",
+      "value": 0.25,
+      "scaling": "max_health",
+      "buff": {
+        "stat": "damage_reduction",
+        "value": 10,
+        "duration": 2
+      }
+    }
+  },
+  "blood_drain": {
+    "id": "blood_drain",
+    "name": "Blood Drain",
+    "description": "Deal 90% attack damage and recover 50% of damage dealt",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "damage_with_lifesteal",
+      "target": "enemy",
+      "value": 0.9,
+      "scaling": "attack",
+      "lifesteal": 0.5
+    }
+  },
+  "bat_swarm": {
+    "id": "bat_swarm",
+    "name": "Bat Swarm",
+    "description": "Deal 85% attack damage and reduce enemy attack by 15% for 3 turns",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_and_debuff",
+      "target": "enemy",
+      "value": 0.85,
+      "scaling": "attack",
+      "debuff": {
+        "stat": "attack",
+        "value": -0.15,
+        "duration": 3
+      }
+    }
+  },
+  "lightning_bolt": {
+    "id": "lightning_bolt",
+    "name": "Lightning Bolt",
+    "description": "Deal 110% attack damage with 25% chance to stun for 1 turn",
+    "type": "debuff",
+    "cooldown": 3,
+    "effect": {
+      "type": "damage_with_stun",
+      "target": "enemy",
+      "value": 1.1,
+      "scaling": "attack",
+      "stun_chance": 0.25,
+      "stun_duration": 1
+    }
+  },
+  "divine_wrath": {
+    "id": "divine_wrath",
+    "name": "Divine Wrath",
+    "description": "Deal 130% attack damage and gain 25% attack for 3 turns",
+    "type": "attack",
+    "cooldown": 3,
+    "effect": {
+      "type": "damage_and_self_buff",
+      "target": "enemy",
+      "value": 1.3,
+      "scaling": "attack",
+      "self_buff": {
+        "stat": "attack",
+        "value": 0.25,
+        "duration": 3
+      }
+    }
+  },
+  "nature_heal": {
+    "id": "nature_heal",
+    "name": "Nature's Embrace",
+    "description": "Recover 40% max health and gain 15% damage reduction for 3 turns",
+    "type": "heal",
+    "cooldown": 2,
+    "effect": {
+      "type": "heal_and_buff",
+      "target": "self",
+      "value": 0.4,
+      "scaling": "max_health",
+      "buff": {
+        "stat": "damage_reduction",
+        "value": 15,
+        "duration": 3
+      }
+    }
+  },
+  "thorn_volley": {
+    "id": "thorn_volley",
+    "name": "Thorn Volley",
+    "description": "Deal 85% attack damage and apply poison for 4 turns",
+    "type": "debuff",
+    "cooldown": 1,
+    "effect": {
+      "type": "damage_and_poison",
+      "target": "enemy",
+      "value": 0.85,
+      "scaling": "attack",
+      "poison": {
+        "value": 0.4,
+        "scaling": "attack",
+        "duration": 4
+      }
+    }
+  },
+  "plague_cloud": {
+    "id": "plague_cloud",
+    "name": "Plague Cloud",
+    "description": "Apply poison dealing 60% attack damage per turn for 4 turns",
+    "type": "debuff",
+    "cooldown": 3,
+    "effect": {
+      "type": "damage_and_poison",
+      "target": "enemy",
+      "value": 0.8,
+      "scaling": "attack",
+      "poison": {
+        "value": 0.6,
+        "scaling": "attack",
+        "duration": 4
+      }
+    }
+  },
+  "antidote": {
+    "id": "antidote",
+    "name": "Antidote",
+    "description": "Remove all debuffs and recover 20% of max health",
+    "type": "heal",
+    "cooldown": 3,
+    "effect": {
+      "type": "cleanse_and_heal",
+      "target": "self",
+      "value": 0.2,
+      "scaling": "max_health"
+    }
+  },
+  "moon_arrow": {
+    "id": "moon_arrow",
+    "name": "Moon Arrow",
+    "description": "Deal 120% attack damage",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 1.2,
+      "scaling": "attack"
+    }
+  },
+  "hunters_mark": {
+    "id": "hunters_mark",
+    "name": "Hunter's Mark",
+    "description": "Mark enemy, increasing damage dealt to them by 25% for 4 turns",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "mark",
+      "target": "enemy",
+      "damage_bonus": 0.25,
+      "duration": 4
+    }
+  },
+  "charm": {
+    "id": "charm",
+    "name": "Charm",
+    "description": "Reduce enemy attack by 30% and recover 15% of max health",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "debuff_and_heal",
+      "target": "enemy",
+      "debuff": {
+        "stat": "attack",
+        "value": -0.3,
+        "duration": 3
+      },
+      "heal_value": 0.15,
+      "heal_scaling": "max_health"
+    }
+  },
+  "dark_magic": {
+    "id": "dark_magic",
+    "name": "Dark Magic",
+    "description": "Deal 120% attack damage and reduce enemy defense by 20% for 3 turns",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_and_debuff",
+      "target": "enemy",
+      "value": 1.2,
+      "scaling": "attack",
+      "debuff": {
+        "stat": "defense",
+        "value": -0.2,
+        "duration": 3
+      }
+    }
+  },
+  "royal_decree": {
+    "id": "royal_decree",
+    "name": "Royal Decree",
+    "description": "Increase all stats by 20% for 3 turns",
+    "type": "buff",
+    "cooldown": 4,
+    "effect": {
+      "type": "multi_buff",
+      "target": "self",
+      "buffs": [
+        {"stat": "attack", "value": 0.2, "duration": 3},
+        {"stat": "defense", "value": 0.2, "duration": 3},
+        {"stat": "damage_reduction", "value": 5, "duration": 3}
+      ]
+    }
+  },
+  "golden_strike": {
+    "id": "golden_strike",
+    "name": "Golden Strike",
+    "description": "Deal 110% attack damage and gain 15% lifesteal for 3 turns",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_and_self_buff",
+      "target": "enemy",
+      "value": 1.1,
+      "scaling": "attack",
+      "self_buff": {
+        "stat": "lifesteal",
+        "value": 15,
+        "duration": 3
+      }
+    }
+  },
+  "tentacle_slam": {
+    "id": "tentacle_slam",
+    "name": "Tentacle Slam",
+    "description": "Deal 115% attack damage and reduce enemy defense by 20% for 3 turns",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_and_debuff",
+      "target": "enemy",
+      "value": 1.15,
+      "scaling": "attack",
+      "debuff": {
+        "stat": "defense",
+        "value": -0.2,
+        "duration": 3
+      }
+    }
+  },
+  "ink_cloud": {
+    "id": "ink_cloud",
+    "name": "Ink Cloud",
+    "description": "Reduce enemy attack by 30% and gain 20% damage reduction for 3 turns",
+    "type": "debuff",
+    "cooldown": 3,
+    "effect": {
+      "type": "debuff_and_self_buff",
+      "target": "enemy",
+      "debuff": {
+        "stat": "attack",
+        "value": -0.3,
+        "duration": 3
+      },
+      "self_buff": {
+        "stat": "damage_reduction",
+        "value": 20,
+        "duration": 3
+      }
+    }
+  },
+  "cute_meow": {
+    "id": "cute_meow",
+    "name": "Cute Meow",
+    "description": "Confuse enemy, reducing their attack by 40% for 2 turns",
+    "type": "debuff",
+    "cooldown": 1,
+    "effect": {
+      "type": "debuff",
+      "target": "enemy",
+      "stat": "attack",
+      "value": -0.4,
+      "duration": 2
+    }
+  },
+  "mystical_pounce": {
+    "id": "mystical_pounce",
+    "name": "Mystical Pounce",
+    "description": "Deal 125% attack damage with 40% lifesteal",
+    "type": "attack",
+    "cooldown": 3,
+    "effect": {
+      "type": "damage_with_lifesteal",
+      "target": "enemy",
+      "value": 1.25,
+      "scaling": "attack",
+      "lifesteal": 0.4
+    }
+  },
+  "royal_command": {
+    "id": "royal_command",
+    "name": "Royal Command",
+    "description": "Deal 90% attack damage and stun enemy for 1 turn",
+    "type": "control",
+    "cooldown": 4,
+    "effect": {
+      "type": "damage_and_stun",
+      "target": "enemy",
+      "value": 0.9,
+      "scaling": "attack",
+      "stun_duration": 1
+    }
+  },
+  "monarch_aura": {
+    "id": "monarch_aura",
+    "name": "Monarch's Aura",
+    "description": "Increase damage by 30% and reduce incoming damage by 20% for 4 turns",
+    "type": "buff",
+    "cooldown": 3,
+    "effect": {
+      "type": "multi_buff",
+      "target": "self",
+      "buffs": [
+        {"stat": "attack", "value": 0.3, "duration": 4},
+        {"stat": "damage_reduction", "value": 20, "duration": 4}
+      ]
+    }
+  },
+  "divine_punishment": {
+    "id": "divine_punishment",
+    "name": "Divine Punishment",
+    "description": "Deal 180% attack damage and recover 30% of damage dealt",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_with_lifesteal",
+      "target": "enemy",
+      "value": 1.8,
+      "scaling": "attack",
+      "lifesteal": 0.3
+    }
+  },
+  "seduction": {
+    "id": "seduction",
+    "name": "Seduction",
+    "description": "Steal 25% of enemy's current health and add it to your own",
+    "type": "drain",
+    "cooldown": 3,
+    "effect": {
+      "type": "health_steal",
+      "target": "enemy",
+      "steal_ratio": 0.25
+    }
+  },
+  "righteous_fury": {
+    "id": "righteous_fury",
+    "name": "Righteous Fury",
+    "description": "Deal damage equal to 150% attack + 50% of missing health",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "damage_with_missing_health",
+      "target": "enemy",
+      "base_value": 1.5,
+      "scaling": "attack",
+      "missing_health_ratio": 0.5
+    }
+  },
+  "value_over_self": {
+    "id": "value_over_self",
+    "name": "Value Over Self",
+    "description": "Take 1 true damage and deal 110% of attack as damage",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "self_true_damage_and_damage",
+      "target": "enemy",
+      "self_damage": 1,
+      "value": 1.1,
+      "scaling": "attack"
+    }
+  },
+  "plannification": {
+    "id": "plannification",
+    "name": "Plannification",
+    "description": "Take 1 true damage, recover 10% max health, and gain +5 attack for 4 turns",
+    "type": "buff",
+    "cooldown": 1,
+    "effect": {
+      "type": "self_true_damage_then_heal_and_buff",
+      "target": "self",
+      "self_damage": 1,
+      "heal_value": 0.1,
+      "heal_scaling": "max_health",
+      "buff": {
+        "stat": "attack",
+        "value": 5,
+        "duration": 4,
+        "mode": "flat"
+      }
+    }
+  },
+  "construction_site": {
+    "id": "construction_site",
+    "name": "Construction Site",
+    "description": "Deploy a domain for 2 turns. While active, shields cannot be gained and all shields are removed. At the end of each player's turn, they take 5 true damage.",
+    "type": "domain",
+    "cooldown": 4,
+    "effect": {
+      "type": "construction_site_domain",
+      "duration": 2,
+      "true_damage_per_turn": 5
+    }
+  },
+  "predation": {
+    "id": "predation",
+    "name": "Predation",
+    "description": "Deal 70% attack, 70% defense, and 10% current health as damage",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "multi_scaling_damage",
+      "target": "enemy",
+      "multiHit": true,
+      "randomizeComponentsEachTurn": true,
+      "components": [
+        { "scaling": "attack", "value": 0.7 },
+        { "scaling": "defense", "value": 0.7 },
+        { "scaling": "current_health", "value": 0.1 }
+      ]
+    }
+  },
+  "devour": {
+    "id": "devour",
+    "name": "Devour",
+    "description": "Every turn, becomes a random skill your opponent has",
+    "type": "utility",
+    "cooldown": 2,
+    "effect": {
+      "type": "devour_copy_skill",
+      "target": "enemy"
+    }
+  },
+  "rimuru_stance": {
+    "id": "rimuru_stance",
+    "name": "Predator Stance",
+    "description": "Enter a defensive stance for 2 enemy turns. While active, gain +4 defense and recover 6 health at the start of your turn.",
+    "type": "stance",
+    "cooldown": 3,
+    "effect": {
+      "type": "stance",
+      "target": "self",
+      "defense_bonus": 4,
+      "heal_on_turn_start": 6,
+      "enemy_turn_duration": 2
+    }
+  },
+  "room_incision": {
+    "id": "room_incision",
+    "name": "Room: Incision",
+    "description": "Deal 110% attack damage and recover 15% of max health",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_with_heal",
+      "target": "enemy",
+      "value": 1.1,
+      "scaling": "attack",
+      "heal_value": 0.15,
+      "heal_scaling": "max_health"
+    }
+  },
+  "takt_breaker": {
+    "id": "takt_breaker",
+    "name": "Takt Breaker",
+    "description": "Deal 80% of attack as damage, then deal 30% of the enemy's current health as damage.",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "damage_then_enemy_current_health_damage",
+      "target": "enemy",
+      "attack_value": 0.8,
+      "enemy_current_health_ratio": 0.3
+    }
+  },
+  "room_domain": {
+    "id": "room_domain",
+    "name": "Room",
+    "description": "Deploy ROOM for 2 turns. While active, enemy skills gain +1 cooldown. Only one domain can exist at a time.",
+    "type": "domain",
+    "cooldown": 4,
+    "effect": {
+      "type": "room_domain",
+      "duration": 2,
+      "enemy_skill_cooldown_bonus": 1
+    }
+  },
+  "shambles_aid": {
+    "id": "shambles_aid",
+    "name": "Shambles Aid",
+    "description": "Deal 90% attack damage and inflict Bleed on enemy for 3 turns",
+    "type": "debuff",
+    "cooldown": 1,
+    "effect": {
+      "type": "damage_and_debuff",
+      "target": "enemy",
+      "value": 0.9,
+      "scaling": "attack",
+      "debuff": {
+        "type": "bleed",
+        "duration": 3,
+        "damage_amp": 0.5
+      }
+    }
+  },
+  "slap": {
+    "id": "slap",
+    "name": "Slap",
+    "description": "Deal 30% of attack as damage and recover 8% of max health",
+    "type": "recovery",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_with_heal",
+      "target": "enemy",
+      "value": 0.3,
+      "scaling": "attack",
+      "heal_ratio": 0.08,
+      "heal_ratio_scaling": "max_health"
+    }
+  },
+  "endure": {
+    "id": "endure",
+    "name": "Endure",
+    "description": "Gain +5 defense for 3 turns",
+    "type": "buff",
+    "cooldown": 2,
+    "effect": {
+      "type": "buff",
+      "target": "self",
+      "stat": "defense",
+      "value": 5,
+      "duration": 3,
+      "mode": "flat"
+    }
+  },
+  "grit": {
+    "id": "grit",
+    "name": "Grit",
+    "description": "Enter a stance that stores all damage you take. Use again to end the stance and deal 50% of stored damage as true damage.",
+    "type": "stance",
+    "cooldown": 1,
+    "effect": {
+      "type": "grit_stance",
+      "release_ratio": 0.5
+    }
+  },
+  "get_serious": {
+    "id": "get_serious",
+    "name": "Get Serious",
+    "description": "Transform into serious form and recover 10% of max health",
+    "type": "utility",
+    "cooldown": 0,
+    "effect": {
+      "type": "transform_self",
+      "target": "self",
+      "transform_to": "saitama_serious",
+      "heal_value": 0.1,
+      "heal_scaling": "max_health"
+    }
+  },
+  "serious_punch": {
+    "id": "serious_punch",
+    "name": "Serious Punch",
+    "description": "Deal 100% of attack as damage",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 1,
+      "scaling": "attack"
+    }
+  },
+  "serious_side_steps": {
+    "id": "serious_side_steps",
+    "name": "Serious Side Steps",
+    "description": "Deal 80% of attack and reduce enemy defense by 10 for 3 turns",
+    "type": "debuff",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_and_debuff",
+      "target": "enemy",
+      "value": 0.8,
+      "scaling": "attack",
+      "debuff": {
+        "stat": "defense",
+        "value": -10,
+        "duration": 3,
+        "mode": "flat"
+      }
+    }
+  },
+  "omnidirectional_serious_punch": {
+    "id": "omnidirectional_serious_punch",
+    "name": "Omnidirectional Serious Punch",
+    "description": "Deal 1000% of attack as damage",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 10,
+      "scaling": "attack"
+    }
+  },
+  "limitless_dominion": {
+    "id": "limitless_dominion",
+    "name": "Limitless Dominion",
+    "description": "For 6 turns, damage becomes healing and healing becomes damage. Only one domain can exist at a time.",
+    "type": "array",
+    "cooldown": 0,
+    "effect": {
+      "type": "array_domain",
+      "duration": 6
+    }
+  },
+  "gojo_strike": {
+    "id": "gojo_strike",
+    "name": "Strike",
+    "description": "Deal 100% of attack as damage. If Limitless Dominion is active, opponent recovers 25% max health instead",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_or_heal_on_domain",
+      "target": "enemy",
+      "damage": {
+        "value": 1,
+        "scaling": "attack"
+      },
+      "domain_heal": {
+        "value": 0.25,
+        "scaling": "max_health"
+      }
+    }
+  },
+  "infinity_rebound": {
+    "id": "infinity_rebound",
+    "name": "Infinity Rebound",
+    "description": "Enter a stance for 3 enemy turns. While stance is active, when you take damage from opposing skills, deal that much damage to opponent then recovers opponent for half the amount. Take is replaced by recover and vice versa if Limitless Dominion is active.",
+    "type": "stance",
+    "cooldown": 2,
+    "effect": {
+      "type": "stance",
+      "target": "self",
+      "stance_key": "infinity_rebound",
+      "enemy_turn_duration": 3
+    }
+  },
+  "reversed_curse_technique": {
+    "id": "reversed_curse_technique",
+    "name": "Reversed Curse Technique",
+    "description": "Take 10 true damage, evade for 1 turn, and gain +3 ATK for 2 turns",
+    "type": "buff",
+    "cooldown": 2,
+    "effect": {
+      "type": "self_true_damage_then_multi_buff",
+      "target": "self",
+      "self_damage": 10,
+      "buffs": [
+        { "stat": "evade", "value": 1, "duration": 1 },
+        { "stat": "attack", "value": 3, "duration": 2, "mode": "flat" }
+      ]
+    }
+  },
+  "darling_bite": {
+    "id": "darling_bite",
+    "name": "Darling Bite",
+    "description": "Deal 90% of attack as damage and apply Kiss Mark for 4 turns. While Kiss Mark is active, healing received by the target is stored.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_and_kiss",
+      "target": "enemy",
+      "value": 0.9,
+      "scaling": "attack",
+      "kiss_duration": 4
+    }
+  },
+  "heartbreak_harvest": {
+    "id": "heartbreak_harvest",
+    "name": "Heartbreak Harvest",
+    "description": "Recover health equal to your current Heartbreak.",
+    "type": "recovery",
+    "cooldown": 3,
+    "effect": {
+      "type": "heal_from_heartbreak",
+      "target": "self",
+      "heal_per_heartbreak": 1
+    }
+  },
+  "dont_hurt_me_baby": {
+    "id": "dont_hurt_me_baby",
+    "name": "Don't Hurt Me Baby",
+    "description": "Enter a stance for 3 enemy turns. When taking damage from an enemy skill, gain twice the Heartbreak and counterattack for (1% per Heartbreak) of attack.",
+    "type": "stance",
+    "cooldown": 3,
+    "effect": {
+      "type": "stance",
+      "target": "self",
+      "stance_key": "dont_hurt_me_baby",
+      "enemy_turn_duration": 3,
+      "double_heartbreak_on_enemy_skill_damage": true,
+      "counter_percent_per_heartbreak": 0.01
+    }
+  },
+  "unrivaled_love": {
+    "id": "unrivaled_love",
+    "name": "Unrivaled Love",
+    "description": "Evade for 1 turn and opponent recovers 12 health",
+    "type": "buff",
+    "cooldown": 2,
+    "effect": {
+      "type": "evade_and_heal_enemy",
+      "target": "self",
+      "evade_duration": 1,
+      "enemy_heal": 12
+    }
+  },
+  "kiss_of_death": {
+    "id": "kiss_of_death",
+    "name": "KISS OF DEATH",
+    "description": "Deal (120% + 1% per Heartbreak) of attack as damage. Consume all Heartbreak stacks.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "heartbreak_finisher",
+      "target": "enemy",
+      "base_percent": 1.2,
+      "per_heartbreak_percent": 0.01,
+      "consume_heartbreak": true
+    }
+  },
+  "ed_rocket_punch": {
+    "id": "ed_rocket_punch",
+    "name": "Rocket Punch",
+    "description": "Deal 95% of attack as damage and generate 20 Heat.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_and_heat",
+      "target": "enemy",
+      "value": 0.95,
+      "scaling": "attack",
+      "heat_gain": 20,
+      "heat_cap": 100
+    }
+  },
+  "ed_coolant_vent": {
+    "id": "ed_coolant_vent",
+    "name": "Coolant Vent",
+    "description": "Generate 25 Heat then restore health as much Heat as possible by venting Heat (1 health per Heat vented).",
+    "type": "recovery",
+    "cooldown": 2,
+    "effect": {
+      "type": "generate_heat_then_vent_to_heal",
+      "target": "self",
+      "heat_gain": 25,
+      "heat_cap": 100,
+      "heal_per_heat_vented": 1
+    }
+  },
+  "equivalent_exchange": {
+    "id": "equivalent_exchange",
+    "name": "Equivalent Exchange",
+    "description": "Enter a stance for 2 enemy turns. When taking damage from an enemy skill, all players gain 1 Heat, then counter for 65% of damage taken, twice.",
+    "type": "stance",
+    "cooldown": 1,
+    "effect": {
+      "type": "stance",
+      "target": "self",
+      "stance_key": "equivalent_exchange",
+      "enemy_turn_duration": 2,
+      "heat_on_trigger": 1,
+      "counter_ratio": 0.65,
+      "counter_hits": 2
+    }
+  },
+  "alchemy": {
+    "id": "alchemy",
+    "name": "Alchemy",
+    "description": "Deploy a domain for 4 turns. While active, whenever a player uses a skill, both players gain 5 Heat.",
+    "type": "domain",
+    "cooldown": 4,
+    "effect": {
+      "type": "alchemy_domain",
+      "duration": 4,
+      "heat_gain": 5,
+      "heat_cap": 100
+    }
+  },
+  "ed_redline_combo": {
+    "id": "ed_redline_combo",
+    "name": "Redline Combo",
+    "description": "Deal (100% + 1% per Heat) of attack as damage. Consumes all Heat.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "redline_combo",
+      "target": "enemy",
+      "base_percent": 1,
+      "per_heat_percent": 0.01,
+      "consume_heat": true
+    }
+  },
+  "naruto_yang_strike": {
+    "id": "naruto_yang_strike",
+    "name": "Yang Strike",
+    "description": "Deal (90% + 6% per Balance) of attack as damage. (Balance ranges from -3 to +3)",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_with_counter",
+      "target": "enemy",
+      "counter": "balance",
+      "base_percent": 0.9,
+      "per_counter_percent": 0.06,
+      "min_multiplier": 0
+    }
+  },
+  "naruto_yang_meteor_rain": {
+    "id": "naruto_yang_meteor_rain",
+    "name": "Yang Meteor Rain",
+    "description": "Deal 80% of attack as damage. Repeat this effect for each Balance.",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "damage_repeat_by_counter",
+      "target": "enemy",
+      "counter": "balance",
+      "value": 0.8,
+      "scaling": "attack",
+      "only_positive_counter": true,
+      "include_base_hit": true
+    }
+  },
+  "naruto_yin_guard": {
+    "id": "naruto_yin_guard",
+    "name": "Yin Guard",
+    "description": "Recover 16% of max health and deal (80% - 6% per Balance) of attack as damage.",
+    "type": "recovery",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage_with_counter_and_heal",
+      "target": "enemy",
+      "counter": "balance",
+      "base_percent": 0.8,
+      "per_counter_percent": -0.06,
+      "min_multiplier": 0,
+      "heal_value": 0.16,
+      "heal_scaling": "max_health"
+    }
+  },
+  "naruto_yin_serenity": {
+    "id": "naruto_yin_serenity",
+    "name": "Yin Serenity",
+    "description": "Enter a stance for 2 turns. While active, when taking damage, create a shield equal to 50% of the damage taken.",
+    "type": "stance",
+    "cooldown": 1,
+    "effect": {
+      "type": "stance",
+      "target": "self",
+      "stance_key": "yin_serenity",
+      "enemy_turn_duration": 2,
+      "shield_ratio_on_damage": 0.5
+    }
+  },
+  "naruto_enter_sage_mode": {
+    "id": "naruto_enter_sage_mode",
+    "name": "Enter Sage Mode",
+    "description": "Enter Sage Mode until the end of the game.",
+    "type": "utility",
+    "cooldown": 0,
+    "effect": {
+      "type": "transform_self",
+      "target": "self",
+      "transform_to": "naruto_sage",
+      "preserve_passive_state": true
+    }
+  },
+  "naruto_sage_judgement": {
+    "id": "naruto_sage_judgement",
+    "name": "Sage Judgement",
+    "description": "Deal 150% of attack as damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "damage",
+      "target": "enemy",
+      "value": 1.5,
+      "scaling": "attack"
+    }
+  },
+  "frieren_minor_utility": {
+    "id": "frieren_minor_utility",
+    "name": "Minor Utility Spell",
+    "description": "Deal 75% of attack as damage. Gains a bonus effect based on your opponent's last skill type used.",
+    "type": "control",
+    "cooldown": 0,
+    "effect": {
+      "type": "archive_minor_utility",
+      "target": "enemy",
+      "base_damage_value": 0.75,
+      "base_damage_scaling": "attack",
+      "shield_value": 7,
+      "shield_scaling": "flat",
+      "damage_value": 0.95,
+      "damage_scaling": "attack",
+      "heal_value": 5,
+      "heal_scaling": "flat",
+      "heal_block_duration": 2
+    }
+  },
+  "frieren_copycat_glyph": {
+    "id": "frieren_copycat_glyph",
+    "name": "Copycat Glyph",
+    "description": "Requires at least 2 Pages. Your next Minor Utility Spell triggers twice.",
+    "type": "utility",
+    "cooldown": 2,
+    "effect": {
+      "type": "archive_copycat_glyph",
+      "target": "self",
+      "page_cost": 2,
+      "duration": 2
+    }
+  },
+  "frieren_rotating_page": {
+    "id": "frieren_rotating_page",
+    "name": "Spell Draft",
+    "description": "Adds 1 random Page and triggers its effect. Changes each turn.",
+    "type": "utility",
+    "cooldown": 1,
+    "effect": {
+      "type": "frieren_rotating_page",
+      "target": "enemy",
+      "max_pages": 5
+    }
+  },
+  "frieren_archive_release": {
+    "id": "frieren_archive_release",
+    "name": "An Era of Spells",
+    "description": "Cast Minor Utility Spell 5 times at full power. Cannot be doubled.",
+    "type": "control",
+    "cooldown": 1,
+    "effect": {
+      "type": "frieren_minor_utility_barrage",
+      "target": "enemy",
+      "casts": 5
+    }
+  }
+}

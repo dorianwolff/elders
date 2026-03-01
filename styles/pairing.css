@@ -1,0 +1,258 @@
+.pairing-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    justify-content: space-between;
+}
+
+.pairing-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    color: #ffd700;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.pairing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.selected-character-display {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.selected-character-display .character-image {
+    width: 100px;
+    height: 100px;
+}
+
+.character-info h2 {
+    color: white;
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.meta-points {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.search-status {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid #ffd700;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.search-text {
+    text-align: center;
+}
+
+.search-text p {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.search-time {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+.pairing-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 600px;
+}
+
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+}
+
+.info-item h3 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.info-item p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.pairing-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-indicator.status-connecting {
+    background: #ffa500;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.status-searching {
+    background: #4CAF50;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.status-error {
+    background: #f44336;
+}
+
+.status-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .pairing-page {
+        padding: 1rem;
+    }
+    
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .selected-character-display {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .selected-character-display .character-image {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .character-info h2 {
+        font-size: 1.25rem;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .pairing-info {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .info-item {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .pairing-page {
+        padding: 0.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.75rem;
+    }
+    
+    .selected-character-display {
+        padding: 0.75rem;
+    }
+    
+    .selected-character-display .character-image {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .character-info h2 {
+        font-size: 1.1rem;
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+    
+    .search-text p {
+        font-size: 1rem;
+    }
+    
+    .info-item {
+        padding: 0.5rem;
+    }
+    
+    .info-item h3 {
+        font-size: 1rem;
+    }
+    
+    .info-item p {
+        font-size: 0.8rem;
+    }
+}
