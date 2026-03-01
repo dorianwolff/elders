@@ -1544,7 +1544,7 @@ class BattlePage extends BasePage {
             const skillType = typeof actionResult.skillType === 'string' ? actionResult.skillType : null;
             const skillId = typeof actionResult.skillId === 'string' ? actionResult.skillId : null;
             const adjustedActionResult = (window.BattleAnimations && typeof window.BattleAnimations.withCloseAttackCombatTextOffset === 'function')
-                ? window.BattleAnimations.withCloseAttackCombatTextOffset(actionResult, actorId, skillType)
+                ? window.BattleAnimations.withCloseAttackCombatTextOffset(actionResult, actorId, skillType, skillId)
                 : actionResult;
 
             if (actionResult._actionSource === 'opponent' && actionResult.actionType === 'ultimate') {
@@ -1564,13 +1564,15 @@ class BattlePage extends BasePage {
             try {
                 if (skillType === 'attack') {
                     const actorChar = actorId ? { id: actorId } : null;
-                    const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
-                        ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar))
-                        : false;
+                    const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacterSkill === 'function'
+                        ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacterSkill(actorChar, skillId))
+                        : (window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
+                            ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar))
+                            : false);
 
                     if (hasClose) {
                         if (window.BattleAnimations && typeof window.BattleAnimations.playCloseAttackAnimationForSide === 'function') {
-                            window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId);
+                            window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId);
                         }
                     }
                 }

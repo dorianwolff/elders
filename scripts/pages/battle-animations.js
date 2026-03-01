@@ -7,25 +7,30 @@
             return 1.8;
         },
 
-        getCloseAttackHitStartDelayMsForCharacter(character) {
+        getCloseAttackHitStartDelayMsForCharacter(character, skillId) {
+            if (window.BattleAssets && typeof window.BattleAssets.getCloseAttackHitStartDelayMsForCharacterSkill === 'function') {
+                return window.BattleAssets.getCloseAttackHitStartDelayMsForCharacterSkill(character, skillId);
+            }
             if (window.BattleAssets && typeof window.BattleAssets.getCloseAttackHitStartDelayMsForCharacter === 'function') {
                 return window.BattleAssets.getCloseAttackHitStartDelayMsForCharacter(character);
             }
             return 0;
         },
 
-        withCloseAttackCombatTextOffset(actionResult, actorCharacterId, skillType) {
+        withCloseAttackCombatTextOffset(actionResult, actorCharacterId, skillType, skillId) {
             if (!actionResult) return actionResult;
             if (skillType !== 'attack') return actionResult;
 
             const actorChar = actorCharacterId ? { id: actorCharacterId } : null;
-            const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
-                ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar))
-                : false;
+            const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacterSkill === 'function'
+                ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacterSkill(actorChar, skillId))
+                : (window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
+                    ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar))
+                    : false);
 
             if (!hasClose) return actionResult;
 
-            const offsetMs = Math.max(0, Math.floor(Number(this.getCloseAttackHitStartDelayMsForCharacter(actorChar)) || 0));
+            const offsetMs = Math.max(0, Math.floor(Number(this.getCloseAttackHitStartDelayMsForCharacter(actorChar, skillId)) || 0));
             if (offsetMs <= 0) return actionResult;
 
             const animations = Array.isArray(actionResult.animations) ? actionResult.animations : null;
@@ -45,7 +50,7 @@
             };
         },
 
-        async playCloseAttackAnimationForSide(battlePage, actionResult, side, actorCharacterId) {
+        async playCloseAttackAnimationForSide(battlePage, actionResult, side, actorCharacterId, skillId) {
             const wrapper = battlePage.getSpriteWrapperForSide(side);
             if (!wrapper) return;
 
@@ -54,9 +59,11 @@
                 : null;
 
             const actorChar = actorCharacterId ? { id: actorCharacterId } : null;
-            const anim = (window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function')
-                ? window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar)
-                : null;
+            const anim = (window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacterSkill === 'function')
+                ? window.BattleAssets.getCloseAttackAnimationForCharacterSkill(actorChar, skillId)
+                : ((window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function')
+                    ? window.BattleAssets.getCloseAttackAnimationForCharacter(actorChar)
+                    : null);
             if (!anim || !anim.start || !Array.isArray(anim.hits) || anim.hits.length === 0 || !anim.end) return;
 
             const hits = Array.isArray(actionResult?.animations)
@@ -72,11 +79,39 @@
             const originalTransform = wrapper.style.transform;
             const originalTransition = wrapper.style.transition;
 
+            const enemySide = side === 'player' ? 'opponent' : 'player';
+            const enemyWrapper = typeof battlePage.getSpriteWrapperForSide === 'function'
+                ? battlePage.getSpriteWrapperForSide(enemySide)
+                : null;
+
+            const offsetRatio = Number(this.getCloseAttackTeleportMultiplierForCharacter(actorChar)) || 0;
+
+            const computeTeleportDxPx = () => {
+                try {
+                    if (!wrapper || !enemyWrapper) return null;
+                    const attackerRect = wrapper.getBoundingClientRect();
+                    const enemyRect = enemyWrapper.getBoundingClientRect();
+                    if (!attackerRect || !enemyRect) return null;
+                    if (!(enemyRect.width > 0) || !(attackerRect.width > 0)) return null;
+
+                    const attackerCenterX = attackerRect.left + (attackerRect.width / 2);
+                    const enemyCenterX = enemyRect.left + (enemyRect.width / 2);
+
+                    // Positive offsetRatio means "land on the near side" of the enemy center (from the attacker's approach direction).
+                    // Negative offsetRatio means "cross past center" to the far side.
+                    const approachDir = Math.sign(enemyCenterX - attackerCenterX) || 1;
+                    const desiredCenterX = enemyCenterX - (approachDir * offsetRatio * enemyRect.width);
+                    return Math.round(desiredCenterX - attackerCenterX);
+                } catch (e) {
+                    return null;
+                }
+            };
+
             const baseTeleportPx = 160;
-            const teleportMultiplier = Math.max(0, Number(this.getCloseAttackTeleportMultiplierForCharacter(actorChar)) || 0);
-            const teleportPx = Math.round(baseTeleportPx * teleportMultiplier);
-            const dir = side === 'player' ? -1 : 1;
-            const inFrontTransform = `translateX(${teleportPx * dir}px)`;
+            const fallbackApproachDir = side === 'player' ? 1 : -1;
+            const fallbackDxPx = Math.round(baseTeleportPx * offsetRatio) * fallbackApproachDir;
+            const dxPx = computeTeleportDxPx();
+            const inFrontTransform = `translateX(${(typeof dxPx === 'number' ? dxPx : fallbackDxPx)}px)`;
 
             const setTeleport = (enabled) => {
                 if (!wrapper) return;

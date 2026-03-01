@@ -190,6 +190,23 @@ window.BattleAssets = {
         return null;
     },
 
+    getCloseAttackAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'zero_two' && skillId === 'darling_bite') {
+            return {
+                start: 'assets/animations/zero_two/zero_two_attack_close_start.png',
+                hits: [
+                    'assets/animations/zero_two/zero_two_attack_close_start.png',
+                    'assets/animations/zero_two/zero_two_attack_close_1.png'
+                ],
+                end: 'assets/animations/zero_two/zero_two_attack_close_end.png'
+            };
+        }
+
+        // Backward-compatible default behavior for characters where all basic attacks share the same close attack.
+        return this.getCloseAttackAnimationForCharacter(character);
+    },
+
     getCloseAttackHitStartDelayMsForCharacter(character) {
         const anim = this.getCloseAttackAnimationForCharacter(character);
         if (!anim) return 0;
@@ -198,11 +215,23 @@ window.BattleAssets = {
         return 120;
     },
 
+    getCloseAttackHitStartDelayMsForCharacterSkill(character, skillId) {
+        const anim = (typeof this.getCloseAttackAnimationForCharacterSkill === 'function')
+            ? this.getCloseAttackAnimationForCharacterSkill(character, skillId)
+            : this.getCloseAttackAnimationForCharacter(character);
+        if (!anim) return 0;
+
+        const id = character && character.id;
+        if (id === 'trafalgar_law') return 200;
+        return 120;
+    },
+
     getCloseAttackTeleportMultiplierForCharacter(character) {
         const id = character && character.id;
-        if (id === 'trafalgar_law') return 1.6;
-        if (id === 'rimuru_tempest') return 1.8;
-        return 1.8;
+        if (id === 'zero_two') return 0.1;
+        if (id === 'rimuru_tempest') return 0.3;
+        if (id === 'trafalgar_law') return 0.5;
+        return 0.3;
     },
 
     getDomainAnimationForCharacterSkill(character, skillId) {
@@ -251,7 +280,9 @@ window.BattleAssets = {
         }
 
         if (skillType === 'attack') {
-            const close = this.getCloseAttackAnimationForCharacter(character);
+            const close = (typeof this.getCloseAttackAnimationForCharacterSkill === 'function')
+                ? this.getCloseAttackAnimationForCharacterSkill(character, skillId)
+                : this.getCloseAttackAnimationForCharacter(character);
             if (close && close.start && close.end && Array.isArray(close.hits) && close.hits.length > 0) {
                 return [close.start, ...close.hits, close.end];
             }
