@@ -19,7 +19,11 @@ class PassiveSystem {
                 archiveLastPageType: null,
                 frierenRotatingSkillBag: [],
                 frierenRotatingSkillCurrentType: null,
-                frierenRotatingSkillLastTurnCount: null
+                frierenRotatingSkillLastTurnCount: null,
+
+                // Zero Two: KISS OF DEATH growth
+                zeroTwoUltBaseBonus: 0,
+                zeroTwoUltUsedTurnCount: null
             };
         }
 
@@ -46,6 +50,13 @@ class PassiveSystem {
         }
         if (character.passiveState.frierenRotatingSkillLastTurnCount === undefined) {
             character.passiveState.frierenRotatingSkillLastTurnCount = null;
+        }
+
+        if (character.passiveState.zeroTwoUltBaseBonus === undefined) {
+            character.passiveState.zeroTwoUltBaseBonus = 0;
+        }
+        if (character.passiveState.zeroTwoUltUsedTurnCount === undefined) {
+            character.passiveState.zeroTwoUltUsedTurnCount = null;
         }
 
         return character.passiveState;
@@ -206,6 +217,30 @@ class PassiveSystem {
         if (!character || !character.passive) return;
 
         const state = this.ensureState(character);
+
+        if (eventType === 'skill_used') {
+            if (character.id === 'zero_two' && payload && payload.skillType === 'ultimate') {
+                const turnCount = Number(this.gameState?.turnCount);
+                if (Number.isFinite(turnCount)) {
+                    state.zeroTwoUltUsedTurnCount = turnCount;
+                }
+            }
+        }
+
+        if (eventType === 'turn_end') {
+            if (character.id === 'zero_two') {
+                const turnCount = Number(this.gameState?.turnCount);
+                const usedThisTurn = Number.isFinite(turnCount) && state.zeroTwoUltUsedTurnCount === turnCount;
+                const ultimateReady = Boolean(player.ultimateReady);
+                const canUseUltimate = (typeof this.gameState.canUseUltimateWithLimit === 'function')
+                    ? this.gameState.canUseUltimateWithLimit(player)
+                    : ultimateReady;
+
+                if (ultimateReady && canUseUltimate && !usedThisTurn) {
+                    state.zeroTwoUltBaseBonus = (Number(state.zeroTwoUltBaseBonus) || 0) + 0.1;
+                }
+            }
+        }
 
         if (eventType === 'turn_start') {
             this.rollDevourSkill('player1');

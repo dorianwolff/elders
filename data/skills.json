@@ -789,13 +789,13 @@
   "darling_bite": {
     "id": "darling_bite",
     "name": "Darling Bite",
-    "description": "Deal 90% of attack as damage and apply Kiss Mark for 4 turns. While Kiss Mark is active, healing received by the target is stored.",
+    "description": "Deal 95% of attack as damage and apply Kiss Mark for 4 turns. While Kiss Mark is active, healing received by the target is stored.",
     "type": "attack",
     "cooldown": 0,
     "effect": {
       "type": "damage_and_kiss",
       "target": "enemy",
-      "value": 0.9,
+      "value": 0.95,
       "scaling": "attack",
       "kiss_duration": 4
     }
@@ -815,9 +815,9 @@
   "dont_hurt_me_baby": {
     "id": "dont_hurt_me_baby",
     "name": "Don't Hurt Me Baby",
-    "description": "Enter a stance for 3 enemy turns. When taking damage from an enemy skill, gain twice the Heartbreak and counterattack for (1% per Heartbreak) of attack.",
+    "description": "Enter a stance for 3 turns. When taking damage from an enemy skill, gain twice the Heartbreak and counterattack for (1% per Heartbreak) of attack.",
     "type": "stance",
-    "cooldown": 3,
+    "cooldown": 2,
     "effect": {
       "type": "stance",
       "target": "self",
@@ -843,15 +843,15 @@
   "kiss_of_death": {
     "id": "kiss_of_death",
     "name": "KISS OF DEATH",
-    "description": "Deal (120% + 1% per Heartbreak) of attack as damage. Consume all Heartbreak stacks.",
+    "description": "Deal (125% + 1% per Heartbreak) of attack as damage. While this ultimate is ready, each of your turns you do not use it grants +10% base damage for future uses. Consume 66 Heartbreak stacks.",
     "type": "attack",
     "cooldown": 0,
     "effect": {
       "type": "heartbreak_finisher",
       "target": "enemy",
-      "base_percent": 1.2,
+      "base_percent": 1.25,
       "per_heartbreak_percent": 0.01,
-      "consume_heartbreak": true
+      "consume_heartbreak": 66
     }
   },
   "ed_rocket_punch": {

@@ -1305,11 +1305,24 @@ class BattlePage extends BasePage {
 
     updateUltimate() {
         const ultimate = this.gameState.player.character.ultimate;
+        const characterId = this.gameState.player.character.id;
+        const passiveState = this.gameState.player.character.passiveState || {};
         const isStunned = this.gameState.isYourTurn && this.gameState.skillSystem && this.gameState.skillSystem.isStunned(this.gameCoordinator.currentPlayerRole);
         const canUse = this.gameState.isYourTurn && !isStunned && this.gameCoordinator.canUseUltimate();
         
         this.updateElement('#ultimate-name', ultimate.name);
-        this.updateElement('#ultimate-description', ultimate.description);
+
+        let desc = ultimate.description;
+        try {
+            if (characterId === 'zero_two' && ultimate && ultimate.id === 'kiss_of_death') {
+                const bonus = Number(passiveState.zeroTwoUltBaseBonus) || 0;
+                const base = (Number(ultimate.effect?.base_percent) || 0) + bonus;
+                const basePct = Math.round(base * 100);
+                desc = `Deal (${basePct}% + 1% per Heartbreak) of attack as damage. While this ultimate is ready, each of your turns you do not use it grants +10% base damage for future uses. Consume 66 Heartbreak stacks.`;
+            }
+        } catch (e) {}
+
+        this.updateElement('#ultimate-description', desc);
         
         const ultimateButton = this.querySelector('#ultimate-button');
         ultimateButton.disabled = !canUse;

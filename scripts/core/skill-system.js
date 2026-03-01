@@ -1423,8 +1423,11 @@ class SkillSystem {
                     const heartbreak = Number(state?.counters?.heartbreak) || 0;
 
                     const basePercent = Number(effect.base_percent) || 0;
+                    const ultBonus = (caster && caster.id === 'zero_two')
+                        ? (Number(state?.zeroTwoUltBaseBonus) || 0)
+                        : 0;
                     const perHb = Number(effect.per_heartbreak_percent) || 0;
-                    const mult = Math.max(0, basePercent + (heartbreak * perHb));
+                    const mult = Math.max(0, basePercent + ultBonus + (heartbreak * perHb));
                     const atk = Number(caster?.stats?.attack) || 0;
 
                     const intended = Math.floor(atk * mult);
@@ -1432,9 +1435,18 @@ class SkillSystem {
                         result.damage = await this.applyDamage(target, intended, targetId, playerId);
                     }
 
-                    const consumeHeartbreak = (typeof effect.consume_heartbreak === 'boolean') ? effect.consume_heartbreak : true;
-                    if (consumeHeartbreak && state && state.counters) {
-                        state.counters.heartbreak = 0;
+                    const consumeCfg = effect.consume_heartbreak;
+                    if (state && state.counters) {
+                        if (typeof consumeCfg === 'number' && Number.isFinite(consumeCfg)) {
+                            const cur = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
+                            const consumeN = Math.max(0, Math.floor(consumeCfg));
+                            state.counters.heartbreak = Math.max(0, cur - consumeN);
+                        } else {
+                            const consumeAll = (typeof consumeCfg === 'boolean') ? consumeCfg : true;
+                            if (consumeAll) {
+                                state.counters.heartbreak = 0;
+                            }
+                        }
                     }
                 }
                 break;
@@ -1679,9 +1691,18 @@ class SkillSystem {
                         }
                     }
 
-                    const consumeHeartbreak = Boolean(effect.consume_heartbreak);
-                    if (consumeHeartbreak && state && state.counters) {
-                        state.counters.heartbreak = 0;
+                    const consumeCfg = effect.consume_heartbreak;
+                    if (state && state.counters) {
+                        if (typeof consumeCfg === 'number' && Number.isFinite(consumeCfg)) {
+                            const cur = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
+                            const consumeN = Math.max(0, Math.floor(consumeCfg));
+                            state.counters.heartbreak = Math.max(0, cur - consumeN);
+                        } else {
+                            const consumeAll = Boolean(consumeCfg);
+                            if (consumeAll) {
+                                state.counters.heartbreak = 0;
+                            }
+                        }
                     }
 
                     const healPer = Number(effect.heal_per_heartbreak) || 0;

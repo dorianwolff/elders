@@ -276,7 +276,7 @@ window.BattleAssets = {
         if (id === 'frieren' && (skillId === 'frieren_copycat_glyph' || skillId === 'frieren_rotating_page')) {
             return [
                 'assets/animations/frieren/frieren_utility_1.png',
-                'assets/animations/frieren/frieren_utility_1.png'
+                'assets/animations/frieren/frieren_utility_2.png'
             ];
         }
         return null;
