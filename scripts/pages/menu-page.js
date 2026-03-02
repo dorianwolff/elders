@@ -299,6 +299,11 @@ class MenuPage extends BasePage {
                 'assets/animations/trafalgar_law/trafalgar_law_idle_1.png',
                 'assets/animations/trafalgar_law/trafalgar_law_idle_2.png'
             ];
+        } else if (id === 'chen') {
+            return [
+                'assets/animations/chen/chen_idle_1.png',
+                'assets/animations/chen/chen_idle_2.png'
+            ];
         } else if (id === 'frieren') {
             return [
                 'assets/animations/frieren/frieren_idle_1.png',

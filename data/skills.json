@@ -725,12 +725,79 @@
   "limitless_dominion": {
     "id": "limitless_dominion",
     "name": "Limitless Dominion",
-    "description": "For 6 turns, damage becomes healing and healing becomes damage. Only one domain can exist at a time.",
+    "description": "For 6 turns, damage becomes healing and healing becomes damage. Only one domain can exist at a time. Using Ultimate resets recovery count to 0.",
     "type": "array",
     "cooldown": 0,
     "effect": {
       "type": "array_domain",
       "duration": 6
+    }
+  },
+  "chen_dragon_strike": {
+    "id": "chen_dragon_strike",
+    "name": "Dragon Strike",
+    "description": "Deal 105% of attack as damage. Cooldown reduction applied to this skill grants it +15% of attack. If it was applied 3 or more times also gain +3 defense permanently.",
+    "type": "attack",
+    "cooldown": 4,
+    "cooldownReductionBuff": {
+      "perStackPercent": 0.15,
+      "maxStacks": 4
+    },
+    "effect": {
+      "type": "damage_with_cdr_stacks",
+      "target": "enemy",
+      "base_percent": 1.05,
+      "per_stack_percent": 0.15,
+      "stack_skill_id": "chen_dragon_strike",
+      "permanent_defense_if_stacks_at_least": 3,
+      "permanent_defense_amount": 3,
+      "reset_stacks_on_use": true
+    }
+  },
+  "chen_tactical_reduction": {
+    "id": "chen_tactical_reduction",
+    "name": "Tactical Reduction",
+    "description": "Apply 1 cooldown reduction to a random other skill and deal 20% of attack as true damage.",
+    "type": "utility",
+    "cooldown": 2,
+    "effect": {
+      "type": "true_damage_and_apply_cdr_random_other",
+      "target": "enemy",
+      "true_damage_percent": 0.2
+    }
+  },
+  "chen_guard_routine": {
+    "id": "chen_guard_routine",
+    "name": "Guard Routine",
+    "description": "Gain +6 defense for 2 turns.",
+    "type": "buff",
+    "cooldown": 3,
+    "effect": {
+      "type": "buff",
+      "target": "self",
+      "stat": "defense",
+      "value": 6,
+      "duration": 2,
+      "mode": "flat"
+    }
+  },
+  "chen_crimson_ult": {
+    "id": "chen_crimson_ult",
+    "name": "Crimson Unsheath",
+    "description": "Deal 100% of attack as damage. Repeat this skill for each cooldown reduction applied to it. If it was applied 3 or more times also reduce cooldown of all your other skills by 1.",
+    "type": "ultimate",
+    "cooldown": 7,
+    "cooldownReductionBuff": {
+      "maxStacks": 99
+    },
+    "effect": {
+      "type": "chen_ultimate_barrage",
+      "target": "enemy",
+      "base_percent": 1,
+      "stack_skill_id": "chen_crimson_ult",
+      "reduce_other_skill_cooldowns_if_stacks_at_least": 3,
+      "reduce_other_skill_cooldowns_amount": 1,
+      "reset_stacks_on_use": true
     }
   },
   "gojo_strike": {

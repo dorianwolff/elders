@@ -746,24 +746,28 @@ class BattlePage extends BasePage {
                         <div class="skills-grid">
                             <button class="skill-button" id="skill-0" data-skill-index="0">
                                 <div class="skill-cd-pill" id="skill-0-cd-tag" style="display: none;"></div>
+                                <div class="skill-stack-pill" id="skill-0-stack-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-0-name">Skill 1</div>
                                 <div class="skill-description" id="skill-0-description">Description</div>
                                 <div class="skill-cooldown" id="skill-0-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-1" data-skill-index="1">
                                 <div class="skill-cd-pill" id="skill-1-cd-tag" style="display: none;"></div>
+                                <div class="skill-stack-pill" id="skill-1-stack-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-1-name">Skill 2</div>
                                 <div class="skill-description" id="skill-1-description">Description</div>
                                 <div class="skill-cooldown" id="skill-1-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-2" data-skill-index="2" style="display: none;">
                                 <div class="skill-cd-pill" id="skill-2-cd-tag" style="display: none;"></div>
+                                <div class="skill-stack-pill" id="skill-2-stack-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-2-name">Skill 3</div>
                                 <div class="skill-description" id="skill-2-description">Description</div>
                                 <div class="skill-cooldown" id="skill-2-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-3" data-skill-index="3" style="display: none;">
                                 <div class="skill-cd-pill" id="skill-3-cd-tag" style="display: none;"></div>
+                                <div class="skill-stack-pill" id="skill-3-stack-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-3-name">Skill 4</div>
                                 <div class="skill-description" id="skill-3-description">Description</div>
                                 <div class="skill-cooldown" id="skill-3-cooldown" style="display: none;"></div>
@@ -774,8 +778,11 @@ class BattlePage extends BasePage {
                     <div class="ultimate-section">
                         <h4>Ultimate</h4>
                         <button class="ultimate-button" id="ultimate-button" disabled>
+                            <div class="skill-cd-pill" id="ultimate-cd-tag" style="display: none;"></div>
+                            <div class="skill-stack-pill" id="ultimate-stack-tag" style="display: none;"></div>
                             <div class="ultimate-name" id="ultimate-name">Ultimate</div>
                             <div class="ultimate-description" id="ultimate-description">Description</div>
+                            <div class="skill-cooldown" id="ultimate-cooldown" style="display: none;"></div>
                             <div class="ultimate-status" id="ultimate-status">Not Ready</div>
                         </button>
                     </div>
@@ -1398,6 +1405,20 @@ class BattlePage extends BasePage {
         skills.forEach((skill, index) => {
             if (!skill) return;
 
+            const stackTag = this.querySelector(`#skill-${index}-stack-tag`);
+            if (stackTag) {
+                stackTag.textContent = '';
+                stackTag.style.display = 'none';
+            }
+
+            if (characterId === 'chen' && stackTag && skill.cooldownReductionBuff) {
+                const stacks = passiveState && passiveState.counters
+                    ? (Number(passiveState.counters[`cdr_${skill.id}`]) || 0)
+                    : 0;
+                stackTag.textContent = String(stacks);
+                stackTag.style.display = 'flex';
+            }
+
             if (skill.id === 'devour' && (skill._copiedName || skill._copiedDescription)) {
                 this.updateElement(`#skill-${index}-name`, skill._copiedName || skill.name);
                 this.updateElement(`#skill-${index}-description`, skill._copiedDescription || skill.description);
@@ -1448,6 +1469,30 @@ class BattlePage extends BasePage {
                         desc = 'Add 1 utility Page and apply Heal Block.';
                     }
                     this.updateElement(`#skill-${index}-description`, desc);
+                } else if (characterId === 'chen' && skill.id === 'chen_dragon_strike') {
+                    const stacks = passiveState && passiveState.counters
+                        ? (Number(passiveState.counters[`cdr_${skill.id}`]) || 0)
+                        : 0;
+                    const base = Number(skill?.effect?.base_percent) || 0;
+                    const per = Number(skill?.effect?.per_stack_percent) || 0;
+                    const currentPct = Math.round((base + (per * stacks)) * 100);
+                    const perPct = Math.round(per * 100);
+
+                    const permDefAt = Math.max(0, Math.floor(Number(skill?.effect?.permanent_defense_if_stacks_at_least) || 0));
+                    const permDef = Math.floor(Number(skill?.effect?.permanent_defense_amount) || 0);
+                    const defTail = (permDefAt > 0 && permDef !== 0)
+                        ? ` If it was applied ${permDefAt} or more times also gain +${permDef} defense permanently.`
+                        : '';
+
+                    const stackTag = this.querySelector(`#skill-${index}-stack-tag`);
+                    if (stackTag) {
+                        stackTag.textContent = String(stacks);
+                        stackTag.style.display = '';
+                    }
+                    this.updateElement(
+                        `#skill-${index}-description`,
+                        `Deal ${currentPct}% of attack as damage. Cooldown reduction applied to this skill grants it +${perPct}% of attack.${defTail}`
+                    );
                 } else if (characterId === 'saitama' && skill.id === 'grit') {
                     let stored = 0;
                     let isActive = false;
@@ -1553,6 +1598,20 @@ class BattlePage extends BasePage {
         
         this.updateElement('#ultimate-name', ultimate.name);
 
+        const ultStackTag = this.querySelector('#ultimate-stack-tag');
+        if (ultStackTag) {
+            ultStackTag.textContent = '';
+            ultStackTag.style.display = 'none';
+        }
+
+        if (characterId === 'chen' && ultimate && ultStackTag && ultimate.cooldownReductionBuff) {
+            const stacks = passiveState && passiveState.counters
+                ? (Number(passiveState.counters[`cdr_${ultimate.id}`]) || 0)
+                : 0;
+            ultStackTag.textContent = String(stacks);
+            ultStackTag.style.display = 'flex';
+        }
+
         let desc = ultimate.description;
         try {
             if (characterId === 'zero_two' && ultimate && ultimate.id === 'kiss_of_death') {
@@ -1561,23 +1620,59 @@ class BattlePage extends BasePage {
                 const basePct = Math.round(base * 100);
                 desc = `Deal (${basePct}% + 1% per Heartbreak) of attack as damage. While this ultimate is ready, each of your turns you do not use it grants +10% base damage for future uses. Consume 66 Heartbreak stacks.`;
             }
+
+            if (characterId === 'chen' && ultimate && ultimate.id === 'chen_crimson_ult') {
+                const stacks = passiveState && passiveState.counters
+                    ? (Number(passiveState.counters[`cdr_${ultimate.id}`]) || 0)
+                    : 0;
+                const basePct = Math.round((Number(ultimate?.effect?.base_percent) || 0) * 100);
+                const cdrAt = Math.max(0, Math.floor(Number(ultimate?.effect?.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
+                const cdrAmt = Math.max(0, Math.floor(Number(ultimate?.effect?.reduce_other_skill_cooldowns_amount) || 0));
+                const cdrTail = (cdrAt > 0 && cdrAmt > 0)
+                    ? ` If it was applied ${cdrAt} or more times also reduce cooldown of all your other skills by ${cdrAmt}.`
+                    : '';
+
+                const stackTag = this.querySelector('#ultimate-stack-tag');
+                if (stackTag) {
+                    stackTag.textContent = String(stacks);
+                    stackTag.style.display = 'flex';
+                }
+
+                desc = `Deal ${basePct}% of attack as damage. Repeat this skill for each cooldown reduction applied to it.${cdrTail}`;
+            }
         } catch (e) {}
 
         this.updateElement('#ultimate-description', desc);
 
         {
             const cdTag = this.querySelector('#ultimate-cd-tag');
+            const cdText = this.querySelector('#ultimate-cooldown');
             const baseCd = Math.max(0, Math.floor(Number(ultimate?.cooldown) || 0));
             if (cdTag) {
                 if (baseCd > 0) {
                     const remaining = (this.gameState?.skillSystem && typeof this.gameState.skillSystem.getSkillCooldown === 'function')
                         ? Math.max(0, Math.floor(this.gameState.skillSystem.getSkillCooldown({ id: ultimate.id }, this.gameCoordinator.currentPlayerRole)))
                         : 0;
-                    cdTag.textContent = remaining > 0 ? `CD ${baseCd} (${remaining})` : `CD ${baseCd}`;
+
+                    // Global behavior: pill shows only base CD. Remaining turns are shown beneath like normal skills.
+                    cdTag.textContent = `CD ${baseCd}`;
+                    if (cdText) {
+                        if (remaining > 0) {
+                            cdText.textContent = `${remaining} ${remaining === 1 ? 'turn' : 'turns'} left`;
+                            cdText.style.display = '';
+                        } else {
+                            cdText.textContent = '';
+                            cdText.style.display = 'none';
+                        }
+                    }
                     cdTag.style.display = '';
                 } else {
                     cdTag.textContent = '';
                     cdTag.style.display = 'none';
+                    if (cdText) {
+                        cdText.textContent = '';
+                        cdText.style.display = 'none';
+                    }
                 }
             }
         }
@@ -1586,12 +1681,25 @@ class BattlePage extends BasePage {
         ultimateButton.disabled = !canUse;
         
         const statusElement = this.querySelector('#ultimate-status');
-        if (this.gameState.player.ultimateReady) {
-            statusElement.textContent = 'Ready!';
-            statusElement.className = 'ultimate-ready';
-        } else {
-            statusElement.textContent = 'Not Ready';
-            statusElement.className = 'ultimate-not-ready';
+        {
+            const remaining = (this.gameState?.skillSystem && typeof this.gameState.skillSystem.getSkillCooldown === 'function')
+                ? Math.max(0, Math.floor(this.gameState.skillSystem.getSkillCooldown({ id: ultimate.id }, this.gameCoordinator.currentPlayerRole)))
+                : 0;
+            const hasCooldownActive = remaining > 0;
+
+            if (hasCooldownActive) {
+                statusElement.textContent = '';
+                statusElement.style.display = 'none';
+            } else {
+                statusElement.style.display = '';
+                if (this.gameState.player.ultimateReady) {
+                    statusElement.textContent = 'Ready';
+                    statusElement.className = 'ultimate-ready';
+                } else {
+                    statusElement.textContent = 'Not Ready';
+                    statusElement.className = 'ultimate-not-ready';
+                }
+            }
         }
     }
 
@@ -1800,10 +1908,10 @@ class BattlePage extends BasePage {
     }
 
     enableActionsIfYourTurn() {
-        if (this.gameState && this.gameState.isYourTurn) {
-            this.updateSkills();
-            this.updateUltimate();
-        }
+        if (!this.gameState || !this.gameState.isYourTurn) return;
+
+        this.updateSkills();
+        this.updateUltimate();
     }
 
     updateGameState(newGameState, actionResult) {
@@ -1866,7 +1974,8 @@ class BattlePage extends BasePage {
                     // no-op
                 }
             }
-            this.scheduleCombatTextAnimations(adjustedActionResult);
+            const animationPromises = [];
+            animationPromises.push(this.scheduleCombatTextAnimations(adjustedActionResult));
 
             // Character-specific attack animations (synced to combat_text delayMs).
             try {
@@ -1880,7 +1989,9 @@ class BattlePage extends BasePage {
 
                     if (hasClose) {
                         if (window.BattleAnimations && typeof window.BattleAnimations.playCloseAttackAnimationForSide === 'function') {
-                            window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId);
+                            animationPromises.push(
+                                window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId)
+                            );
                         }
                     }
                 }
@@ -1894,7 +2005,9 @@ class BattlePage extends BasePage {
                         ? Boolean(window.BattleAssets.getRangedAttackAnimationForCharacterSkill(actorChar, skillId))
                         : false;
                     if (hasRanged && window.BattleAnimations && typeof window.BattleAnimations.playRangedAttackAnimationForSide === 'function') {
-                        window.BattleAnimations.playRangedAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId);
+                        animationPromises.push(
+                            window.BattleAnimations.playRangedAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId)
+                        );
                     }
                 }
             } catch (e) {}
@@ -1903,7 +2016,9 @@ class BattlePage extends BasePage {
             try {
                 if (skillType === 'domain' && skillId) {
                     if (window.BattleAnimations && typeof window.BattleAnimations.playDomainSkillAnimationForSide === 'function') {
-                        window.BattleAnimations.playDomainSkillAnimationForSide(this, actorSide, actorId, skillId);
+                        animationPromises.push(
+                            window.BattleAnimations.playDomainSkillAnimationForSide(this, actorSide, actorId, skillId)
+                        );
                     }
                 }
             } catch (e) {}
@@ -1912,7 +2027,9 @@ class BattlePage extends BasePage {
             try {
                 if (skillType === 'debuff' && skillId) {
                     if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
-                        window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType);
+                        animationPromises.push(
+                            window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType)
+                        );
                     }
                 }
             } catch (e) {}
@@ -1921,7 +2038,9 @@ class BattlePage extends BasePage {
             try {
                 if (skillType === 'recovery' && skillId) {
                     if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
-                        window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType);
+                        animationPromises.push(
+                            window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType)
+                        );
                     }
                 }
             } catch (e) {}
@@ -1930,7 +2049,9 @@ class BattlePage extends BasePage {
             try {
                 if (skillType === 'utility' && skillId) {
                     if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
-                        window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType);
+                        animationPromises.push(
+                            window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType)
+                        );
                     }
                 }
             } catch (e) {}

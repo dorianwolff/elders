@@ -224,6 +224,11 @@ class PassiveSystem {
                 if (character.id === 'trafalgar_law' && character.passive && character.passive.id === 'room_surgeon') {
                     state.totalHealingDone = 0;
                 }
+
+                // Gojo Satoru: Blossoming Emotion recovery counter resets when using ultimate.
+                if (character.id === 'gojo_satoru' && character.passive && character.passive.id === 'blossoming_emotion') {
+                    state.totalHealingDone = 0;
+                }
             }
             if (character.id === 'zero_two' && payload && payload.skillType === 'ultimate') {
                 const turnCount = Number(this.gameState?.turnCount);
@@ -368,6 +373,28 @@ class PassiveSystem {
         const effects = Array.isArray(character.passive.effects) ? character.passive.effects : [];
         for (const eff of effects) {
             if (!eff || eff.timing !== eventType) continue;
+
+            if (eff.type === 'grant_ultimate_once') {
+                const key = typeof eff.stateKey === 'string' && eff.stateKey ? eff.stateKey : 'grantUltimateOnceUsed';
+                if (state[key]) {
+                    continue;
+                }
+                state[key] = true;
+                state.ultimateReady = true;
+                player.ultimateReady = true;
+            }
+
+            if (eff.type === 'cooldown_reduction_random_other_skill') {
+                if (eventType !== 'skill_used') continue;
+                const usedSkillId = payload && payload.skillId ? String(payload.skillId) : null;
+                if (!usedSkillId) continue;
+
+                const amount = Math.max(1, Math.floor(Number(eff.amount) || 1));
+                const seed = `${this.gameState?.gameId || 'game'}:${this.gameState?.turnCount || 0}:${playerId}:cdr:${usedSkillId}:passive`;
+                if (this.skillSystem && typeof this.skillSystem.applyCooldownReductionToRandomOtherSkill === 'function') {
+                    this.skillSystem.applyCooldownReductionToRandomOtherSkill(playerId, usedSkillId, { amount, seed });
+                }
+            }
 
             if (eff.type === 'heartbreak_meter') {
                 const key = eff.counter || 'heartbreak';

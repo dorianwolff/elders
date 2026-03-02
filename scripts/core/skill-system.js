@@ -8,6 +8,84 @@ class SkillSystem {
         this._cooldownsSkipNextDecrement = new Set();
     }
 
+    getCooldownReductionStackKeyForSkill(skillId) {
+        return `cdr_${skillId}`;
+    }
+
+    getCooldownReductionStacksForSkill(playerId, skillId) {
+        const key = this.getCooldownReductionStackKeyForSkill(skillId);
+        return Math.max(0, Math.floor(this.getCounterValue(playerId, key)));
+    }
+
+    setCooldownReductionStacksForSkill(playerId, skillId, stacks) {
+        const key = this.getCooldownReductionStackKeyForSkill(skillId);
+        const next = Math.max(0, Math.floor(Number(stacks) || 0));
+        this.setCounterValue(playerId, key, next);
+    }
+
+    applyCooldownReductionToRandomOtherSkill(playerId, excludeSkillId, options = {}) {
+        const player = this.gameState?.players?.get(playerId);
+        if (!player || !player.character) return null;
+
+        const character = player.character;
+        const skills = Array.isArray(character.skills) ? character.skills : [];
+        const ultimate = character.ultimate;
+        const list = [];
+
+        for (const s of skills) {
+            if (s && typeof s.id === 'string') {
+                list.push({ kind: 'skill', skill: s });
+            }
+        }
+        if (ultimate && typeof ultimate.id === 'string') {
+            list.push({ kind: 'ultimate', skill: ultimate });
+        }
+
+        const amount = Math.max(1, Math.floor(Number(options.amount) || 1));
+        const seed = typeof options.seed === 'string' ? options.seed : null;
+
+        const eligible = [];
+        for (const item of list) {
+            const s = item.skill;
+            if (!s || !s.id) continue;
+            if (excludeSkillId && s.id === excludeSkillId) continue;
+
+            const remaining = this.getSkillCooldown({ id: s.id }, playerId);
+            const buffCfg = s.cooldownReductionBuff && typeof s.cooldownReductionBuff === 'object'
+                ? s.cooldownReductionBuff
+                : null;
+            const canBuff = Boolean(buffCfg);
+            if (remaining > 0 || canBuff) {
+                eligible.push({ item, remaining, buffCfg });
+            }
+        }
+
+        if (eligible.length === 0) return null;
+
+        const rand = (seed && typeof this.deterministicRandom === 'function')
+            ? this.deterministicRandom(seed)
+            : Math.random();
+        const index = Math.min(eligible.length - 1, Math.floor(rand * eligible.length));
+        const picked = eligible[index];
+        const pickedSkill = picked.item.skill;
+
+        if (picked.remaining > 0) {
+            const nextCd = Math.max(0, picked.remaining - amount);
+            this.setSkillCooldown(pickedSkill.id, playerId, nextCd);
+        }
+
+        if (picked.buffCfg) {
+            const maxStacks = (typeof picked.buffCfg.maxStacks === 'number')
+                ? Math.max(0, Math.floor(picked.buffCfg.maxStacks))
+                : null;
+            const cur = this.getCooldownReductionStacksForSkill(playerId, pickedSkill.id);
+            const next = maxStacks === null ? (cur + amount) : Math.min(maxStacks, cur + amount);
+            this.setCooldownReductionStacksForSkill(playerId, pickedSkill.id, next);
+        }
+
+        return { skillId: pickedSkill.id };
+    }
+
     resolveSkillDisplayForCaster(caster, skillId) {
         if (!caster || !skillId) return null;
         const skills = Array.isArray(caster.skills) ? caster.skills : [];
@@ -300,6 +378,11 @@ class SkillSystem {
 
         for (const [effectId, effect] of this.activeEffects.entries()) {
             if (!effect || effect.target !== playerId) continue;
+
+            if (effect && effect._skipNextDecrement) {
+                effect._skipNextDecrement = false;
+                continue;
+            }
 
             // DoTs tick at end of the affected player's own turn.
             if (effect.type === 'poison' || effect.type === 'curse') continue;
@@ -743,6 +826,104 @@ class SkillSystem {
         }
 
         switch (effect.type) {
+            case 'damage_with_cdr_stacks':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+
+                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
+                        ? effect.stack_skill_id
+                        : (typeof override.skillId === 'string' ? override.skillId : null);
+                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
+                    const base = Number(effect.base_percent) || 0;
+                    const per = Number(effect.per_stack_percent) || 0;
+                    const mult = Math.max(0, base + (stacks * per));
+
+                    const intended = this.calculateDamage({ scaling: 'attack', value: mult }, caster, target);
+                    if (intended > 0) {
+                        result.damage = await this.applyDamage(target, intended, targetId, playerId);
+                    }
+
+                    if (stackSkillId && effect.reset_stacks_on_use) {
+                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
+                    }
+
+                    // Ch'en: Dragon Strike permanent defense bonus when sufficiently enhanced.
+                    const permDefAt = Math.max(0, Math.floor(Number(effect.permanent_defense_if_stacks_at_least) || 0));
+                    const permDef = Math.floor(Number(effect.permanent_defense_amount) || 0);
+                    if (permDefAt > 0 && permDef !== 0 && stacks >= permDefAt) {
+                        if (!caster.baseStats) caster.baseStats = { ...caster.stats };
+                        caster.baseStats.defense = (Number(caster.baseStats.defense) || 0) + permDef;
+                        this.recalculateStats(playerId);
+                        result.effects.push(`Permanently gained +${permDef} defense`);
+                    }
+                }
+                break;
+
+            case 'true_damage_and_apply_cdr_random_other':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+
+                    const ratio = Math.max(0, Number(effect.true_damage_percent) || 0);
+                    const intended = Math.max(0, Math.floor((Number(caster?.stats?.attack) || 0) * ratio));
+                    if (intended > 0) {
+                        const dealt = await this.applyTrueDamage(target, intended, targetId, playerId);
+                        result.damage = (Number(result.damage) || 0) + dealt;
+                    }
+
+                    const ctx = this.getActiveActionContext();
+                    const exclude = (ctx && typeof ctx.skillId === 'string') ? ctx.skillId : null;
+                    const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:cdr:${exclude || 'none'}:skill_effect`;
+                    this.applyCooldownReductionToRandomOtherSkill(playerId, exclude, { amount: 1, seed });
+                }
+                break;
+
+            case 'chen_ultimate_barrage':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+
+                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
+                        ? effect.stack_skill_id
+                        : null;
+                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
+                    const base = Number(effect.base_percent) || 0;
+                    const hits = Math.max(1, 1 + Math.max(0, Math.floor(stacks)));
+
+                    for (let i = 0; i < hits; i++) {
+                        const intended = this.calculateDamage({ scaling: 'attack', value: base }, caster, target);
+                        if (intended > 0) {
+                            const dealt = await this.applyDamage(target, intended, targetId, playerId);
+                            result.damage = (Number(result.damage) || 0) + dealt;
+                        }
+                    }
+
+                    // Ch'en: If sufficiently enhanced, reduce cooldown of all other skills.
+                    const cdrAt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
+                    const cdrAmt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_amount) || 0));
+                    if (cdrAt > 0 && cdrAmt > 0 && stacks >= cdrAt) {
+                        const skills = Array.isArray(caster?.skills) ? caster.skills : [];
+                        let reducedAny = false;
+                        for (const s of skills) {
+                            if (!s || !s.id) continue;
+                            if (s.id === stackSkillId) continue;
+                            const remaining = Math.max(0, Math.floor(this.getSkillCooldown({ id: s.id }, playerId)));
+                            if (remaining > 0) {
+                                this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
+                                reducedAny = true;
+                            }
+                        }
+                        if (reducedAny) {
+                            result.effects.push(`Reduced cooldown of other skills by ${cdrAmt}`);
+                        }
+                    }
+
+                    if (stackSkillId && effect.reset_stacks_on_use) {
+                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
+                    }
+                }
+                break;
             case 'stance':
                 {
                     const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || Number(effect.duration) || 1));
@@ -2673,7 +2854,10 @@ class SkillSystem {
                             const perHb = Number(stance.counterPercentPerHeartbreak) || 0;
                             const mult = Math.max(0, heartbreak * perHb);
                             const atk = Number(victim?.stats?.attack) || 0;
-                            const intended = Math.floor(atk * mult);
+                            const intendedRaw = Math.floor(atk * mult);
+                            const intended = (mult > 0 && atk > 0)
+                                ? Math.max(1, intendedRaw)
+                                : 0;
 
                             if (intended > 0) {
                                 await this.withActionContext({
@@ -2732,7 +2916,10 @@ class SkillSystem {
                         const ratio = Number(stance.counter_ratio);
                         const counterRatio = Number.isFinite(ratio) ? Math.max(0, ratio) : 0.65;
                         const hits = Math.max(1, Math.floor(Number(stance.counter_hits) || 2));
-                        const intended = Math.max(0, Math.floor(remaining * counterRatio));
+                        const intendedRaw = Math.max(0, Math.floor(remaining * counterRatio));
+                        const intended = (counterRatio > 0 && remaining > 0)
+                            ? Math.max(1, intendedRaw)
+                            : 0;
 
                         if (intended > 0) {
                             await this.withActionContext({
@@ -2818,7 +3005,9 @@ class SkillSystem {
                             // 1) "Restore" the same amount to enemy => applyHealing (becomes DAMAGE under domain)
                             // 2) Then deal damage equal to half of that damage dealt => applyDamage (becomes HEALING under domain)
                             const dealt = await this.applyHealing(enemy, reflected, attackerId);
-                            await this.applyDamage(enemy, Math.floor(dealt / 2), attackerId, playerId);
+                            const followUpRaw = Math.floor(dealt / 2);
+                            const followUp = dealt > 0 ? Math.max(1, followUpRaw) : 0;
+                            await this.applyDamage(enemy, followUp, attackerId, playerId);
                         });
                     }
                 }
@@ -3560,6 +3749,69 @@ class SkillSystem {
         const effect = skill.effect;
         
         switch (effect.type) {
+            case 'true_damage_and_apply_cdr_random_other':
+                {
+                    // Sync only the cooldown reduction targeting; damage is pre-calculated.
+                    const ctxSkillId = skill && typeof skill.id === 'string' ? skill.id : null;
+                    const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:cdr:${ctxSkillId || 'none'}:skill_effect`;
+                    if (typeof this.applyCooldownReductionToRandomOtherSkill === 'function') {
+                        this.applyCooldownReductionToRandomOtherSkill(playerId, ctxSkillId, { amount: 1, seed });
+                    }
+                }
+                break;
+
+            case 'damage_with_cdr_stacks':
+                {
+                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
+                        ? effect.stack_skill_id
+                        : null;
+
+                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
+
+                    // Sync Ch'en permanent defense gain (Dragon Strike) when sufficiently enhanced.
+                    const permDefAt = Math.max(0, Math.floor(Number(effect.permanent_defense_if_stacks_at_least) || 0));
+                    const permDef = Math.floor(Number(effect.permanent_defense_amount) || 0);
+                    if (permDefAt > 0 && permDef !== 0 && stacks >= permDefAt) {
+                        if (!caster.baseStats) caster.baseStats = { ...caster.stats };
+                        caster.baseStats.defense = (Number(caster.baseStats.defense) || 0) + permDef;
+                        this.recalculateStats(playerId);
+                    }
+
+                    // This effect only mutates stacks when reset_on_use is enabled.
+                    if (effect.reset_stacks_on_use && stackSkillId) {
+                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
+                    }
+                }
+                break;
+
+            case 'chen_ultimate_barrage':
+                {
+                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
+                        ? effect.stack_skill_id
+                        : null;
+                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
+
+                    // Sync Ch'en ultimate cooldown reduction of other skills when sufficiently enhanced.
+                    const cdrAt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
+                    const cdrAmt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_amount) || 0));
+                    if (cdrAt > 0 && cdrAmt > 0 && stacks >= cdrAt) {
+                        const skills = Array.isArray(caster?.skills) ? caster.skills : [];
+                        for (const s of skills) {
+                            if (!s || !s.id) continue;
+                            if (s.id === stackSkillId) continue;
+                            const remaining = Math.max(0, Math.floor(this.getSkillCooldown({ id: s.id }, playerId)));
+                            if (remaining > 0) {
+                                this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
+                            }
+                        }
+                    }
+
+                    if (stackSkillId && effect.reset_stacks_on_use) {
+                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
+                    }
+                }
+                break;
+
             case 'stance':
                 {
                     const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || Number(effect.duration) || 1));
@@ -3863,6 +4115,7 @@ class SkillSystem {
             characterId: target.id,
             duration: duration,
             turnsLeft: duration,
+            _skipNextDecrement: true,
             name: 'Stunned',
             description: `Cannot act for ${duration} turns`
         });

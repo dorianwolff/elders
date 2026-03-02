@@ -192,13 +192,31 @@
     "mission": {
       "type": "total_healing_done",
       "value": 50,
-      "resetOnReady": true
+      "resetOnReady": false
     },
     "effects": [
       {
         "type": "heal_opponent_flat",
         "timing": "turn_start",
         "amount": 10
+      }
+    ]
+  },
+  "chen_melee_cooldown_master": {
+    "id": "chen_melee_cooldown_master",
+    "name": "Cooldown Mastery",
+    "description": "Gain Ultimate at the start of battle. Each time you use a skill, reduce the cooldown of one of your other skills by 1 (or empower a skill that benefits from cooldown reduction).",
+    "alwaysUltimateReady": true,
+    "effects": [
+      {
+        "type": "grant_ultimate_once",
+        "timing": "turn_start",
+        "stateKey": "chenGrantedUltimate"
+      },
+      {
+        "type": "cooldown_reduction_random_other_skill",
+        "timing": "skill_used",
+        "amount": 1
       }
     ]
   },
