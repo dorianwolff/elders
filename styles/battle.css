@@ -210,6 +210,19 @@
     overflow: hidden;
 }
 
+.health-heal-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background: rgba(60, 200, 95, 0.50);
+    z-index: 2;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: 14px;
+}
+
 .health-damage-fill {
     position: absolute;
     left: 0;
@@ -225,7 +238,7 @@
 
 .health-fill {
     position: relative;
-    z-index: 2;
+    z-index: 3;
 }
 
 .health-text {

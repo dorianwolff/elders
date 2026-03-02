@@ -19,6 +19,8 @@ class BattlePage extends BasePage {
         this.pendingHealthLoss = { player: null, opponent: null };
         this.displayedHealthPercent = { player: null, opponent: null };
         this.pendingHealthAnimation = null;
+        this.healOverlayAnimating = { player: false, opponent: false };
+        this.presentationQueue = Promise.resolve();
 
         this.spriteAnimation = {
             intervalId: null,
@@ -213,14 +215,14 @@ class BattlePage extends BasePage {
         const hits = { player: [], opponent: [] };
         for (const anim of animations) {
             if (!anim || anim.type !== 'combat_text') continue;
-            if (anim.kind !== 'damage') continue;
+            if (anim.kind !== 'damage' && anim.kind !== 'heal') continue;
             const targetPlayerId = anim.targetPlayerId;
             const delayMs = Math.max(0, Math.floor(Number(anim.delayMs) || 0));
 
             if (targetPlayerId === playerIdForSide.player) {
-                hits.player.push({ amount: Number(anim.amount) || 0, delayMs });
+                hits.player.push({ kind: anim.kind, amount: Number(anim.amount) || 0, delayMs });
             } else if (targetPlayerId === playerIdForSide.opponent) {
-                hits.opponent.push({ amount: Number(anim.amount) || 0, delayMs });
+                hits.opponent.push({ kind: anim.kind, amount: Number(anim.amount) || 0, delayMs });
             }
         }
 
@@ -232,9 +234,18 @@ class BattlePage extends BasePage {
             const maxHealth = maxHealthForSide[side];
             const steps = [];
             for (let i = 0; i < list.length; i++) {
-                const pctLoss = (Math.max(0, list[i].amount) / maxHealth) * 100;
-                cur = Math.max(finalPercentForSide[side], cur - pctLoss);
-                steps.push({ delayMs: list[i].delayMs, percent: cur });
+                const amount = Math.max(0, Number(list[i].amount) || 0);
+                if (list[i].kind === 'heal') {
+                    // Use authoritative final HP% for healing steps to avoid intermediate "partial" moves.
+                    // This prevents double-step corrections in cases like mirror actions (one heals while the other takes damage)
+                    // where combat_text amounts may not perfectly match the resulting HP delta.
+                    cur = Math.max(cur, finalPercentForSide[side]);
+                    steps.push({ delayMs: list[i].delayMs, percent: cur, kind: 'heal' });
+                } else {
+                    const pctLoss = (amount / maxHealth) * 100;
+                    cur = Math.max(finalPercentForSide[side], cur - pctLoss);
+                    steps.push({ delayMs: list[i].delayMs, percent: cur, kind: 'damage' });
+                }
             }
             steps[steps.length - 1].percent = finalPercentForSide[side];
             return {
@@ -269,6 +280,84 @@ class BattlePage extends BasePage {
         el.style.width = `${p}%`;
     }
 
+    setHealHealthPercent(side, percent, animate = true, delayMs = 0) {
+        const el = this.querySelector(side === 'player' ? '#player-health-heal-fill' : '#opponent-health-heal-fill');
+        if (!el) return;
+        const p = Math.max(0, Math.min(100, Number(percent) || 0));
+        const delay = Math.max(0, Math.floor(Number(delayMs) || 0));
+        // Backwards-compatible: treat as "fill from 0". Prefer setHealOverlayRange() for gain previews.
+        el.style.transition = animate ? `width 520ms linear ${delay}ms, opacity 260ms linear ${delay}ms` : 'none';
+        el.style.opacity = '1';
+        el.style.left = '0%';
+        el.style.width = `${p}%`;
+    }
+
+    setHealOverlayRange(side, fromPercent, toPercent, animate = true, delayMs = 0) {
+        const el = this.querySelector(side === 'player' ? '#player-health-heal-fill' : '#opponent-health-heal-fill');
+        if (!el) return;
+
+        const from = Math.max(0, Math.min(100, Number(fromPercent) || 0));
+        const to = Math.max(0, Math.min(100, Number(toPercent) || 0));
+        const start = Math.min(from, to);
+        const end = Math.max(from, to);
+        const width = Math.max(0, end - start);
+        const delay = Math.max(0, Math.floor(Number(delayMs) || 0));
+
+        el.style.transition = animate
+            ? `left 0ms linear ${delay}ms, width 520ms linear ${delay}ms, opacity 260ms linear ${delay}ms`
+            : 'none';
+        el.style.opacity = '1';
+        el.style.left = `${start}%`;
+        el.style.width = `${width}%`;
+    }
+
+    hideHealOverlay(side, animate = true, delayMs = 0) {
+        const el = this.querySelector(side === 'player' ? '#player-health-heal-fill' : '#opponent-health-heal-fill');
+        if (!el) return;
+        const delay = Math.max(0, Math.floor(Number(delayMs) || 0));
+        el.style.transition = animate ? `opacity 260ms linear ${delay}ms` : 'none';
+        el.style.opacity = '0';
+    }
+
+    showHealOverlay(side, animate = true, delayMs = 0) {
+        const el = this.querySelector(side === 'player' ? '#player-health-heal-fill' : '#opponent-health-heal-fill');
+        if (!el) return;
+        const delay = Math.max(0, Math.floor(Number(delayMs) || 0));
+        el.style.transition = animate ? `opacity 120ms linear ${delay}ms` : 'none';
+        el.style.opacity = '1';
+    }
+
+    async playHealingGainAnimation(side, toPercent) {
+        // Dark green overlay jumps to the target first, then the main bar follows.
+        const target = Math.max(0, Math.min(100, Number(toPercent) || 0));
+        const from = this.displayedHealthPercent?.[side];
+        const start = (typeof from === 'number') ? from : target;
+
+        this.healOverlayAnimating[side] = true;
+        try {
+            // Immediately show overlay at the final (healed) HP.
+            this.setHealHealthPercent(side, target, false);
+            this.showHealOverlay(side, false);
+
+            // Next frame: animate the main bar from current -> target.
+            await new Promise(resolve => requestAnimationFrame(resolve));
+
+            const greenEl = this.querySelector(side === 'player' ? '#player-health-fill' : '#opponent-health-fill');
+            if (greenEl) {
+                greenEl.style.transition = 'width 520ms linear';
+                greenEl.style.width = `${target}%`;
+            }
+            this.displayedHealthPercent[side] = target;
+            this.setShadowHealthPercent(side, target, false);
+
+            await this.sleep(560);
+            this.hideHealOverlay(side, true, 0);
+            await this.sleep(280);
+        } finally {
+            this.healOverlayAnimating[side] = false;
+        }
+    }
+
     async playHealthAnimation(healthAnim) {
         if (!healthAnim) return;
 
@@ -278,20 +367,33 @@ class BattlePage extends BasePage {
 
             this.setGreenHealthPercent(side, data.startPercent, false);
             this.setShadowHealthPercent(side, data.startPercent, false);
+            this.setHealHealthPercent(side, data.startPercent, false);
+            this.hideHealOverlay(side, false);
 
             let prevDelay = 0;
+            let sawDamage = false;
             for (const step of data.steps) {
                 const delta = Math.max(0, step.delayMs - prevDelay);
                 if (delta > 0) {
                     await this.sleep(delta);
                 }
-                this.setGreenHealthPercent(side, step.percent, true);
+                if (step.kind === 'heal') {
+                    await this.playHealingGainAnimation(side, step.percent);
+                } else {
+                    sawDamage = true;
+                    this.hideHealOverlay(side, false);
+                    this.setGreenHealthPercent(side, step.percent, true);
+                }
                 prevDelay = step.delayMs;
             }
 
             await this.sleep(140);
-            this.setShadowHealthPercent(side, data.finalPercent, true, 0);
-            await this.sleep(560);
+            if (sawDamage) {
+                this.setShadowHealthPercent(side, data.finalPercent, true, 0);
+                await this.sleep(560);
+            } else {
+                this.setShadowHealthPercent(side, data.finalPercent, false, 0);
+            }
         };
 
         await Promise.all([
@@ -307,33 +409,62 @@ class BattlePage extends BasePage {
         return null;
     }
 
-    scheduleCombatTextAnimations(actionResult) {
+    scheduleCombatTextAnimations(actionResult, healthAnimOverride = null) {
         if (!actionResult) return Promise.resolve();
         const animations = Array.isArray(actionResult.animations) ? actionResult.animations : [];
         if (!animations.length) return Promise.resolve();
 
+        // Capture the health animation at scheduling time so newer updates don't overwrite it.
+        const capturedHealthAnim = healthAnimOverride || this.pendingHealthAnimation;
+        if (healthAnimOverride || this.pendingHealthAnimation) {
+            this.pendingHealthAnimation = null;
+        }
+
         const needsUltimateWait = this.getActionPresentationDelayMs(actionResult) === null;
         const waitPromise = needsUltimateWait ? (this.ultimateOverlayDonePromise || Promise.resolve()) : Promise.resolve();
 
-        const promise = waitPromise.then(async () => {
-            const healthAnim = this.pendingHealthAnimation;
-            this.pendingHealthAnimation = null;
-
+        const run = () => waitPromise.then(async () => {
             this.renderCombatTextAnimations(actionResult);
 
             await Promise.all([
-                this.playHealthAnimation(healthAnim),
+                this.playHealthAnimation(capturedHealthAnim),
                 this.sleep(this.getCombatTextDurationMs())
             ]);
+
+            // Some actions can change HP without producing combat_text steps (e.g., swap health).
+            // Keep UI in sync once the presentation finishes.
+            try {
+                const pHealth = Number(this.gameState?.player?.character?.stats?.health) || 0;
+                const pMax = Number(this.gameState?.player?.character?.stats?.maxHealth) || 1;
+                const oHealth = Number(this.gameState?.opponent?.character?.stats?.health) || 0;
+                const oMax = Number(this.gameState?.opponent?.character?.stats?.maxHealth) || 1;
+
+                const pPct = Math.max(0, Math.min(100, (pHealth / Math.max(1, pMax)) * 100));
+                const oPct = Math.max(0, Math.min(100, (oHealth / Math.max(1, oMax)) * 100));
+
+                this.setGreenHealthPercent('player', pPct, false);
+                this.setShadowHealthPercent('player', pPct, false);
+                this.setGreenHealthPercent('opponent', oPct, false);
+                this.setShadowHealthPercent('opponent', oPct, false);
+
+                this.lastHealthPercent.player = pPct;
+                this.lastHealthPercent.opponent = oPct;
+            } catch (e) {
+                this.updateHealthBars();
+            }
         });
 
-        this.pendingCombatTextPresentation = promise.finally(() => {
-            if (this.pendingCombatTextPresentation === promise) {
+        // Serialize presentations so long animations aren't cut off by newer updates.
+        const queued = this.presentationQueue.then(run, run);
+        this.presentationQueue = queued.catch(() => {});
+
+        this.pendingCombatTextPresentation = queued.finally(() => {
+            if (this.pendingCombatTextPresentation === queued) {
                 this.pendingCombatTextPresentation = null;
             }
         });
 
-        return promise;
+        return queued;
     }
 
     async waitForGameEndPresentation(actionResult) {
@@ -509,6 +640,7 @@ class BattlePage extends BasePage {
                                     </div>
                                     <div class="health-bar-container">
                                         <div class="health-bar">
+                                            <div class="health-heal-fill" id="opponent-health-heal-fill"></div>
                                             <div class="health-damage-fill" id="opponent-health-damage-fill"></div>
                                             <div class="health-fill" id="opponent-health-fill"></div>
                                             <div class="health-text">
@@ -541,6 +673,7 @@ class BattlePage extends BasePage {
                                     </div>
                                     <div class="health-bar-container">
                                         <div class="health-bar">
+                                            <div class="health-heal-fill" id="player-health-heal-fill"></div>
                                             <div class="health-damage-fill" id="player-health-damage-fill"></div>
                                             <div class="health-fill" id="player-health-fill"></div>
                                             <div class="health-text">
@@ -1046,7 +1179,11 @@ class BattlePage extends BasePage {
         const playerMaxHealth = Number(this.gameState.player.character.stats.maxHealth) || 1;
         const playerHealthPercent = Math.max(0, Math.min(100, (playerHealth / playerMaxHealth) * 100));
 
-        if (this.lastHealthPercent.player !== null && playerHealthPercent < this.lastHealthPercent.player) {
+        if (
+            this.lastHealthPercent.player !== null &&
+            playerHealthPercent < this.lastHealthPercent.player &&
+            (this.pendingCombatTextPresentation || this.pendingHealthAnimation)
+        ) {
             this.pendingHealthLoss.player = { from: this.lastHealthPercent.player, to: playerHealthPercent };
         }
         this.lastHealthPercent.player = playerHealthPercent;
@@ -1059,7 +1196,18 @@ class BattlePage extends BasePage {
             this.displayedHealthPercent.player = playerHealthPercent;
             this.setShadowHealthPercent('player', playerHealthPercent, false);
         } else if (playerHealthPercent > this.displayedHealthPercent.player) {
-            // Healing or maxHealth change: snap both bars up.
+            // Healing: if an animation is pending, do not snap the main bar yet.
+            if (!this.pendingCombatTextPresentation && !this.pendingHealthAnimation) {
+                this.displayedHealthPercent.player = playerHealthPercent;
+                this.setShadowHealthPercent('player', playerHealthPercent, false);
+            }
+        } else if (
+            playerHealthPercent < this.displayedHealthPercent.player &&
+            !this.pendingHealthAnimation &&
+            !this.pendingHealthLoss?.player
+        ) {
+            // HP decreased without damage animation steps (e.g., health swap): allow the bar to go down
+            // and keep the shadow bar in sync so it doesn't visually mask the decrease.
             this.displayedHealthPercent.player = playerHealthPercent;
             this.setShadowHealthPercent('player', playerHealthPercent, false);
         } else if (!this.pendingCombatTextPresentation && !this.pendingHealthAnimation) {
@@ -1068,6 +1216,12 @@ class BattlePage extends BasePage {
         }
         if (playerFill) {
             playerFill.style.width = `${this.displayedHealthPercent.player}%`;
+        }
+
+        // Keep heal overlay hidden unless an explicit heal animation is playing.
+        if (!this.healOverlayAnimating.player) {
+            this.setHealHealthPercent('player', this.displayedHealthPercent.player, false);
+            this.hideHealOverlay('player', false);
         }
 
         // Player Shield
@@ -1091,7 +1245,11 @@ class BattlePage extends BasePage {
         const opponentMaxHealth = Number(this.gameState.opponent.character.stats.maxHealth) || 1;
         const opponentHealthPercent = Math.max(0, Math.min(100, (opponentHealth / opponentMaxHealth) * 100));
 
-        if (this.lastHealthPercent.opponent !== null && opponentHealthPercent < this.lastHealthPercent.opponent) {
+        if (
+            this.lastHealthPercent.opponent !== null &&
+            opponentHealthPercent < this.lastHealthPercent.opponent &&
+            (this.pendingCombatTextPresentation || this.pendingHealthAnimation)
+        ) {
             this.pendingHealthLoss.opponent = { from: this.lastHealthPercent.opponent, to: opponentHealthPercent };
         }
         this.lastHealthPercent.opponent = opponentHealthPercent;
@@ -1104,7 +1262,18 @@ class BattlePage extends BasePage {
             this.displayedHealthPercent.opponent = opponentHealthPercent;
             this.setShadowHealthPercent('opponent', opponentHealthPercent, false);
         } else if (opponentHealthPercent > this.displayedHealthPercent.opponent) {
-            // Healing or maxHealth change: snap both bars up.
+            // Healing: if an animation is pending, do not snap the main bar yet.
+            if (!this.pendingCombatTextPresentation && !this.pendingHealthAnimation) {
+                this.displayedHealthPercent.opponent = opponentHealthPercent;
+                this.setShadowHealthPercent('opponent', opponentHealthPercent, false);
+            }
+        } else if (
+            opponentHealthPercent < this.displayedHealthPercent.opponent &&
+            !this.pendingHealthAnimation &&
+            !this.pendingHealthLoss?.opponent
+        ) {
+            // HP decreased without damage animation steps (e.g., health swap): allow the bar to go down
+            // and keep the shadow bar in sync so it doesn't visually mask the decrease.
             this.displayedHealthPercent.opponent = opponentHealthPercent;
             this.setShadowHealthPercent('opponent', opponentHealthPercent, false);
         } else if (!this.pendingCombatTextPresentation && !this.pendingHealthAnimation) {
@@ -1113,6 +1282,12 @@ class BattlePage extends BasePage {
         }
         if (opponentFill) {
             opponentFill.style.width = `${this.displayedHealthPercent.opponent}%`;
+        }
+
+        // Keep heal overlay hidden unless an explicit heal animation is playing.
+        if (!this.healOverlayAnimating.opponent) {
+            this.setHealHealthPercent('opponent', this.displayedHealthPercent.opponent, false);
+            this.hideHealOverlay('opponent', false);
         }
 
         // Opponent Shield
@@ -1546,9 +1721,7 @@ class BattlePage extends BasePage {
 
     updateGameState(newGameState, actionResult) {
         this.gameState = newGameState;
-        this.updateUI();
-        this.startIdleSpriteAnimation();
-        
+
         if (actionResult) {
             const actorSide = actionResult._actionSource === 'opponent' ? 'opponent' : 'player';
             const actorId = typeof actionResult.actorCharacterId === 'string'
@@ -1560,6 +1733,15 @@ class BattlePage extends BasePage {
                 ? window.BattleAnimations.withCloseAttackCombatTextOffset(actionResult, actorId, skillType, skillId)
                 : actionResult;
 
+            // Prepare HP animation BEFORE updateUI() updates bar widths.
+            this.pendingHealthAnimation = this.buildHealthAnimationFromCombatText(adjustedActionResult, newGameState);
+
+            const actionAnimations = Array.isArray(adjustedActionResult.animations) ? adjustedActionResult.animations : [];
+            if (actionAnimations.length === 0) {
+                // No combat_text to drive an animation: fall back to a bar sync.
+                this.pendingHealthAnimation = null;
+            }
+
             if (actionResult._actionSource === 'opponent' && actionResult.actionType === 'ultimate') {
                 const actorCharacterId = actionResult.actorCharacterId;
                 if (actorCharacterId) {
@@ -1569,8 +1751,31 @@ class BattlePage extends BasePage {
                 }
             }
 
-            this.pendingHealthAnimation = this.buildHealthAnimationFromCombatText(adjustedActionResult, newGameState);
+            // Now render the new state.
+            this.updateUI();
+            this.startIdleSpriteAnimation();
 
+            // If there are no animations, keep bars in sync (but allow first-hit animations when combat_text exists).
+            if (actionAnimations.length === 0) {
+                try {
+                    const pHealth = Number(this.gameState?.player?.character?.stats?.health) || 0;
+                    const pMax = Number(this.gameState?.player?.character?.stats?.maxHealth) || 1;
+                    const oHealth = Number(this.gameState?.opponent?.character?.stats?.health) || 0;
+                    const oMax = Number(this.gameState?.opponent?.character?.stats?.maxHealth) || 1;
+                    const pPct = Math.max(0, Math.min(100, (pHealth / Math.max(1, pMax)) * 100));
+                    const oPct = Math.max(0, Math.min(100, (oHealth / Math.max(1, oMax)) * 100));
+
+                    this.pendingHealthLoss.player = null;
+                    this.pendingHealthLoss.opponent = null;
+
+                    this.setGreenHealthPercent('player', pPct, false);
+                    this.setShadowHealthPercent('player', pPct, false);
+                    this.setGreenHealthPercent('opponent', oPct, false);
+                    this.setShadowHealthPercent('opponent', oPct, false);
+                } catch (e) {
+                    // no-op
+                }
+            }
             this.scheduleCombatTextAnimations(adjustedActionResult);
 
             // Character-specific attack animations (synced to combat_text delayMs).
@@ -1822,9 +2027,15 @@ class BattlePage extends BasePage {
     }
 
     addLogMessage(message) {
-        const logContent = this.querySelector('#log-content');
+        let logContent = this.querySelector('#log-content');
         if (!logContent) {
-            console.warn('Battle log content element not found');
+            // Fallback: if the page container isn't wired yet (or was cleaned up), try the document.
+            logContent = document.querySelector('#log-content');
+        }
+        if (!logContent) {
+            if (this.isRendered) {
+                console.warn('Battle log content element not found');
+            }
             return;
         }
         

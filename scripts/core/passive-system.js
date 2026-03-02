@@ -219,6 +219,12 @@ class PassiveSystem {
         const state = this.ensureState(character);
 
         if (eventType === 'skill_used') {
+            if (payload && payload.skillType === 'ultimate') {
+                // Trafalgar Law: Room Surgeon counter resets when using ultimate.
+                if (character.id === 'trafalgar_law' && character.passive && character.passive.id === 'room_surgeon') {
+                    state.totalHealingDone = 0;
+                }
+            }
             if (character.id === 'zero_two' && payload && payload.skillType === 'ultimate') {
                 const turnCount = Number(this.gameState?.turnCount);
                 if (Number.isFinite(turnCount)) {
@@ -293,6 +299,18 @@ class PassiveSystem {
                     return;
                 }
             }
+            if (mission && mission.type === 'total_healing_done') {
+                // Trafalgar Law: cap at threshold and do not overflow until ultimate is used.
+                if (character.id === 'trafalgar_law' && character.passive && character.passive.id === 'room_surgeon') {
+                    const cap = Number(mission.value) || 80;
+                    const current = Number(state.totalHealingDone) || 0;
+                    const next = Math.min(cap, current + (Number(payload.amount) || 0));
+                    state.totalHealingDone = next;
+                    this.updateUltimateReady(playerId);
+                    return;
+                }
+            }
+
             state.totalHealingDone = (Number(state.totalHealingDone) || 0) + (Number(payload.amount) || 0);
             this.updateUltimateReady(playerId);
             return;
@@ -301,6 +319,10 @@ class PassiveSystem {
         if (eventType === 'opponent_healing_done') {
             const mission = this.getMission(character);
             if (mission && mission.type === 'total_healing_done') {
+                // Trafalgar Law: should never charge from opponent healing (prevents Law vs Law mirror bug).
+                if (character.id === 'trafalgar_law' && character.passive && character.passive.id === 'room_surgeon') {
+                    return;
+                }
                 // Special-case: Gojo's Blossoming Emotion should not charge while his domain ultimate is active.
                 // Also cap progress at the mission threshold.
                 if (character.id === 'gojo_satoru' && character.passive && character.passive.id === 'blossoming_emotion') {

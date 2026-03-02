@@ -79,11 +79,11 @@
   "room_surgeon": {
     "id": "room_surgeon",
     "name": "Room Surgeon",
-    "description": "When Law deals damage, recover 5% of max health. Ultimate becomes available after recovering 80 total health.",
+    "description": "When Law deals damage, recover 5% of max health. Ultimate becomes available after recovering 80 total health. Using Ultimate resets recovery count to 0.",
     "mission": {
       "type": "total_healing_done",
       "value": 80,
-      "resetOnReady": true
+      "resetOnReady": false
     },
     "effects": [
       {

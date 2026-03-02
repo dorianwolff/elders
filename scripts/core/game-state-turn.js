@@ -93,7 +93,8 @@ GameState.prototype.applyProgressiveHPLoss = async function (playerId) {
     const maxHp = Number(character.stats.maxHealth) || 0;
     if (maxHp <= 1) return;
 
-    const loss = Math.max(1, Math.floor(maxHp * 0.05));
+    const currentRound = Math.floor(this.turnCount / 2) + 1;
+    const loss = Math.max(0, 5 + Math.max(0, currentRound - 10));
     character.stats.health = Math.max(0, (Number(character.stats.health) || 0) - loss);
 
     if (loss > 0 && this.skillSystem && typeof this.skillSystem.emitCombatText === 'function') {

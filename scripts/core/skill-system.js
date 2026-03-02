@@ -1395,6 +1395,25 @@ class SkillSystem {
                     caster.stats.health = Math.max(0, newCasterHp);
                     target.stats.health = Math.max(0, newTargetHp);
 
+                    // Emit HP swap as combat_text so the UI health bars animate like normal damage/heal.
+                    // This is especially important in multiplayer where swap results often come with animations: [].
+                    const casterDelta = (Number(caster.stats.health) || 0) - oldCasterHp;
+                    const targetDelta = (Number(target.stats.health) || 0) - oldTargetHp;
+                    if (playerId) {
+                        if (casterDelta > 0) {
+                            this.emitCombatText('heal', Math.floor(casterDelta), playerId);
+                        } else if (casterDelta < 0) {
+                            this.emitCombatText('damage', Math.floor(Math.abs(casterDelta)), playerId);
+                        }
+                    }
+                    if (targetId) {
+                        if (targetDelta > 0) {
+                            this.emitCombatText('heal', Math.floor(targetDelta), targetId);
+                        } else if (targetDelta < 0) {
+                            this.emitCombatText('damage', Math.floor(Math.abs(targetDelta)), targetId);
+                        }
+                    }
+
                     const gained = Math.max(0, (Number(caster.stats.health) || 0) - oldCasterHp);
                     if (gained > 0 && this.gameState && this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
                         if (typeof this.gameState.updateHealingPassive === 'function') {

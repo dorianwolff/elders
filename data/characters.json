@@ -86,7 +86,7 @@
     "ultimate": {
       "id": "shambles",
       "name": "Shambles",
-      "description": "Swap current health with the enemy. If the enemy is at 10% or less max health afterward, execute them.",
+      "description": "Swap current health with the enemy. If the enemy is at 10% or less max health afterward, execute them. Resets recovery count to 0.",
       "limit": 3,
       "effect": {
         "type": "swap_health_and_execute",
@@ -215,12 +215,12 @@
   "edward_elric": {
     "id": "edward_elric",
     "name": "Edward Elric",
-    "metaPoints": 175,
+    "metaPoints": 145,
     "stats": {
       "health": 107,
       "maxHealth": 107,
       "attack": 32,
-      "defense": 16,
+      "defense": 14,
       "lifesteal": 0,
       "damageReduction": 0,
       "shield": 0,

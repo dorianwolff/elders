@@ -888,7 +888,7 @@
     "name": "Equivalent Exchange",
     "description": "Enter a stance for 2 enemy turns. When taking damage from an enemy skill, all players gain 1 Heat, then counter for 65% of damage taken, twice.",
     "type": "stance",
-    "cooldown": 1,
+    "cooldown": 2,
     "effect": {
       "type": "stance",
       "target": "self",

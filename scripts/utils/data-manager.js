@@ -29,6 +29,9 @@ class DataManager {
             return await this.encryptionManager.decrypt(encryptedData, this.encryptionKey);
         } catch (error) {
             console.error('Failed to load data:', error);
+            try {
+                localStorage.removeItem(this.storagePrefix + key);
+            } catch (e) {}
             return null;
         }
     }

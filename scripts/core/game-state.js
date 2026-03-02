@@ -292,15 +292,6 @@ class GameState {
         if (!player || !player.character) return;
         player.character.passiveProgress = this.initializePassiveProgress(player.character.passive);
         this.ensureUltimateProgressShape(player.character);
-
-        if (player.character.passiveState) {
-            if (typeof player.character.passiveState.totalHealingDone === 'number') {
-                player.character.passiveState.totalHealingDone = 0;
-            }
-            if (typeof player.character.passiveState.ultimateReady === 'boolean') {
-                player.character.passiveState.ultimateReady = false;
-            }
-        }
     }
 
     updatePassiveProgress(player, skill, result) {
