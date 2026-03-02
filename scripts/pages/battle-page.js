@@ -603,6 +603,27 @@ class BattlePage extends BasePage {
         return sprite ? sprite.closest('.battle-sprite') : null;
     }
 
+    getSpriteOverlayElementForSide(side) {
+        const id = side === 'player' ? 'player-sprite-overlay' : 'opponent-sprite-overlay';
+        const selector = `#${id}`;
+        const existing = this.querySelector(selector);
+        if (existing) return existing;
+
+        // Backward compatibility: if the battle page was mounted before we added overlay markup,
+        // create the overlay element on demand.
+        const wrapper = this.getSpriteWrapperForSide(side);
+        if (!wrapper) return null;
+
+        const overlay = document.createElement('img');
+        overlay.id = id;
+        overlay.className = 'battle-sprite-overlay';
+        overlay.alt = side === 'player' ? 'Player Overlay' : 'Opponent Overlay';
+        overlay.style.display = 'none';
+        overlay.src = '';
+        wrapper.appendChild(overlay);
+        return overlay;
+    }
+
     getHTML() {
         return `
             <div class="battle-page">
@@ -724,21 +745,25 @@ class BattlePage extends BasePage {
                         <h4>Skills</h4>
                         <div class="skills-grid">
                             <button class="skill-button" id="skill-0" data-skill-index="0">
+                                <div class="skill-cd-pill" id="skill-0-cd-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-0-name">Skill 1</div>
                                 <div class="skill-description" id="skill-0-description">Description</div>
                                 <div class="skill-cooldown" id="skill-0-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-1" data-skill-index="1">
+                                <div class="skill-cd-pill" id="skill-1-cd-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-1-name">Skill 2</div>
                                 <div class="skill-description" id="skill-1-description">Description</div>
                                 <div class="skill-cooldown" id="skill-1-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-2" data-skill-index="2" style="display: none;">
+                                <div class="skill-cd-pill" id="skill-2-cd-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-2-name">Skill 3</div>
                                 <div class="skill-description" id="skill-2-description">Description</div>
                                 <div class="skill-cooldown" id="skill-2-cooldown" style="display: none;"></div>
                             </button>
                             <button class="skill-button" id="skill-3" data-skill-index="3" style="display: none;">
+                                <div class="skill-cd-pill" id="skill-3-cd-tag" style="display: none;"></div>
                                 <div class="skill-name" id="skill-3-name">Skill 4</div>
                                 <div class="skill-description" id="skill-3-description">Description</div>
                                 <div class="skill-cooldown" id="skill-3-cooldown" style="display: none;"></div>
@@ -1478,6 +1503,18 @@ class BattlePage extends BasePage {
             const skillButton = this.querySelector(`#skill-${index}`);
             if (!skillButton) return;
 
+            // Always show the base/effective cooldown (pre-use) as a pill tag.
+            const cdTag = this.querySelector(`#skill-${index}-cd-tag`);
+            if (cdTag) {
+                const baseCd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
+                const bonus = (this.gameState?.skillSystem && typeof this.gameState.skillSystem.getEnemySkillCooldownBonus === 'function')
+                    ? Math.max(0, Math.floor(this.gameState.skillSystem.getEnemySkillCooldownBonus(this.gameCoordinator.currentPlayerRole)))
+                    : 0;
+                const effectiveCd = baseCd + bonus;
+                cdTag.textContent = bonus > 0 ? `CD ${effectiveCd} (+${bonus})` : `CD ${effectiveCd}`;
+                cdTag.style.display = '';
+            }
+
             const cooldownRemaining = this.gameCoordinator.getSkillCooldown(index);
             const isOnCooldown = cooldownRemaining > 0;
             const canUse = this.gameState.isYourTurn && this.gameCoordinator.canUseSkill(index);
@@ -1527,6 +1564,23 @@ class BattlePage extends BasePage {
         } catch (e) {}
 
         this.updateElement('#ultimate-description', desc);
+
+        {
+            const cdTag = this.querySelector('#ultimate-cd-tag');
+            const baseCd = Math.max(0, Math.floor(Number(ultimate?.cooldown) || 0));
+            if (cdTag) {
+                if (baseCd > 0) {
+                    const remaining = (this.gameState?.skillSystem && typeof this.gameState.skillSystem.getSkillCooldown === 'function')
+                        ? Math.max(0, Math.floor(this.gameState.skillSystem.getSkillCooldown({ id: ultimate.id }, this.gameCoordinator.currentPlayerRole)))
+                        : 0;
+                    cdTag.textContent = remaining > 0 ? `CD ${baseCd} (${remaining})` : `CD ${baseCd}`;
+                    cdTag.style.display = '';
+                } else {
+                    cdTag.textContent = '';
+                    cdTag.style.display = 'none';
+                }
+            }
+        }
         
         const ultimateButton = this.querySelector('#ultimate-button');
         ultimateButton.disabled = !canUse;
@@ -1762,9 +1816,12 @@ class BattlePage extends BasePage {
                 : (actorSide === 'player' ? this.gameState?.player?.character?.id : this.gameState?.opponent?.character?.id);
             const skillType = typeof actionResult.skillType === 'string' ? actionResult.skillType : null;
             const skillId = typeof actionResult.skillId === 'string' ? actionResult.skillId : null;
-            const adjustedActionResult = (window.BattleAnimations && typeof window.BattleAnimations.withCloseAttackCombatTextOffset === 'function')
+            const closeAdjustedActionResult = (window.BattleAnimations && typeof window.BattleAnimations.withCloseAttackCombatTextOffset === 'function')
                 ? window.BattleAnimations.withCloseAttackCombatTextOffset(actionResult, actorId, skillType, skillId)
                 : actionResult;
+            const adjustedActionResult = (window.BattleAnimations && typeof window.BattleAnimations.withRangedAttackCombatTextDelay === 'function')
+                ? window.BattleAnimations.withRangedAttackCombatTextDelay(closeAdjustedActionResult, actorId, skillId)
+                : closeAdjustedActionResult;
 
             // Prepare HP animation BEFORE updateUI() updates bar widths.
             this.pendingHealthAnimation = this.buildHealthAnimationFromCombatText(adjustedActionResult, newGameState);
@@ -1825,6 +1882,19 @@ class BattlePage extends BasePage {
                         if (window.BattleAnimations && typeof window.BattleAnimations.playCloseAttackAnimationForSide === 'function') {
                             window.BattleAnimations.playCloseAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId);
                         }
+                    }
+                }
+            } catch (e) {}
+
+            // Character-specific ranged attack animations (dual attacker + target overlay).
+            try {
+                if (actorId && skillId) {
+                    const actorChar = { id: actorId };
+                    const hasRanged = window.BattleAssets && typeof window.BattleAssets.getRangedAttackAnimationForCharacterSkill === 'function'
+                        ? Boolean(window.BattleAssets.getRangedAttackAnimationForCharacterSkill(actorChar, skillId))
+                        : false;
+                    if (hasRanged && window.BattleAnimations && typeof window.BattleAnimations.playRangedAttackAnimationForSide === 'function') {
+                        window.BattleAnimations.playRangedAttackAnimationForSide(this, adjustedActionResult, actorSide, actorId, skillId);
                     }
                 }
             } catch (e) {}
@@ -1952,6 +2022,48 @@ class BattlePage extends BasePage {
                 indicator.className = `effect-indicator stack-counter ${badge.className || ''}`.trim();
                 indicator.textContent = String(stacks);
                 indicator.title = `${badge.title || key}: ${stacks}`;
+
+                if (character?.id === 'frieren' && key === 'archivePages') {
+                    const pages = Array.isArray(character?.passiveState?.archivePages)
+                        ? character.passiveState.archivePages
+                        : [];
+
+                    {
+                        const counts = {
+                            stance: 0,
+                            utility: 0,
+                            attack: 0,
+                            debuff: 0,
+                            buff: 0,
+                            recovery: 0,
+                            ultimate: 0,
+                            domain: 0
+                        };
+                        for (const p of pages) {
+                            const t = typeof p === 'string' ? p : null;
+                            if (t && counts[t] !== undefined) counts[t] += 1;
+                        }
+
+                        const order = ['debuff', 'buff', 'attack', 'stance', 'utility', 'recovery', 'domain', 'ultimate'];
+                        const parts = [];
+                        for (const t of order) {
+                            const n = counts[t] || 0;
+                            if (n <= 0) continue;
+                            parts.push(`${n} ${t}`);
+                        }
+
+                        const total = pages.length;
+                        if (parts.length === 0) {
+                            indicator.title = '0 pages';
+                        } else if (parts.length === 1) {
+                            indicator.title = `${parts[0]} ${total === 1 ? 'page' : 'pages'}`;
+                        } else {
+                            const head = parts.slice(0, -1).join(', ');
+                            const tail = parts[parts.length - 1];
+                            indicator.title = `${head} and ${tail} ${total === 1 ? 'page' : 'pages'}`;
+                        }
+                    }
+                }
                 container.appendChild(indicator);
             }
         } else if (mission && mission.type === 'stack_threshold') {

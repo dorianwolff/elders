@@ -283,8 +283,45 @@ window.BattleAssets = {
         return null;
     },
 
+    getRangedAttackAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'frieren' && skillId === 'frieren_minor_utility') {
+            return {
+                attackerFrames: [
+                    'assets/animations/frieren/frieren_attack_range_1.png',
+                    'assets/animations/frieren/frieren_attack_range_2.png',
+                    'assets/animations/frieren/frieren_attack_range_3.png',
+                    'assets/animations/frieren/frieren_attack_range_4.png',
+                    'assets/animations/frieren/frieren_attack_range_5.png',
+                    'assets/animations/frieren/frieren_attack_range_6.png'
+                ],
+                targetOverlayFrames: [
+                    'assets/animations/light/light_1.png',
+                    'assets/animations/light/light_2.png',
+                    'assets/animations/light/light_3.png',
+                    'assets/animations/light/light_4.png',
+                    'assets/animations/light/light_5.png',
+                    'assets/animations/light/light_6.png'
+                ],
+                overlay: {
+                    bottomOffsetRatio: 0.1,
+                    opacity: 0.7
+                }
+            };
+        }
+        return null;
+    },
+
     getSkillPreviewAnimationFramesForCharacterSkill(character, skillId, skillType) {
         if (!character || !skillId) return null;
+
+        // Ranged attacks may include target overlay frames in battle; for previews, only show the attacker.
+        const ranged = (typeof this.getRangedAttackAnimationForCharacterSkill === 'function')
+            ? this.getRangedAttackAnimationForCharacterSkill(character, skillId)
+            : null;
+        if (ranged && Array.isArray(ranged.attackerFrames) && ranged.attackerFrames.length > 0) {
+            return ranged.attackerFrames;
+        }
 
         if (skillType === 'domain') {
             return this.getDomainAnimationForCharacterSkill(character, skillId);

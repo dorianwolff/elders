@@ -50,6 +50,37 @@
             };
         },
 
+        withRangedAttackCombatTextDelay(actionResult, actorCharacterId, skillId) {
+            if (!actionResult) return actionResult;
+            if (!actorCharacterId || !skillId) return actionResult;
+
+            const actorChar = actorCharacterId ? { id: actorCharacterId } : null;
+            const ranged = (window.BattleAssets && typeof window.BattleAssets.getRangedAttackAnimationForCharacterSkill === 'function')
+                ? window.BattleAssets.getRangedAttackAnimationForCharacterSkill(actorChar, skillId)
+                : null;
+            if (!ranged || !Array.isArray(ranged.attackerFrames) || ranged.attackerFrames.length < 3) return actionResult;
+
+            const frameMs = 120;
+            const startDamageMs = (3 - 1) * frameMs;
+
+            const animations = Array.isArray(actionResult.animations) ? actionResult.animations : null;
+            if (!animations || !animations.length) return actionResult;
+
+            const shifted = animations.map(a => {
+                if (!a || a.type !== 'combat_text') return a;
+                const d = Math.max(0, Math.floor(Number(a.delayMs) || 0));
+                return {
+                    ...a,
+                    delayMs: Math.max(d, startDamageMs)
+                };
+            });
+
+            return {
+                ...actionResult,
+                animations: shifted
+            };
+        },
+
         async playCloseAttackAnimationForSide(battlePage, actionResult, side, actorCharacterId, skillId) {
             const wrapper = battlePage.getSpriteWrapperForSide(side);
             if (!wrapper) return;
@@ -176,6 +207,73 @@
             wrapper.style.transition = originalTransition;
             wrapper.style.transform = originalTransform;
         }
+        ,
+
+        async playRangedAttackAnimationForSide(battlePage, actionResult, side, actorCharacterId, skillId) {
+            if (!battlePage || !actorCharacterId || !skillId) return;
+
+            const actorChar = { id: actorCharacterId };
+            const ranged = (window.BattleAssets && typeof window.BattleAssets.getRangedAttackAnimationForCharacterSkill === 'function')
+                ? window.BattleAssets.getRangedAttackAnimationForCharacterSkill(actorChar, skillId)
+                : null;
+            if (!ranged || !Array.isArray(ranged.attackerFrames) || ranged.attackerFrames.length === 0) return;
+
+            const enemySide = side === 'player' ? 'opponent' : 'player';
+            const actorSprite = (typeof battlePage.getSpriteElementForSide === 'function')
+                ? battlePage.getSpriteElementForSide(side)
+                : null;
+            const targetOverlay = (typeof battlePage.getSpriteOverlayElementForSide === 'function')
+                ? battlePage.getSpriteOverlayElementForSide(enemySide)
+                : null;
+
+            if (!actorSprite) return;
+
+            const overlayFrames = Array.isArray(ranged.targetOverlayFrames) ? ranged.targetOverlayFrames : [];
+            const overlayCfg = ranged.overlay || {};
+            const overlayOpacity = (typeof overlayCfg.opacity === 'number') ? overlayCfg.opacity : 1;
+            const bottomOffsetRatio = (typeof overlayCfg.bottomOffsetRatio === 'number') ? overlayCfg.bottomOffsetRatio : 0;
+
+            const sleep = async (ms) => {
+                const t = Math.max(0, Math.floor(Number(ms) || 0));
+                if (t > 0) await battlePage.sleep(t);
+            };
+
+            const frameMs = 120;
+            const endHoldMs = 160;
+            const totalFrames = Math.max(ranged.attackerFrames.length, overlayFrames.length);
+            const totalDurationMs = totalFrames * frameMs + endHoldMs;
+
+            battlePage.playSpriteOverride(side, [ranged.attackerFrames[0]], totalDurationMs, `ranged_${actorCharacterId}_${skillId}`);
+            actorSprite.src = ranged.attackerFrames[0];
+
+            if (targetOverlay && overlayFrames.length > 0) {
+                targetOverlay.style.display = '';
+                targetOverlay.style.opacity = String(Math.max(0, Math.min(1, overlayOpacity)));
+                targetOverlay.style.bottom = `${bottomOffsetRatio * 100}%`;
+                targetOverlay.src = overlayFrames[0];
+            }
+
+            for (let i = 1; i < totalFrames; i++) {
+                await sleep(frameMs);
+
+                const attackerFrame = ranged.attackerFrames[i] || ranged.attackerFrames[ranged.attackerFrames.length - 1];
+                battlePage.playSpriteOverride(side, [attackerFrame], totalDurationMs - (i * frameMs), `ranged_${actorCharacterId}_${skillId}_${i}`);
+                actorSprite.src = attackerFrame;
+
+                if (targetOverlay && overlayFrames.length > 0) {
+                    const overlayFrame = overlayFrames[i] || overlayFrames[overlayFrames.length - 1];
+                    targetOverlay.src = overlayFrame;
+                }
+            }
+
+            await sleep(endHoldMs);
+
+            if (targetOverlay) {
+                targetOverlay.style.display = 'none';
+                targetOverlay.src = '';
+            }
+        }
+
         ,
 
         async playDomainSkillAnimationForSide(battlePage, side, actorCharacterId, skillId) {
