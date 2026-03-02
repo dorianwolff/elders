@@ -82,11 +82,11 @@
     },
     "images": ["trafalgar_law.webp"],
     "passiveId": "room_surgeon",
-    "skillIds": ["room_incision", "takt_breaker", "shambles_aid", "room_domain"],
+    "skillIds": ["room_incision", "takt_breaker", "shambles_precision", "room_domain"],
     "ultimate": {
       "id": "shambles",
       "name": "Shambles",
-      "description": "Swap current health with the enemy. If the enemy is at 10% or less max health afterward, execute them. Resets recovery count to 0.",
+      "description": "Swap health with enemy. If the enemy's health is reduced to 0, execute them.",
       "limit": 3,
       "effect": {
         "type": "swap_health_and_execute",

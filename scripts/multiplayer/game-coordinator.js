@@ -11,6 +11,34 @@ class GameCoordinator {
         this.characterSystem = new CharacterSystem();
         this.battleStartTime = null;
         this.lastActionResult = null;
+
+        this.battlePageReady = false;
+        this.pendingUiUpdates = [];
+    }
+
+    flushPendingUiUpdates() {
+        if (!this.battlePageReady) return;
+        if (!Array.isArray(this.pendingUiUpdates) || this.pendingUiUpdates.length === 0) return;
+
+        const queued = this.pendingUiUpdates.slice();
+        this.pendingUiUpdates.length = 0;
+        for (const item of queued) {
+            try {
+                this._updateGameUIImmediate(item.result);
+            } catch (e) {
+                console.warn('Failed to flush queued UI update:', e);
+            }
+        }
+    }
+
+    _updateGameUIImmediate(result) {
+        if (window.app && window.app.router) {
+            const currentPage = window.app.router.getCurrentPage();
+            if (currentPage && typeof currentPage.updateGameState === 'function') {
+                const gameStateForPlayer = this.gameState.getGameStateForPlayer(this.currentPlayerRole);
+                currentPage.updateGameState(gameStateForPlayer, result);
+            }
+        }
     }
 
     async init() {
@@ -312,26 +340,31 @@ class GameCoordinator {
     }
 
     updateGameUI(result) {
-        // This will be called by the battle page to update the UI
-        if (window.app && window.app.router) {
-            const currentPage = window.app.router.getCurrentPage();
-            if (currentPage && typeof currentPage.updateGameState === 'function') {
-                const gameStateForPlayer = this.gameState.getGameStateForPlayer(this.currentPlayerRole);
-                currentPage.updateGameState(gameStateForPlayer, result);
+        // If an action arrives before the battle page is ready, queue it.
+        if (!this.battlePageReady) {
+            if (Array.isArray(this.pendingUiUpdates)) {
+                this.pendingUiUpdates.push({ result });
             }
+            return;
         }
+
+        this._updateGameUIImmediate(result);
     }
 
     notifyGameStarted(gameState) {
         // Navigate to battle page and pass game state
         if (window.app && window.app.router) {
+            this.battlePageReady = false;
             window.app.router.navigateTo('battle');
             
             // Wait a bit for the page to load, then update it
             setTimeout(() => {
                 const currentPage = window.app.router.getCurrentPage();
                 if (currentPage && typeof currentPage.initializeGame === 'function') {
-                    currentPage.initializeGame(gameState);
+                    Promise.resolve(currentPage.initializeGame(gameState)).finally(() => {
+                        this.battlePageReady = true;
+                        this.flushPendingUiUpdates();
+                    });
                 }
             }, 100);
         }

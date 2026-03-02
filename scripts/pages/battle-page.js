@@ -21,6 +21,7 @@ class BattlePage extends BasePage {
         this.pendingHealthAnimation = null;
         this.healOverlayAnimating = { player: false, opponent: false };
         this.presentationQueue = Promise.resolve();
+        this._skipToggleBound = false;
 
         this.spriteAnimation = {
             intervalId: null,
@@ -335,6 +336,9 @@ class BattlePage extends BasePage {
 
         this.healOverlayAnimating[side] = true;
         try {
+            // Keep the red damage shadow pinned to the current HP during healing so it doesn't look like damage is "growing".
+            this.setShadowHealthPercent(side, start, false);
+
             // Immediately show overlay at the final (healed) HP.
             this.setHealHealthPercent(side, target, false);
             this.showHealOverlay(side, false);
@@ -348,9 +352,11 @@ class BattlePage extends BasePage {
                 greenEl.style.width = `${target}%`;
             }
             this.displayedHealthPercent[side] = target;
+
+            // Once the green bar has caught up, snap the red shadow to the final value.
+            await this.sleep(540);
             this.setShadowHealthPercent(side, target, false);
 
-            await this.sleep(560);
             this.hideHealOverlay(side, true, 0);
             await this.sleep(280);
         } finally {
@@ -775,6 +781,19 @@ class BattlePage extends BasePage {
         this.addEventListener('#ultimate-button', 'click', this.useUltimate.bind(this));
         this.addEventListener('#skip-animations-button', 'click', () => this.toggleSkipAnimations());
         this.addEventListener('#surrender-button', 'click', () => this.surrender());
+
+        if (this.container && !this._skipToggleBound) {
+            this._skipToggleBound = true;
+            this.container.addEventListener('click', (e) => {
+                const t = e && e.target;
+                if (!t || !t.closest) return;
+                const btn = t.closest('#skip-animations-button');
+                if (!btn) return;
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleSkipAnimations();
+            }, true);
+        }
         
         // Add tooltip event listeners for character images
         this.addEventListener('#player-image', 'click', (e) => this.showPlayerTooltip(e));
@@ -830,11 +849,16 @@ class BattlePage extends BasePage {
         this.gameState = gameState;
         this.isInitialized = true;
         
+        // Prevent acting during the short window where multiplayer UI/state can still be settling.
+        this.disableAllActions();
+        
         // Initialize stat display system only if skillSystem exists
         if (gameState && gameState.skillSystem) {
             this.statDisplay = new StatDisplay(gameState.skillSystem);
             this.characterTooltip = new CharacterTooltip(gameState.skillSystem);
         }
+        
+        this.setupEventListeners();
         
         this.updateUI();
         this.startIdleSpriteAnimation();
@@ -846,6 +870,10 @@ class BattlePage extends BasePage {
         }
         
         console.log('Battle page initialized with game state:', gameState);
+
+        // Re-enable actions only after initial UI is painted.
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        this.enableActionsIfYourTurn();
     }
 
     renderCombatTextAnimations(actionResult) {
@@ -877,6 +905,7 @@ class BattlePage extends BasePage {
         if (!this.gameState) return;
 
         this.applyArenaBackgroundIfNeeded();
+        this.setSkipAnimations(this.skipAnimations);
         this.updateTurnIndicator();
         this.updateDomainIndicator();
         this.updateCharacterInfo();
@@ -1367,7 +1396,7 @@ class BattlePage extends BasePage {
                         } else if (archiveLastType === 'ultimate') {
                             tail = 'deal True Damage instead and recover 50% of damage dealt.';
                         } else if (archiveLastType === 'stance') {
-                            tail = "remove the enemy's Stance.";
+                            tail = "ignore the enemy's Stance.";
                         } else if (archiveLastType === 'domain') {
                             tail = 'deploy a Domain (+3 attack to you and -3 attack to the enemy for 2 turns).';
                         } else {
@@ -1387,7 +1416,7 @@ class BattlePage extends BasePage {
                     } else if (t === 'ultimate') {
                         desc = 'Add 1 ultimate Page and deal 75% of attack as True Damage, then recover 50% of damage dealt.';
                     } else if (t === 'stance') {
-                        desc = "Add 1 stance Page and remove the enemy's Stance.";
+                        desc = "Add 1 stance Page and ignore the enemy's Stance on your next hit.";
                     } else if (t === 'domain') {
                         desc = 'Add 1 domain Page and deploy a Domain (+3 attack to you and -3 attack to the enemy for 2 turns).';
                     } else {
@@ -1710,6 +1739,10 @@ class BattlePage extends BasePage {
         this.disableElement('#skill-2');
         this.disableElement('#skill-3');
         this.disableElement('#ultimate-button');
+
+        // Skip is a UI preference toggle, not a gameplay action.
+        // Keep it clickable even while actions are locked.
+        this.enableElement('#skip-animations-button');
     }
 
     enableActionsIfYourTurn() {

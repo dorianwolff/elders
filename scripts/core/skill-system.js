@@ -733,8 +733,6 @@ class SkillSystem {
         }
         try {
 
-        console.log(`applySkillEffect: type=${effect.type}, caster=${caster.name}, target=${target.name}, playerId=${playerId}`);
-
         const opponentId = playerId === 'player1' ? 'player2' : 'player1';
         const targetPlayerId = target === caster ? playerId : opponentId;
 
@@ -1003,6 +1001,12 @@ class SkillSystem {
                     const enemyChar = target === caster ? caster : target;
 
                     const executeOnce = async () => {
+                        const ctx = this.getActiveActionContext();
+                        const prevIgnore = ctx ? Boolean(ctx.ignoreTargetStance) : false;
+                        if (ctx && lastType === 'stance') {
+                            // Frieren stance page: ignore enemy stance for this attack (do NOT remove stance).
+                            ctx.ignoreTargetStance = true;
+                        }
                         {
                             const baseScaling = effect.base_damage_scaling || 'attack';
                             const baseValue = effect.base_damage_value !== undefined ? effect.base_damage_value : 0.75;
@@ -1035,15 +1039,17 @@ class SkillSystem {
                             }
                         }
 
+                        if (ctx) {
+                            ctx.ignoreTargetStance = prevIgnore;
+                        }
+
                         if (lastType === 'ultimate') {
                             return;
                         }
 
                         if (lastType === 'stance') {
-                            const removed = this.removeStanceEffects(enemyId);
-                            if (removed > 0) {
-                                result.effects.push('Stance Broken');
-                            }
+                            // Frieren stance page: ignore stance on the attack above; do not remove stance.
+                            result.effects.push('Stance Ignored');
                             return;
                         }
 
@@ -1154,10 +1160,11 @@ class SkillSystem {
                     }
 
                     if (pageType === 'stance') {
-                        const removed = this.removeStanceEffects(enemyId);
-                        if (removed > 0) {
-                            result.effects.push('Stance Broken');
+                        // Frieren stance page: do not remove stance; the next damaging hit ignores stance.
+                        if (player && player.character && player.character.passiveState) {
+                            player.character.passiveState.ignoreTargetStanceNextHit = true;
                         }
+                        result.effects.push('Stance Ignored');
                         break;
                     }
 
@@ -1310,6 +1317,14 @@ class SkillSystem {
                         break;
                     }
 
+                    // If any replay uses the stance page, the entire ultimate ignores stance on all casts.
+                    const ctx = this.getActiveActionContext();
+                    const barrageIgnoreStance = pages.includes('stance');
+                    const prevIgnore = ctx ? Boolean(ctx.ignoreTargetStance) : false;
+                    if (ctx && barrageIgnoreStance) {
+                        ctx.ignoreTargetStance = true;
+                    }
+
                     const executeMinorOnceNoCopycat = async (pageType) => {
                         const isUltimatePage = pageType === 'ultimate';
                         const baseIntended = isUltimatePage
@@ -1332,10 +1347,8 @@ class SkillSystem {
 
                         if (pageType === 'ultimate') return result;
                         if (pageType === 'stance') {
-                            const removed = this.removeStanceEffects(enemyId);
-                            if (removed > 0) {
-                                result.effects.push('Stance Broken');
-                            }
+                            // Stance page does not remove stance; stance ignore is handled at the action-context level.
+                            result.effects.push('Stance Ignored');
                             return result;
                         }
 
@@ -1377,6 +1390,10 @@ class SkillSystem {
 
                     for (const pageType of pages) {
                         await executeMinorOnceNoCopycat(pageType);
+                    }
+
+                    if (ctx && barrageIgnoreStance) {
+                        ctx.ignoreTargetStance = prevIgnore;
                     }
 
                     result.effects.push('Archive Barrage');
@@ -1490,6 +1507,30 @@ class SkillSystem {
                 const damageTargetId = target === caster ? playerId : (playerId === 'player1' ? 'player2' : 'player1');
                 result.damage = await this.applyDamage(target, result.damage, damageTargetId, playerId);
                 await this.applyProcDamageIfAny(caster, target, playerId, damageTargetId, result, override, 'damage');
+                break;
+
+            case 'damage_remove_stance_true_if_removed':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+                    const removed = this.removeStanceEffects(targetId);
+
+                    // True damage should ignore defense during calculation.
+                    // calculateDamage() includes defense mitigation, so for the true-damage branch we
+                    // compute from raw scaling instead.
+                    const atk = Math.max(0, Math.floor(Number(caster?.stats?.attack) || 0));
+                    const ratio = Number(effect.value);
+                    const rawRatio = Number.isFinite(ratio) ? ratio : 0;
+
+                    const intended = removed > 0
+                        ? Math.max(0, Math.floor(atk * rawRatio))
+                        : this.calculateDamage(effect, caster, target);
+                    if (intended > 0) {
+                        result.damage = removed > 0
+                            ? await this.applyTrueDamage(target, intended, targetId, playerId)
+                            : await this.applyDamage(target, intended, targetId, playerId);
+                    }
+                }
                 break;
 
             case 'damage_and_heat':
@@ -2489,6 +2530,23 @@ class SkillSystem {
         const oldHealth = Number(target.stats.health) || 0;
         let _deathChecked = false;
 
+        // Frieren: stance page sets a one-time "ignore stance on next hit" flag.
+        // Convert it into an action-context flag for this damage instance.
+        try {
+            const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+            const ctx = this.getActiveActionContext();
+            if (ctx && attackerId) {
+                const attacker = this.getPlayerById(attackerId);
+                const state = attacker?.character?.passiveState;
+                if (state && state.ignoreTargetStanceNextHit) {
+                    state.ignoreTargetStanceNextHit = false;
+                    ctx.ignoreTargetStance = true;
+                }
+            }
+        } catch (e) {
+            // no-op
+        }
+
         console.log(`💥 DAMAGE APPLIED: Dealing ${finalDamage} damage to ${target.name}`);
 
         let remaining = finalDamage;
@@ -2565,6 +2623,11 @@ class SkillSystem {
                     ctx._damageTakenByTarget = {};
                 }
                 ctx._damageTakenByTarget[playerId] = (Number(ctx._damageTakenByTarget[playerId]) || 0) + remaining;
+            }
+
+            // Frieren stance ignore: suppress stance reactions for this attack without removing stance.
+            if (isEnemySkillDamage && ctx && ctx.ignoreTargetStance) {
+                return remaining;
             }
 
             if (isEnemySkillDamage) {
@@ -3006,7 +3069,7 @@ class SkillSystem {
         return Math.max(1, Math.ceil(baseHealing));
     }
 
-    async applyDamage(target, damage, playerId, attackerIdOverride = undefined) {
+    async applyDamage(target, damage, playerId, attackerIdOverride) {
         if (this.isDomainActive()) {
             // Under domain, damage becomes healing
             return await this.applyHealingNoDomain(target, damage, playerId);
@@ -3576,6 +3639,15 @@ class SkillSystem {
                     await this.applyDebuff(target, effect.debuff, debuffOpponentId);
                 }
                 break;
+
+            case 'damage_remove_stance_true_if_removed':
+                {
+                    // Sync only the stance removal; damage is authoritative.
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+                    this.removeStanceEffects(targetId);
+                }
+                break;
                 
             case 'damage_with_stun':
                 // Sync only the stun effect, not the damage
@@ -3697,7 +3769,7 @@ class SkillSystem {
                             continue;
                         }
                         if (pageType === 'stance') {
-                            this.removeStanceEffects(opponentId);
+                            // Frieren stance page does not remove stance; stance ignore is applied during the authoritative damage resolution.
                             continue;
                         }
                         if (pageType === 'attack') {

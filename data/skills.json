@@ -609,22 +609,17 @@
       "enemy_skill_cooldown_bonus": 1
     }
   },
-  "shambles_aid": {
-    "id": "shambles_aid",
-    "name": "Shambles Aid",
-    "description": "Deal 90% attack damage and inflict Bleed on enemy for 3 turns",
-    "type": "debuff",
+  "shambles_precision": {
+    "id": "shambles_precision",
+    "name": "Shambles Precision",
+    "description": "Remove the enemy's stance and deal 75% of attack as damage. If a stance was removed, this damage is true damage.",
+    "type": "attack",
     "cooldown": 1,
     "effect": {
-      "type": "damage_and_debuff",
+      "type": "damage_remove_stance_true_if_removed",
       "target": "enemy",
-      "value": 0.9,
-      "scaling": "attack",
-      "debuff": {
-        "type": "bleed",
-        "duration": 3,
-        "damage_amp": 0.5
-      }
+      "value": 0.75,
+      "scaling": "attack"
     }
   },
   "slap": {
