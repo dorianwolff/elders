@@ -348,7 +348,7 @@
     },
     "images": ["chen.png"],
     "passiveId": "chen_melee_cooldown_master",
-    "skillIds": ["chen_dragon_strike", "chen_tactical_reduction"],
+    "skillIds": ["chen_dragon_strike", "chen_piercing_assault", "chen_tactical_reduction"],
     "ultimate": {
       "id": "chen_crimson_ult",
       "name": "Crimson Unsheath",

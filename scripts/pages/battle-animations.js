@@ -104,7 +104,7 @@
             // - teleport in front (still attack_1)
             // - teleport closer with attack_2
             // - teleport back and show end frame
-            if (actorChar && actorChar.id === 'chen' && skillId === 'chen_dragon_strike') {
+            if (actorChar && actorChar.id === 'chen' && (skillId === 'chen_dragon_strike' || skillId === 'chen_piercing_assault')) {
                 const originalTransform = wrapper.style.transform;
                 const originalTransition = wrapper.style.transition;
 

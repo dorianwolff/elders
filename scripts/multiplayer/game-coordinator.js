@@ -1,16 +1,17 @@
 class GameCoordinator {
     constructor() {
-        this.wsManager = new WebSocketManager();
+        this.wsManager = (typeof WebSocketManager === 'function') ? new WebSocketManager() : null;
         this.pairingManager = null;
         this.playerOne = null;
         this.playerTwo = null;
         this.gameState = null;
-        this.currentPlayerRole = null; // 'player1' or 'player2'
-        this.gameId = null;
         this.isGameActive = false;
         this.characterSystem = new CharacterSystem();
         this.battleStartTime = null;
         this.lastActionResult = null;
+
+        this._pendingGameEndWinner = null;
+        this._gameEndNavigationStarted = false;
 
         this._lastSyncActionId = null;
 
@@ -47,22 +48,21 @@ class GameCoordinator {
 
     async init() {
         try {
-            // Try to initialize WebSocket connection
+            if (!this.wsManager && typeof WebSocketManager === 'function') {
+                this.wsManager = new WebSocketManager();
+            }
+
             try {
                 await this.wsManager.connect();
                 console.log('WebSocket connection established');
                 
-                // Initialize pairing manager
                 this.pairingManager = new PairingManager(this.wsManager);
                 
-                // Set up game-related message handlers
                 this.setupGameMessageHandlers();
             } catch (wsError) {
                 console.warn('WebSocket connection failed, running in offline mode:', wsError.message);
-                // Continue without WebSocket - the game can still work for local testing
             }
             
-            // Initialize player instances (these work regardless of WebSocket status)
             this.playerOne = new PlayerOne(this);
             this.playerTwo = new PlayerTwo(this);
             
@@ -76,7 +76,6 @@ class GameCoordinator {
     setupGameMessageHandlers() {
         this.wsManager.onMessage('game_started', this.handleGameStarted.bind(this));
         this.wsManager.onMessage('sync_action', this.handleSyncAction.bind(this));
-        // Backward compatibility with older servers
         this.wsManager.onMessage('opponent_action', this.handleOpponentAction.bind(this));
         this.wsManager.onMessage('game_ended', this.handleGameEnded.bind(this));
         this.wsManager.onMessage('opponent_disconnected', this.handleOpponentDisconnected.bind(this));
@@ -111,17 +110,12 @@ class GameCoordinator {
                 this._pendingLocalSyncFallbacks.delete(clientActionId);
             }
 
-            // De-dupe (server broadcasts to both clients; reconnects can re-deliver)
             const dedupeId = clientActionId || actionId;
             if (dedupeId && this._lastSyncActionId === dedupeId) return;
             if (dedupeId) this._lastSyncActionId = dedupeId;
 
-            // Ensure both clients start presentation at the same time.
             await this._sleepUntilStartAt(startAt);
 
-            // Apply results: if I'm the actor, state is already applied locally by useSkill/useUltimate.
-            // Always prefer the authoritative snapshot (if present) so BOTH clients converge
-            // before starting animations.
             const iAmActor = playerId === this.currentPlayerRole;
             const result = actionData && actionData.result ? actionData.result : null;
 
@@ -136,6 +130,7 @@ class GameCoordinator {
                 );
             }
 
+            const syncActionKey = clientActionId || actionId || null;
             const resultWithActionInfo = {
                 ...(result || {}),
                 actionType,
@@ -145,12 +140,16 @@ class GameCoordinator {
                 skillName: actionData?.skillName,
                 ultimateName: actionData?.ultimateName,
                 actorCharacterId: actionData?.actorCharacterId,
-                _actionSource: iAmActor ? 'local' : 'opponent'
+                _actionSource: iAmActor ? 'local' : 'opponent',
+                _syncActionKey: syncActionKey
             };
 
-            // Update UI at the synchronized start time. This is what triggers animations in BattlePage.
             this.updateGameUI(resultWithActionInfo);
             this.lastActionResult = resultWithActionInfo;
+
+            if (this._pendingGameEndWinner) {
+                this._pendingGameEndWinner = null;
+            }
 
             if (resultWithActionInfo && resultWithActionInfo.gameEnded) {
                 await this.handleGameEnd(resultWithActionInfo.winner);
@@ -204,16 +203,16 @@ class GameCoordinator {
         try {
             this.isGameActive = true;
             this.battleStartTime = Date.now();
+            this._pendingGameEndWinner = null;
+            this._gameEndNavigationStarted = false;
+            this.lastActionResult = null;
+            this._lastSyncActionId = null;
+            this.battlePageReady = false;
+            if (Array.isArray(this.pendingUiUpdates)) this.pendingUiUpdates.length = 0;
             
-            // Initialize game state
             this.gameState = new GameState();
-            // Provide access to character templates for runtime transformations
             this.gameState.characterSystem = this.characterSystem;
             this.gameState.skillSystem.characterSystem = this.characterSystem;
-
-            // The local client must be authoritative for its own selected kit (2-of-N skills).
-            // Some servers may send a canonical template character; if we accept it verbatim,
-            // the battle UI will show the full kit and transforms will preserve the wrong palette.
             try {
                 const selected = this.pairingManager && this.pairingManager.selectedCharacter
                     ? this.pairingManager.selectedCharacter
@@ -252,7 +251,6 @@ class GameCoordinator {
 
             console.log('Game started successfully');
             
-            // Notify the UI that the game has started
             this.notifyGameStarted(this.gameState.getGameStateForPlayer(this.currentPlayerRole));
             
         } catch (error) {
@@ -276,7 +274,6 @@ class GameCoordinator {
                     : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
                 const startAt = Date.now() + 120;
 
-                // Send action to server; server will broadcast a sync_action to both clients.
                 await this.wsManager.send('player_action', {
                     gameId: this.gameId,
                     playerId,
@@ -286,8 +283,6 @@ class GameCoordinator {
                     startAt
                 });
 
-                // Do NOT update UI immediately.
-                // Wait for server sync_action so both clients call animations at the same time.
                 this.lastActionResult = {
                     ...actionData.result,
                     actionType,
@@ -298,8 +293,6 @@ class GameCoordinator {
                     _actionSource: 'local'
                 };
 
-                // Fallback: if server doesn't support sync_action yet, still update local UI.
-                // This timeout is cancelled when a matching sync_action (clientActionId) arrives.
                 const fallbackResultWithActionInfo = {
                     ...actionData.result,
                     actionType,
@@ -313,19 +306,14 @@ class GameCoordinator {
                 };
 
                 const timeoutId = setTimeout(() => {
-                    // If we still haven't received the authoritative sync_action, run local UI update.
                     if (this._pendingLocalSyncFallbacks && this._pendingLocalSyncFallbacks.has(clientActionId)) {
                         this._pendingLocalSyncFallbacks.delete(clientActionId);
-                        try {
-                            console.log('[sync_action] fallback firing', { clientActionId, playerId, actionType });
-                        } catch (e) {}
                         this.updateGameUI(fallbackResultWithActionInfo);
                     }
                 }, Math.max(0, startAt - Date.now()));
 
                 this._pendingLocalSyncFallbacks.set(clientActionId, timeoutId);
             } else {
-                // Offline mode / no server: behave like the old flow and update immediately.
                 const resultWithActionInfo = {
                     ...actionData.result,
                     actionType,
@@ -358,11 +346,8 @@ class GameCoordinator {
         try {
             const { actionType, actionData } = message;
             
-            // Use the result calculated by the acting player (SINGLE SOURCE OF TRUTH)
-            // Don't re-execute the skill - just apply the effects to local state
             const result = actionData.result;
             
-            // Apply the pre-calculated effects to our local game state
             await this.gameState.applyOpponentActionResult(
                 message.playerId,
                 actionType,
@@ -370,7 +355,6 @@ class GameCoordinator {
                 result
             );
 
-            // Update UI IMMEDIATELY with action details
             const resultWithActionInfo = {
                 ...result,
                 actionType,
@@ -386,7 +370,6 @@ class GameCoordinator {
 
             this.lastActionResult = resultWithActionInfo;
 
-            // Trigger animations INDEPENDENTLY (non-blocking)
             this.playOpponentActionAnimation(actionType, actionData, result); // No await!
 
             // Check if game ended
@@ -402,12 +385,8 @@ class GameCoordinator {
     async playOpponentActionAnimation(actionType, actionData, result) {
         const currentPlayer = this.currentPlayerRole === 'player1' ? this.playerOne : this.playerTwo;
 
-        // Log the opponent's action instead of trying to animate it
-        // (since we don't have the opponent's character data in our player instances)
         console.log(`Opponent used ${actionType}:`, actionData);
 
-        // NOTE: State changes (HP/shield/counters/effects) are applied from authoritative snapshots.
-        // Avoid mutating state again here.
     }
 
     async useSkill(skillIndex) {
@@ -500,14 +479,14 @@ class GameCoordinator {
     }
 
     async handleGameEnd(winner) {
+        if (this._gameEndNavigationStarted) {
+            return;
+        }
+        this._gameEndNavigationStarted = true;
         this.isGameActive = false;
         
         console.log('Game ended. Winner:', winner);
 
-        // Per-client presentation timing:
-        // - If this client is watching an ultimate (skipAnimations off), wait for video end
-        // - Ensure combat text has time to appear before navigating
-        // This allows one client to finish early while the other is still in the ultimate.
         if (window.app && window.app.router) {
             const currentPage = window.app.router.getCurrentPage();
             if (currentPage && typeof currentPage.waitForGameEndPresentation === 'function') {
@@ -554,7 +533,38 @@ class GameCoordinator {
     }
 
     async handleGameEnded(message) {
-        await this.handleGameEnd(message.winner);
+        const winner = message && message.winner ? message.winner : null;
+        if (!winner) return;
+
+        if (this.lastActionResult && this.lastActionResult.gameEnded) {
+            let hasPresentationScheduled = false;
+            let presentationKeyMatches = false;
+            try {
+                const currentPage = window.app && window.app.router ? window.app.router.getCurrentPage() : null;
+                const expectedKey = this.lastActionResult ? this.lastActionResult._syncActionKey : null;
+                const pageKey = currentPage ? currentPage.pendingActionPresentationKey : null;
+                presentationKeyMatches = Boolean(expectedKey && pageKey && expectedKey === pageKey);
+                hasPresentationScheduled = Boolean(
+                    currentPage && (currentPage.pendingActionPresentation || currentPage.pendingCombatTextPresentation)
+                );
+            } catch (e) {}
+
+            if (hasPresentationScheduled && presentationKeyMatches) {
+                await this.handleGameEnd(winner);
+                return;
+            }
+        }
+
+        this._pendingGameEndWinner = winner;
+
+        setTimeout(() => {
+            try {
+                if (this._gameEndNavigationStarted) return;
+                if (!this._pendingGameEndWinner) return;
+                this.handleGameEnd(this._pendingGameEndWinner);
+                this._pendingGameEndWinner = null;
+            } catch (e) {}
+        }, 1600);
     }
 
     async handleOpponentDisconnected(message) {

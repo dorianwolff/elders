@@ -860,6 +860,39 @@ class SkillSystem {
                 }
                 break;
 
+            case 'chen_piercing_assault':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+
+                    const threshold = Math.max(0, Math.floor(Number(effect.shield_break_if_other_skill_stacks_at_least) || 0));
+                    const stackIds = Array.isArray(effect.stack_skill_ids) ? effect.stack_skill_ids : [];
+                    let shouldBreakShield = false;
+                    if (threshold > 0 && stackIds.length > 0) {
+                        for (const sid of stackIds) {
+                            if (!sid) continue;
+                            const stacks = this.getCooldownReductionStacksForSkill(playerId, sid);
+                            if (stacks >= threshold) {
+                                shouldBreakShield = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (shouldBreakShield && target && target.stats && (Number(target.stats.shield) || 0) > 0) {
+                        target.stats.shield = 0;
+                        target.stats.maxShield = 0;
+                        result.effects.push('Shield Broken');
+                    }
+
+                    const ratio = Math.max(0, Number(effect.damage_percent) || 0);
+                    const intended = this.calculateDamage({ scaling: 'attack', value: ratio }, caster, target);
+                    if (intended > 0) {
+                        result.damage = await this.applyDamage(target, intended, targetId, playerId);
+                    }
+                }
+                break;
+
             case 'true_damage_and_apply_cdr_random_other':
                 {
                     const opponentId = playerId === 'player1' ? 'player2' : 'player1';
@@ -3749,6 +3782,33 @@ class SkillSystem {
         const effect = skill.effect;
         
         switch (effect.type) {
+            case 'chen_piercing_assault':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = target === caster ? playerId : opponentId;
+                    if (targetId === playerId) break;
+
+                    const threshold = Math.max(0, Math.floor(Number(effect.shield_break_if_other_skill_stacks_at_least) || 0));
+                    const stackIds = Array.isArray(effect.stack_skill_ids) ? effect.stack_skill_ids : [];
+                    let shouldBreakShield = false;
+                    if (threshold > 0 && stackIds.length > 0) {
+                        for (const sid of stackIds) {
+                            if (!sid) continue;
+                            const stacks = this.getCooldownReductionStacksForSkill(playerId, sid);
+                            if (stacks >= threshold) {
+                                shouldBreakShield = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (shouldBreakShield && target && target.stats && (Number(target.stats.shield) || 0) > 0) {
+                        target.stats.shield = 0;
+                        target.stats.maxShield = 0;
+                    }
+                }
+                break;
+
             case 'true_damage_and_apply_cdr_random_other':
                 {
                     // Sync only the cooldown reduction targeting; damage is pre-calculated.

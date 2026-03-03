@@ -754,6 +754,20 @@
       "reset_stacks_on_use": true
     }
   },
+  "chen_piercing_assault": {
+    "id": "chen_piercing_assault",
+    "name": "Piercing Assault",
+    "description": "Deal 95% of attack as damage. If another one of your skills has at least 3 cooldown reduction stacks, remove enemy shield before dealing damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "chen_piercing_assault",
+      "target": "enemy",
+      "damage_percent": 0.95,
+      "shield_break_if_other_skill_stacks_at_least": 3,
+      "stack_skill_ids": ["chen_dragon_strike", "chen_crimson_ult"]
+    }
+  },
   "chen_tactical_reduction": {
     "id": "chen_tactical_reduction",
     "name": "Tactical Reduction",

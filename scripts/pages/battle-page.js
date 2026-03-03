@@ -15,6 +15,8 @@ class BattlePage extends BasePage {
         this.skipAnimations = false;
         this.floatingCombatText = null;
         this.pendingCombatTextPresentation = null;
+        this.pendingActionPresentation = null;
+        this.pendingActionPresentationKey = null;
         this.lastHealthPercent = { player: null, opponent: null };
         this.pendingHealthLoss = { player: null, opponent: null };
         this.displayedHealthPercent = { player: null, opponent: null };
@@ -22,6 +24,7 @@ class BattlePage extends BasePage {
         this.healOverlayAnimating = { player: false, opponent: false };
         this.presentationQueue = Promise.resolve();
         this._skipToggleBound = false;
+        this._eventListenersBound = false;
 
         this.spriteAnimation = {
             intervalId: null,
@@ -429,12 +432,20 @@ class BattlePage extends BasePage {
         const needsUltimateWait = this.getActionPresentationDelayMs(actionResult) === null;
         const waitPromise = needsUltimateWait ? (this.ultimateOverlayDonePromise || Promise.resolve()) : Promise.resolve();
 
+        let maxDelayMs = 0;
+        for (const anim of animations) {
+            if (!anim || anim.type !== 'combat_text') continue;
+            const delay = Math.max(0, Math.floor(Number(anim.delayMs) || 0));
+            if (delay > maxDelayMs) maxDelayMs = delay;
+        }
+        const totalCombatTextMs = maxDelayMs + this.getCombatTextDurationMs();
+
         const run = () => waitPromise.then(async () => {
             this.renderCombatTextAnimations(actionResult);
 
             await Promise.all([
                 this.playHealthAnimation(capturedHealthAnim),
-                this.sleep(this.getCombatTextDurationMs())
+                this.sleep(totalCombatTextMs)
             ]);
 
             // Some actions can change HP without producing combat_text steps (e.g., swap health).
@@ -473,18 +484,56 @@ class BattlePage extends BasePage {
         return queued;
     }
 
+    getEstimatedCombatTextPresentationMs(actionResult) {
+        if (!actionResult) return 0;
+        const animations = Array.isArray(actionResult.animations) ? actionResult.animations : [];
+        let maxDelay = 0;
+        for (const a of animations) {
+            if (!a || a.type !== 'combat_text') continue;
+            const d = Math.max(0, Math.floor(Number(a.delayMs) || 0));
+            if (d > maxDelay) maxDelay = d;
+        }
+        const base = (typeof this.getCombatTextDurationMs === 'function')
+            ? Math.max(0, Math.floor(this.getCombatTextDurationMs() || 0))
+            : 0;
+        // Add a small buffer for layout/paint.
+        return maxDelay + base + 120;
+    }
+
     async waitForGameEndPresentation(actionResult) {
         if (!actionResult) return;
         if (actionResult.actionType === 'ultimate' && !this.skipAnimations) {
             await (this.ultimateOverlayDonePromise || Promise.resolve());
         }
 
-        if (this.pendingCombatTextPresentation) {
-            await this.pendingCombatTextPresentation;
-            return;
-        }
+        const estimateMs = Math.max(700, this.getEstimatedCombatTextPresentationMs(actionResult));
+        const timeoutMs = estimateMs + 800;
+        const timeout = new Promise(resolve => setTimeout(resolve, timeoutMs));
 
-        await this.scheduleCombatTextAnimations(actionResult);
+        const present = (async () => {
+            if (this.pendingActionPresentation) {
+                await this.pendingActionPresentation;
+                return;
+            }
+            if (this.pendingCombatTextPresentation) {
+                await this.pendingCombatTextPresentation;
+                return;
+            }
+
+            // Fallback: if action presentation tracking wasn't set, schedule it now.
+            await this.scheduleCombatTextAnimations(actionResult);
+
+            // Extra safety: ensure at least one short beat passes so the final state is visible.
+            await this.sleep(Math.min(650, estimateMs));
+        })();
+
+        await Promise.race([present, timeout]);
+
+        // Ensure the last combat text/HP state has at least one paint before navigation.
+        try {
+            await new Promise(resolve => requestAnimationFrame(() => resolve()));
+        } catch (e) {}
+
     }
 
     getIdleFramesForCharacter(character) {
@@ -806,6 +855,9 @@ class BattlePage extends BasePage {
     }
 
     async setupEventListeners() {
+        if (this._eventListenersBound) return;
+        this._eventListenersBound = true;
+
         this.addEventListener('#skill-0', 'click', () => this.useSkill(0));
         this.addEventListener('#skill-1', 'click', () => this.useSkill(1));
         this.addEventListener('#skill-2', 'click', () => this.useSkill(2));
@@ -890,7 +942,8 @@ class BattlePage extends BasePage {
             this.characterTooltip = new CharacterTooltip(gameState.skillSystem);
         }
         
-        this.setupEventListeners();
+        // Default: skip ultimate animations unless the user explicitly toggles otherwise.
+        this.setSkipAnimations(true);
         
         this.updateUI();
         this.startIdleSpriteAnimation();
@@ -2049,6 +2102,23 @@ class BattlePage extends BasePage {
                     }
                 }
             } catch (e) {}
+
+            // Track the full presentation for this action so game-end navigation waits for it.
+            try {
+                const p = Promise.allSettled(animationPromises);
+                this.pendingActionPresentation = p.finally(() => {
+                    if (this.pendingActionPresentation === p) {
+                        this.pendingActionPresentation = null;
+                        this.pendingActionPresentationKey = null;
+                    }
+                });
+                this.pendingActionPresentationKey = (actionResult && actionResult._syncActionKey)
+                    ? actionResult._syncActionKey
+                    : null;
+            } catch (e) {
+                this.pendingActionPresentation = null;
+                this.pendingActionPresentationKey = null;
+            }
 
             // Only log opponent actions here. Local actions are logged in useSkill/useUltimate.
             if (actionResult._actionSource === 'opponent') {

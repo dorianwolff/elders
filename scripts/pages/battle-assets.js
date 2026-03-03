@@ -202,7 +202,7 @@ window.BattleAssets = {
 
     getCloseAttackAnimationForCharacterSkill(character, skillId) {
         const id = character && character.id;
-        if (id === 'chen' && skillId === 'chen_dragon_strike') {
+        if (id === 'chen' && (skillId === 'chen_dragon_strike' || skillId === 'chen_piercing_assault')) {
             return {
                 start: 'assets/animations/chen/chen_attack_start.png',
                 hits: [
@@ -242,7 +242,7 @@ window.BattleAssets = {
         if (!anim) return 0;
 
         const id = character && character.id;
-        if (id === 'chen' && skillId === 'chen_dragon_strike') return 160;
+        if (id === 'chen' && (skillId === 'chen_dragon_strike' || skillId === 'chen_piercing_assault')) return 160;
         if (id === 'trafalgar_law') return 200;
         return 120;
     },
