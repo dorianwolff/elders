@@ -97,6 +97,138 @@
                     : null);
             if (!anim || !anim.start || !Array.isArray(anim.hits) || anim.hits.length === 0 || !anim.end) return;
 
+            // Special-case: Ch'en Dragon Strike close combo.
+            // Timeline:
+            // - start at origin (start frame)
+            // - attack_1 at origin
+            // - teleport in front (still attack_1)
+            // - teleport closer with attack_2
+            // - teleport back and show end frame
+            if (actorChar && actorChar.id === 'chen' && skillId === 'chen_dragon_strike') {
+                const originalTransform = wrapper.style.transform;
+                const originalTransition = wrapper.style.transition;
+
+                const enemySide = side === 'player' ? 'opponent' : 'player';
+                const enemyWrapper = typeof battlePage.getSpriteWrapperForSide === 'function'
+                    ? battlePage.getSpriteWrapperForSide(enemySide)
+                    : null;
+
+                const offsetRatio = Number(this.getCloseAttackTeleportMultiplierForCharacter(actorChar)) || 0;
+
+                const computeTeleportDxPx = () => {
+                    try {
+                        if (!wrapper || !enemyWrapper) return null;
+                        const attackerRect = wrapper.getBoundingClientRect();
+                        const enemyRect = enemyWrapper.getBoundingClientRect();
+                        if (!attackerRect || !enemyRect) return null;
+                        if (!(enemyRect.width > 0) || !(attackerRect.width > 0)) return null;
+
+                        const attackerCenterX = attackerRect.left + (attackerRect.width / 2);
+                        const enemyCenterX = enemyRect.left + (enemyRect.width / 2);
+
+                        const approachDir = Math.sign(enemyCenterX - attackerCenterX) || 1;
+                        const desiredCenterX = enemyCenterX - (approachDir * offsetRatio * enemyRect.width);
+                        return Math.round(desiredCenterX - attackerCenterX);
+                    } catch (e) {
+                        return null;
+                    }
+                };
+
+                const baseTeleportPx = 160;
+                const fallbackApproachDir = side === 'player' ? 1 : -1;
+                const fallbackDxPx = Math.round(baseTeleportPx * offsetRatio) * fallbackApproachDir;
+                const dxPx = computeTeleportDxPx();
+
+                const inFrontDx = (typeof dxPx === 'number') ? dxPx : fallbackDxPx;
+                const closerDx = Math.round(inFrontDx * 1.22);
+
+                const inFrontTransform = `translateX(${inFrontDx}px)`;
+                const closerTransform = `translateX(${closerDx}px)`;
+
+                const setTeleportTransform = (transformStr) => {
+                    if (!wrapper) return;
+                    wrapper.style.transition = 'none';
+                    wrapper.style.transform = transformStr
+                        ? (originalTransform ? `${originalTransform} ${transformStr}` : transformStr)
+                        : (originalTransform || '');
+                    void wrapper.offsetWidth;
+                };
+
+                const sleepUntil = async (targetMs) => {
+                    const now = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+                        ? performance.now()
+                        : Date.now();
+                    const delta = Math.max(0, Math.floor(targetMs - now));
+                    if (delta > 0) await battlePage.sleep(delta);
+                };
+
+                const startTs = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+                    ? performance.now()
+                    : Date.now();
+
+                const hitTimings = Array.isArray(actionResult?.animations)
+                    ? actionResult.animations
+                        .filter(a => a && a.type === 'combat_text')
+                        .map(a => Math.max(0, Math.floor(Number(a.delayMs) || 0)))
+                        .sort((a, b) => a - b)
+                    : [];
+                const firstHitMs = hitTimings.length ? hitTimings[0] : 0;
+
+                const startHoldMs = 90;
+                const attack1HoldMs = 130;
+                const inFrontHoldMs = 120;
+                const attack2HoldMs = 160;
+                const endHoldBeforeReturnMs = 160;
+                const settleAfterReturnMs = 140;
+
+                const totalDurationMs = Math.max(
+                    1000,
+                    firstHitMs + startHoldMs + attack1HoldMs + inFrontHoldMs + attack2HoldMs + endHoldBeforeReturnMs + settleAfterReturnMs
+                );
+
+                battlePage.playSpriteOverride(side, [anim.start], totalDurationMs, `chen_close_start_${actorCharacterId || 'unknown'}`);
+                if (spriteEl) spriteEl.src = anim.start;
+
+                // Attack 1 at origin.
+                await sleepUntil(startTs + startHoldMs);
+                battlePage.playSpriteOverride(side, [anim.hits[0]], Math.max(200, totalDurationMs - startHoldMs), `chen_close_a1_${actorCharacterId || 'unknown'}`);
+                if (spriteEl) spriteEl.src = anim.hits[0];
+
+                // Teleport in front while keeping attack 1.
+                await sleepUntil(startTs + startHoldMs + attack1HoldMs);
+                setTeleportTransform(inFrontTransform);
+
+                // Teleport closer + switch to attack 2 near first hit timing.
+                await sleepUntil(startTs + Math.max(firstHitMs, startHoldMs + attack1HoldMs + inFrontHoldMs));
+                setTeleportTransform(closerTransform);
+                battlePage.playSpriteOverride(side, [anim.hits[1] || anim.hits[0]], Math.max(220, totalDurationMs - Math.max(firstHitMs, startHoldMs + attack1HoldMs + inFrontHoldMs)), `chen_close_a2_${actorCharacterId || 'unknown'}`);
+                if (spriteEl) spriteEl.src = anim.hits[1] || anim.hits[0];
+
+                // End frame, then return.
+                await sleepUntil(startTs + Math.max(firstHitMs, startHoldMs + attack1HoldMs + inFrontHoldMs) + attack2HoldMs);
+                battlePage.playSpriteOverride(side, [anim.end], Math.max(220, totalDurationMs - (Math.max(firstHitMs, startHoldMs + attack1HoldMs + inFrontHoldMs) + attack2HoldMs)), `chen_close_end_${actorCharacterId || 'unknown'}`);
+                if (spriteEl) spriteEl.src = anim.end;
+
+                await sleepUntil(startTs + Math.max(firstHitMs, startHoldMs + attack1HoldMs + inFrontHoldMs) + attack2HoldMs + endHoldBeforeReturnMs);
+                setTeleportTransform('');
+
+                await sleepUntil(startTs + totalDurationMs);
+                const prev = battlePage.spriteAnimation && battlePage.spriteAnimation.override
+                    ? battlePage.spriteAnimation.override[side]
+                    : null;
+                if (prev && prev.timeoutId) {
+                    try {
+                        clearTimeout(prev.timeoutId);
+                    } catch (e) {}
+                }
+                if (battlePage.spriteAnimation && battlePage.spriteAnimation.override) {
+                    battlePage.spriteAnimation.override[side] = null;
+                }
+                wrapper.style.transition = originalTransition;
+                wrapper.style.transform = originalTransform;
+                return;
+            }
+
             const hits = Array.isArray(actionResult?.animations)
                 ? actionResult.animations
                     .filter(a => a && a.type === 'combat_text')

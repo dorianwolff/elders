@@ -58,6 +58,9 @@ window.BattleAssets = {
         else if (id === 'frieren') {
             return 'assets/animations/frieren/frieren_ultimate.mp4';
         }
+        else if (id === 'chen') {
+            return 'assets/animations/chen/chen_ultimate.mp4';
+        }
         return null;
     },
 
@@ -199,6 +202,16 @@ window.BattleAssets = {
 
     getCloseAttackAnimationForCharacterSkill(character, skillId) {
         const id = character && character.id;
+        if (id === 'chen' && skillId === 'chen_dragon_strike') {
+            return {
+                start: 'assets/animations/chen/chen_attack_start.png',
+                hits: [
+                    'assets/animations/chen/chen_attack_1.png',
+                    'assets/animations/chen/chen_attack_2.png'
+                ],
+                end: 'assets/animations/chen/chen_attack_end.png'
+            };
+        }
         if (id === 'zero_two' && skillId === 'darling_bite') {
             return {
                 start: 'assets/animations/zero_two/zero_two_attack_close_start.png',
@@ -229,6 +242,7 @@ window.BattleAssets = {
         if (!anim) return 0;
 
         const id = character && character.id;
+        if (id === 'chen' && skillId === 'chen_dragon_strike') return 160;
         if (id === 'trafalgar_law') return 200;
         return 120;
     },
@@ -285,6 +299,11 @@ window.BattleAssets = {
                 'assets/animations/frieren/frieren_utility_1.png',
                 'assets/animations/frieren/frieren_utility_2.png',
                 'assets/animations/frieren/frieren_utility_3.png'
+            ];
+        }
+        if (id === 'chen' && skillId === 'chen_tactical_reduction') {
+            return [
+                'assets/animations/chen/chen_utility_1.png'
             ];
         }
         return null;
