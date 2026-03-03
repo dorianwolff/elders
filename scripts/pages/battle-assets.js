@@ -188,15 +188,6 @@ window.BattleAssets = {
                 end: 'assets/animations/rimuru_tempest/rimuru_tempest_attack_close_end.png'
             };
         }
-        if (id === 'trafalgar_law') {
-            return {
-                start: 'assets/animations/trafalgar_law/trafalgar_law_attack_close_start.png',
-                hits: [
-                    'assets/animations/trafalgar_law/trafalgar_law_attack_close_1.png'
-                ],
-                end: 'assets/animations/trafalgar_law/trafalgar_law_attack_close_end.png'
-            };
-        }
         return null;
     },
 
@@ -212,7 +203,7 @@ window.BattleAssets = {
                 end: 'assets/animations/chen/chen_attack_end.png'
             };
         }
-        if (id === 'zero_two' && skillId === 'darling_bite') {
+        else if (id === 'zero_two' && skillId === 'darling_bite') {
             return {
                 start: 'assets/animations/zero_two/zero_two_attack_close_start.png',
                 hits: [
@@ -220,6 +211,28 @@ window.BattleAssets = {
                     'assets/animations/zero_two/zero_two_attack_close_1.png'
                 ],
                 end: 'assets/animations/zero_two/zero_two_attack_close_end.png'
+            };
+        }
+        else if (id === 'trafalgar_law' && (skillId === 'shambles_precision' || skillId === 'takt_breaker')) {
+            return {
+                start: 'assets/animations/trafalgar_law/trafalgar_law_attack_close_start.png',
+                hits: [
+                    'assets/animations/trafalgar_law/trafalgar_law_attack_close_1.png'
+                ],
+                end: 'assets/animations/trafalgar_law/trafalgar_law_attack_close_end.png'
+            };
+        }
+        else if (id === 'gojo_satoru' && skillId === 'gojo_strike') {
+            return {
+                start: 'assets/animations/gojo_satoru/gojo_satoru_attack_close_start.png',
+                hits: [
+                    'assets/animations/gojo_satoru/gojo_satoru_attack_close_1.png',
+                    'assets/animations/gojo_satoru/gojo_satoru_attack_close_start.png',
+                    'assets/animations/gojo_satoru/gojo_satoru_attack_close_2.png',
+                    'assets/animations/gojo_satoru/gojo_satoru_attack_close_start.png',
+                    'assets/animations/gojo_satoru/gojo_satoru_attack_close_3.png'
+                ],
+                end: 'assets/animations/gojo_satoru/gojo_satoru_attack_close_end.png'
             };
         }
 
@@ -251,6 +264,7 @@ window.BattleAssets = {
         const id = character && character.id;
         if (id === 'zero_two') return 0.1;
         if (id === 'rimuru_tempest') return 0.3;
+        if (id === 'gojo_satoru') return 0.4;
         if (id === 'trafalgar_law') return 0.5;
         return 0.3;
     },
@@ -269,16 +283,6 @@ window.BattleAssets = {
 
     getDebuffAnimationForCharacterSkill(character, skillId) {
         const id = character && character.id;
-        if (id === 'trafalgar_law' && skillId === 'shambles_aid') {
-            return [
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
-                'assets/animations/trafalgar_law/trafalgar_law_debuff_3.png'
-            ];
-        }
         return null;
     },
 
@@ -304,7 +308,8 @@ window.BattleAssets = {
         if (id === 'chen' && skillId === 'chen_tactical_reduction') {
             return [
                 'assets/animations/chen/chen_utility_1.png',
-                'assets/animations/chen/chen_utility_1.png'
+                'assets/animations/chen/chen_utility_2.png',
+                'assets/animations/chen/chen_utility_3.png'
             ];
         }
         return null;
@@ -334,6 +339,18 @@ window.BattleAssets = {
                     bottomOffsetRatio: 0.1,
                     opacity: 0.7
                 }
+            };
+        }
+        else if (id === 'trafalgar_law' && skillId === 'room_incision') {
+            return {
+                attackerFrames: [
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_1.png',
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_2.png',
+                    'assets/animations/trafalgar_law/trafalgar_law_debuff_3.png'
+                ]
             };
         }
         return null;
