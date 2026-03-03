@@ -209,18 +209,27 @@ class GameServer {
         const game = this.activeGames.get(gameId);
         
         if (!game) return;
-        
-        // Determine opponent
-        const opponentId = game.player1 === sessionId ? game.player2 : game.player1;
-        
-        // Forward action to opponent
-        this.sendToClient(opponentId, {
-            type: 'opponent_action',
+
+        const startAt = (typeof message.startAt === 'number' && message.startAt > 0)
+            ? message.startAt
+            : (Date.now() + 120);
+        const actionId = (typeof message.clientActionId === 'string' && message.clientActionId)
+            ? message.clientActionId
+            : uuidv4();
+
+        const payload = {
+            type: 'sync_action',
             gameId,
+            actionId,
+            clientActionId: actionId,
+            startAt,
             playerId,
             actionType,
             actionData
-        });
+        };
+
+        this.sendToClient(game.player1, payload);
+        this.sendToClient(game.player2, payload);
         
         // Check if game ended
         if (actionData.result && actionData.result.gameEnded) {

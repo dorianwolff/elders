@@ -196,15 +196,26 @@ export class Lobby {
     const game = this.activeGames.get(gameId);
     if (!game) return;
 
-    const opponentSessionId = (game.player1 === sessionId) ? game.player2 : game.player1;
+    const startAt = (typeof message.startAt === 'number' && message.startAt > 0)
+      ? message.startAt
+      : (Date.now() + 120);
+    const actionId = (typeof message.clientActionId === 'string' && message.clientActionId)
+      ? message.clientActionId
+      : crypto.randomUUID();
 
-    this.sendToClient(opponentSessionId, {
-      type: 'opponent_action',
+    const payload = {
+      type: 'sync_action',
       gameId,
+      actionId,
+      clientActionId: actionId,
+      startAt,
       playerId,
       actionType,
       actionData
-    });
+    };
+
+    this.sendToClient(game.player1, payload);
+    this.sendToClient(game.player2, payload);
 
     if (actionData && actionData.result && actionData.result.gameEnded) {
       this.endGame(gameId, actionData.result.winner);

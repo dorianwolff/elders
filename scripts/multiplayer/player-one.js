@@ -36,9 +36,6 @@ class PlayerOne {
                 result
             });
 
-            // Trigger animations INDEPENDENTLY (non-blocking)
-            this.playSkillAnimation(skillIndex, result); // No await!
-
             return result;
         } catch (error) {
             console.error('Player One skill execution failed:', error);
@@ -64,9 +61,6 @@ class PlayerOne {
                 actorCharacterId,
                 result
             });
-
-            // Trigger animations INDEPENDENTLY (non-blocking)
-            this.playUltimateAnimation(result); // No await!
 
             return result;
         } catch (error) {

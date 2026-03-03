@@ -1475,7 +1475,7 @@ class BattlePage extends BasePage {
                         : 0;
                     const base = Number(skill?.effect?.base_percent) || 0;
                     const per = Number(skill?.effect?.per_stack_percent) || 0;
-                    const currentPct = Math.round((base + (per * stacks)) * 100);
+                    const basePct = Math.round(base * 100);
                     const perPct = Math.round(per * 100);
 
                     const permDefAt = Math.max(0, Math.floor(Number(skill?.effect?.permanent_defense_if_stacks_at_least) || 0));
@@ -1491,7 +1491,7 @@ class BattlePage extends BasePage {
                     }
                     this.updateElement(
                         `#skill-${index}-description`,
-                        `Deal ${currentPct}% of attack as damage. Cooldown reduction applied to this skill grants it +${perPct}% of attack.${defTail}`
+                        `Deal ${basePct}% of attack as damage. Cooldown reduction applied to this skill grants it +${perPct}% of attack.${defTail}`
                     );
                 } else if (characterId === 'saitama' && skill.id === 'grit') {
                     let stored = 0;
@@ -1833,9 +1833,6 @@ class BattlePage extends BasePage {
             // Execute skill with IMMEDIATE logic and sync
             const result = await this.gameCoordinator.useSkill(skillIndex);
             
-            // Update UI IMMEDIATELY after logic completes
-            this.updateUI();
-            
             // Log results (animations run independently in background)
             if (result.damage > 0) {
                 this.addLogMessage(`Dealt ${result.damage} damage to opponent`);
@@ -1871,10 +1868,7 @@ class BattlePage extends BasePage {
             
             // Execute ultimate with IMMEDIATE logic and sync
             const result = await this.gameCoordinator.useUltimate();
-            
-            // Update UI IMMEDIATELY after logic completes
-            this.updateUI();
-            
+
             // Log results (animations run independently in background)
             if (result.damage > 0) {
                 this.addLogMessage(`Ultimate dealt ${result.damage} damage!`);

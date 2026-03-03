@@ -12,6 +12,10 @@ class GameCoordinator {
         this.battleStartTime = null;
         this.lastActionResult = null;
 
+        this._lastSyncActionId = null;
+
+        this._pendingLocalSyncFallbacks = new Map();
+
         this.battlePageReady = false;
         this.pendingUiUpdates = [];
     }
@@ -71,9 +75,89 @@ class GameCoordinator {
 
     setupGameMessageHandlers() {
         this.wsManager.onMessage('game_started', this.handleGameStarted.bind(this));
+        this.wsManager.onMessage('sync_action', this.handleSyncAction.bind(this));
+        // Backward compatibility with older servers
         this.wsManager.onMessage('opponent_action', this.handleOpponentAction.bind(this));
         this.wsManager.onMessage('game_ended', this.handleGameEnded.bind(this));
         this.wsManager.onMessage('opponent_disconnected', this.handleOpponentDisconnected.bind(this));
+    }
+
+    _sleepUntilStartAt(startAt) {
+        const target = Math.max(0, Math.floor(Number(startAt) || 0));
+        if (!target) return Promise.resolve();
+        const now = Date.now();
+        const delta = Math.max(0, target - now);
+        if (delta <= 0) return Promise.resolve();
+        return new Promise(resolve => setTimeout(resolve, delta));
+    }
+
+    async handleSyncAction(message) {
+        if (!this.isGameActive || !this.gameState) {
+            return;
+        }
+
+        try {
+            const { actionId, clientActionId, startAt, playerId, actionType, actionData } = message || {};
+
+            try {
+                console.log('[sync_action] received', { actionId, clientActionId, startAt, playerId, actionType });
+            } catch (e) {}
+
+            if (clientActionId && this._pendingLocalSyncFallbacks && this._pendingLocalSyncFallbacks.has(clientActionId)) {
+                try {
+                    const t = this._pendingLocalSyncFallbacks.get(clientActionId);
+                    if (t) clearTimeout(t);
+                } catch (e) {}
+                this._pendingLocalSyncFallbacks.delete(clientActionId);
+            }
+
+            // De-dupe (server broadcasts to both clients; reconnects can re-deliver)
+            const dedupeId = clientActionId || actionId;
+            if (dedupeId && this._lastSyncActionId === dedupeId) return;
+            if (dedupeId) this._lastSyncActionId = dedupeId;
+
+            // Ensure both clients start presentation at the same time.
+            await this._sleepUntilStartAt(startAt);
+
+            // Apply results: if I'm the actor, state is already applied locally by useSkill/useUltimate.
+            // Always prefer the authoritative snapshot (if present) so BOTH clients converge
+            // before starting animations.
+            const iAmActor = playerId === this.currentPlayerRole;
+            const result = actionData && actionData.result ? actionData.result : null;
+
+            if (result && result.stateSnapshot && typeof this.gameState.applyStateSnapshot === 'function') {
+                await this.gameState.applyStateSnapshot(result.stateSnapshot);
+            } else if (!iAmActor) {
+                await this.gameState.applyOpponentActionResult(
+                    playerId,
+                    actionType,
+                    actionData ? actionData.skillIndex : undefined,
+                    result
+                );
+            }
+
+            const resultWithActionInfo = {
+                ...(result || {}),
+                actionType,
+                skillIndex: (actionType === 'skill') ? actionData?.skillIndex : undefined,
+                skillId: (actionType === 'skill') ? actionData?.skillId : undefined,
+                skillType: (actionType === 'skill') ? actionData?.skillType : undefined,
+                skillName: actionData?.skillName,
+                ultimateName: actionData?.ultimateName,
+                actorCharacterId: actionData?.actorCharacterId,
+                _actionSource: iAmActor ? 'local' : 'opponent'
+            };
+
+            // Update UI at the synchronized start time. This is what triggers animations in BattlePage.
+            this.updateGameUI(resultWithActionInfo);
+            this.lastActionResult = resultWithActionInfo;
+
+            if (resultWithActionInfo && resultWithActionInfo.gameEnded) {
+                await this.handleGameEnd(resultWithActionInfo.winner);
+            }
+        } catch (error) {
+            console.error('Failed to handle sync action:', error);
+        }
     }
 
     async startMatchmaking(character) {
@@ -182,38 +266,83 @@ class GameCoordinator {
         }
 
         try {
-            // Send action to opponent via WebSocket
-            await this.wsManager.send('player_action', {
-                gameId: this.gameId,
-                playerId,
-                actionType,
-                actionData
-            });
+            const hasWs = this.wsManager && typeof this.wsManager.isSocketConnected === 'function'
+                ? this.wsManager.isSocketConnected()
+                : false;
 
-            // Update local UI based on action result
-            this.updateGameUI({
-                ...actionData.result,
-                actionType,
-                skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
-                skillId: (actionType === 'skill') ? actionData.skillId : undefined,
-                skillType: (actionType === 'skill') ? actionData.skillType : undefined,
-                actorCharacterId: actionData.actorCharacterId,
-                _actionSource: 'local'
-            });
+            if (hasWs) {
+                const clientActionId = (typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function')
+                    ? crypto.randomUUID()
+                    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+                const startAt = Date.now() + 120;
 
-            this.lastActionResult = {
-                ...actionData.result,
-                actionType,
-                skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
-                skillId: (actionType === 'skill') ? actionData.skillId : undefined,
-                skillType: (actionType === 'skill') ? actionData.skillType : undefined,
-                actorCharacterId: actionData.actorCharacterId,
-                _actionSource: 'local'
-            };
+                // Send action to server; server will broadcast a sync_action to both clients.
+                await this.wsManager.send('player_action', {
+                    gameId: this.gameId,
+                    playerId,
+                    actionType,
+                    actionData,
+                    clientActionId,
+                    startAt
+                });
 
-            // Check if game ended
-            if (actionData.result.gameEnded) {
-                await this.handleGameEnd(actionData.result.winner);
+                // Do NOT update UI immediately.
+                // Wait for server sync_action so both clients call animations at the same time.
+                this.lastActionResult = {
+                    ...actionData.result,
+                    actionType,
+                    skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                    skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                    skillType: (actionType === 'skill') ? actionData.skillType : undefined,
+                    actorCharacterId: actionData.actorCharacterId,
+                    _actionSource: 'local'
+                };
+
+                // Fallback: if server doesn't support sync_action yet, still update local UI.
+                // This timeout is cancelled when a matching sync_action (clientActionId) arrives.
+                const fallbackResultWithActionInfo = {
+                    ...actionData.result,
+                    actionType,
+                    skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                    skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                    skillType: (actionType === 'skill') ? actionData.skillType : undefined,
+                    actorCharacterId: actionData.actorCharacterId,
+                    skillName: actionData.skillName,
+                    ultimateName: actionData.ultimateName,
+                    _actionSource: 'local'
+                };
+
+                const timeoutId = setTimeout(() => {
+                    // If we still haven't received the authoritative sync_action, run local UI update.
+                    if (this._pendingLocalSyncFallbacks && this._pendingLocalSyncFallbacks.has(clientActionId)) {
+                        this._pendingLocalSyncFallbacks.delete(clientActionId);
+                        try {
+                            console.log('[sync_action] fallback firing', { clientActionId, playerId, actionType });
+                        } catch (e) {}
+                        this.updateGameUI(fallbackResultWithActionInfo);
+                    }
+                }, Math.max(0, startAt - Date.now()));
+
+                this._pendingLocalSyncFallbacks.set(clientActionId, timeoutId);
+            } else {
+                // Offline mode / no server: behave like the old flow and update immediately.
+                const resultWithActionInfo = {
+                    ...actionData.result,
+                    actionType,
+                    skillIndex: (actionType === 'skill') ? actionData.skillIndex : undefined,
+                    skillId: (actionType === 'skill') ? actionData.skillId : undefined,
+                    skillType: (actionType === 'skill') ? actionData.skillType : undefined,
+                    actorCharacterId: actionData.actorCharacterId,
+                    skillName: actionData.skillName,
+                    ultimateName: actionData.ultimateName,
+                    _actionSource: 'local'
+                };
+                this.updateGameUI(resultWithActionInfo);
+                this.lastActionResult = resultWithActionInfo;
+
+                if (actionData.result && actionData.result.gameEnded) {
+                    await this.handleGameEnd(actionData.result.winner);
+                }
             }
 
         } catch (error) {
