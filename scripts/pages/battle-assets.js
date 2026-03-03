@@ -303,6 +303,7 @@ window.BattleAssets = {
         }
         if (id === 'chen' && skillId === 'chen_tactical_reduction') {
             return [
+                'assets/animations/chen/chen_utility_1.png',
                 'assets/animations/chen/chen_utility_1.png'
             ];
         }
