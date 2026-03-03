@@ -213,6 +213,15 @@ window.BattleAssets = {
                 end: 'assets/animations/zero_two/zero_two_attack_close_end.png'
             };
         }
+        else if (id === 'edward_elric' && skillId === 'ed_rocket_punch') {
+            return {
+                start: 'assets/animations/edward_elric/edward_elric_attack_close_start.png',
+                hits: [
+                    'assets/animations/edward_elric/edward_elric_attack_close_1.png'
+                ],
+                end: 'assets/animations/edward_elric/edward_elric_attack_close_end.png'
+            };
+        }
         else if (id === 'trafalgar_law' && (skillId === 'shambles_precision' || skillId === 'takt_breaker')) {
             return {
                 start: 'assets/animations/trafalgar_law/trafalgar_law_attack_close_start.png',
