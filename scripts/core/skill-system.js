@@ -3626,18 +3626,20 @@ class SkillSystem {
             owningPlayer.ultimateReady = false;
         }
 
-        // Naruto: entering Sage Mode resets Balance back to 0.
-        if (transformToId === 'naruto_sage' && character.passiveState && character.passiveState.counters) {
-            character.passiveState.counters.balance = 0;
-
-            // Naruto: if we were at Balance +3 before transforming, remove the +10 ATK buff.
-            if (this.activeEffects) {
-                const balanceAtkBuffId = `balance_plus3_attack_${playerId}`;
-                if (this.activeEffects.has(balanceAtkBuffId)) {
-                    this.activeEffects.delete(balanceAtkBuffId);
-                }
+        try {
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                window.BattleHooks.emit('skill_system:transform_self', {
+                    skillSystem: this,
+                    passiveSystem: this.passiveSystem,
+                    gameState: this.gameState,
+                    playerId,
+                    character,
+                    prevId,
+                    transformToId,
+                    preservedPassiveState
+                });
             }
-        }
+        } catch (e) {}
 
         // If we preserved counters (e.g., Naruto Sage Orbs), allow the new passive to reinterpret them.
         // Specifically: when entering Sage Mode, existing Sage Orbs should also start granting +1 ATK each.

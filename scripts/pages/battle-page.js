@@ -1548,13 +1548,37 @@ class BattlePage extends BasePage {
                 stackTag.style.display = 'none';
             }
 
-            if (characterId === 'chen' && stackTag && skill.cooldownReductionBuff) {
-                const stacks = passiveState && passiveState.counters
-                    ? (Number(passiveState.counters[`cdr_${skill.id}`]) || 0)
-                    : 0;
-                stackTag.textContent = String(stacks);
-                stackTag.style.display = 'flex';
-            }
+            try {
+                if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                    const res = window.BattleHooks.emit('ui:skills:stack_tag', {
+                        battlePage: this,
+                        gameState: this.gameState,
+                        skillSystem: this.gameState?.skillSystem,
+                        character: this.gameState?.player?.character,
+                        characterId,
+                        passiveState,
+                        skill,
+                        index,
+                        stackTag
+                    });
+                    for (const r of (res || [])) {
+                        if (!stackTag) continue;
+                        if (typeof r === 'string') {
+                            stackTag.textContent = r;
+                            stackTag.style.display = r ? 'flex' : 'none';
+                        } else if (r && typeof r === 'object') {
+                            if (typeof r.text === 'string') {
+                                stackTag.textContent = r.text;
+                            }
+                            if (typeof r.display === 'string') {
+                                stackTag.style.display = r.display;
+                            } else if (r.text) {
+                                stackTag.style.display = 'flex';
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
 
             if (skill.id === 'devour' && (skill._copiedName || skill._copiedDescription)) {
                 this.updateElement(`#skill-${index}-name`, skill._copiedName || skill.name);
@@ -1562,91 +1586,34 @@ class BattlePage extends BasePage {
             } else {
                 this.updateElement(`#skill-${index}-name`, skill.name);
 
-                if (characterId === 'frieren' && skill.id === 'frieren_minor_utility') {
-                    if (!archiveLastType) {
-                        this.updateElement(
-                            `#skill-${index}-description`,
-                            "Deal 75% of attack as damage. Gains a bonus effect based on your opponent's last skill type used."
-                        );
-                    } else {
-                        let tail = '';
-                        if (archiveLastType === 'attack') {
-                            tail = 'gain a Barrier (+7 Shield).';
-                        } else if (archiveLastType === 'buff') {
-                            tail = 'dispel 1 buff from the enemy and deal additional 95% of attack as damage.';
-                        } else if (archiveLastType === 'debuff') {
-                            tail = 'cleanse yourself and heal 5 Health.';
-                        } else if (archiveLastType === 'ultimate') {
-                            tail = 'deal True Damage instead and recover 50% of damage dealt.';
-                        } else if (archiveLastType === 'stance') {
-                            tail = "ignore the enemy's Stance.";
-                        } else if (archiveLastType === 'domain') {
-                            tail = 'deploy a Domain (+3 attack to you and -3 attack to the enemy for 2 turns).';
-                        } else {
-                            tail = 'apply Heal Block.';
+                let hookOverride = null;
+                try {
+                    if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                        const res = window.BattleHooks.emit('ui:skills:description', {
+                            battlePage: this,
+                            gameState: this.gameState,
+                            skillSystem: this.gameState?.skillSystem,
+                            character: this.gameState?.player?.character,
+                            characterId,
+                            passiveState,
+                            skill,
+                            index
+                        });
+                        for (const r of (res || [])) {
+                            if (typeof r === 'string') {
+                                hookOverride = r;
+                            }
                         }
-                        this.updateElement(`#skill-${index}-description`, `Deal 75% of attack as damage and ${tail}`);
                     }
-                } else if (characterId === 'frieren' && skill.id === 'frieren_rotating_page') {
-                    const t = frierenRotatingType || 'attack';
-                    let desc = '';
-                    if (t === 'attack') {
-                        desc = 'Add 1 attack Page and gain a Barrier (+7 Shield).';
-                    } else if (t === 'buff') {
-                        desc = 'Add 1 buff Page, dispel 1 buff from the enemy, and deal 95% of attack as damage.';
-                    } else if (t === 'debuff') {
-                        desc = 'Add 1 debuff Page, cleanse yourself, and heal 5 Health.';
-                    } else if (t === 'ultimate') {
-                        desc = 'Add 1 ultimate Page and deal 75% of attack as True Damage, then recover 50% of damage dealt.';
-                    } else if (t === 'stance') {
-                        desc = "Add 1 stance Page and ignore the enemy's Stance on your next hit.";
-                    } else if (t === 'domain') {
-                        desc = 'Add 1 domain Page and deploy a Domain (+3 attack to you and -3 attack to the enemy for 2 turns).';
-                    } else {
-                        desc = 'Add 1 utility Page and apply Heal Block.';
-                    }
-                    this.updateElement(`#skill-${index}-description`, desc);
-                } else if (characterId === 'chen' && skill.id === 'chen_dragon_strike') {
-                    const stacks = passiveState && passiveState.counters
-                        ? (Number(passiveState.counters[`cdr_${skill.id}`]) || 0)
-                        : 0;
-                    const base = Number(skill?.effect?.base_percent) || 0;
-                    const per = Number(skill?.effect?.per_stack_percent) || 0;
-                    const basePct = Math.round(base * 100);
-                    const perPct = Math.round(per * 100);
+                } catch (e) {
+                    hookOverride = null;
+                }
 
-                    const permDefAt = Math.max(0, Math.floor(Number(skill?.effect?.permanent_defense_if_stacks_at_least) || 0));
-                    const permDef = Math.floor(Number(skill?.effect?.permanent_defense_amount) || 0);
-                    const defTail = (permDefAt > 0 && permDef !== 0)
-                        ? ` If it was applied ${permDefAt} or more times also gain +${permDef} defense permanently.`
-                        : '';
+                if (hookOverride !== null) {
+                    this.updateElement(`#skill-${index}-description`, hookOverride);
+                } else {
 
-                    const stackTag = this.querySelector(`#skill-${index}-stack-tag`);
-                    if (stackTag) {
-                        stackTag.textContent = String(stacks);
-                        stackTag.style.display = '';
-                    }
-                    this.updateElement(
-                        `#skill-${index}-description`,
-                        `Deal ${basePct}% of attack as damage. Cooldown reduction applied to this skill grants it +${perPct}% of attack.${defTail}`
-                    );
-                } else if (characterId === 'naofumi_iwatani' && skill.id === 'naofumi_shield_bash') {
-                    const isTransform = Boolean(passiveState && passiveState.naofumiTransformActive);
-                    this.updateElement(
-                        `#skill-${index}-description`,
-                        isTransform
-                            ? 'Deal 100% of defense as damage.'
-                            : 'Deal 85% of defense as damage.'
-                    );
-                } else if (characterId === 'naofumi_iwatani' && skill.id === 'naofumi_defensive_stance') {
-                    const isTransform = Boolean(passiveState && passiveState.naofumiTransformActive);
-                    this.updateElement(
-                        `#skill-${index}-description`,
-                        isTransform
-                            ? 'Reduces damage taken by 30% and deals 50% of defense as damage if enemy deals damage to Naofumi with a skill'
-                            : 'Reduces damage taken by 30%'
-                    );
-                } else if (characterId === 'saitama' && skill.id === 'grit') {
+                if (characterId === 'saitama' && skill.id === 'grit') {
                     let stored = 0;
                     let isActive = false;
                     try {
@@ -1696,6 +1663,7 @@ class BattlePage extends BasePage {
                 } else {
                     this.updateElement(`#skill-${index}-description`, skill.description);
                 }
+                }
             }
 
             const skillButton = this.querySelector(`#skill-${index}`);
@@ -1733,11 +1701,30 @@ class BattlePage extends BasePage {
                 skillButton.disabled = true;
             } else {
                 skillButton.classList.remove('skill-on-cooldown');
-                if (characterId === 'frieren' && skill.id === 'frieren_copycat_glyph') {
-                    skillButton.disabled = !canUse || archivePagesCount < 2;
-                } else {
-                    skillButton.disabled = !canUse;
-                }
+                let disabled = !canUse;
+                try {
+                    if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                        const res = window.BattleHooks.emit('ui:skills:disabled', {
+                            battlePage: this,
+                            gameState: this.gameState,
+                            skillSystem: this.gameState?.skillSystem,
+                            character: this.gameState?.player?.character,
+                            characterId,
+                            passiveState,
+                            skill,
+                            index,
+                            canUse,
+                            disabled
+                        });
+                        for (const r of (res || [])) {
+                            if (typeof r === 'boolean') {
+                                disabled = r;
+                            }
+                        }
+                    }
+                } catch (e) {}
+
+                skillButton.disabled = disabled;
             }
         });
     }
@@ -1757,13 +1744,36 @@ class BattlePage extends BasePage {
             ultStackTag.style.display = 'none';
         }
 
-        if (characterId === 'chen' && ultimate && ultStackTag && ultimate.cooldownReductionBuff) {
-            const stacks = passiveState && passiveState.counters
-                ? (Number(passiveState.counters[`cdr_${ultimate.id}`]) || 0)
-                : 0;
-            ultStackTag.textContent = String(stacks);
-            ultStackTag.style.display = 'flex';
-        }
+        try {
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                const res = window.BattleHooks.emit('ui:ultimate:stack_tag', {
+                    battlePage: this,
+                    gameState: this.gameState,
+                    skillSystem: this.gameState?.skillSystem,
+                    character: this.gameState?.player?.character,
+                    characterId,
+                    passiveState,
+                    ultimate,
+                    ultStackTag
+                });
+                for (const r of (res || [])) {
+                    if (!ultStackTag) continue;
+                    if (typeof r === 'string') {
+                        ultStackTag.textContent = r;
+                        ultStackTag.style.display = r ? 'flex' : 'none';
+                    } else if (r && typeof r === 'object') {
+                        if (typeof r.text === 'string') {
+                            ultStackTag.textContent = r.text;
+                        }
+                        if (typeof r.display === 'string') {
+                            ultStackTag.style.display = r.display;
+                        } else if (r.text) {
+                            ultStackTag.style.display = 'flex';
+                        }
+                    }
+                }
+            }
+        } catch (e) {}
 
         let desc = ultimate.description;
         try {
@@ -1774,24 +1784,22 @@ class BattlePage extends BasePage {
                 desc = `Deal (${basePct}% + 1% per Heartbreak) of attack as damage. While this ultimate is ready, each of your turns you do not use it grants +10% base damage for future uses. Consume 66 Heartbreak stacks.`;
             }
 
-            if (characterId === 'chen' && ultimate && ultimate.id === 'chen_crimson_ult') {
-                const stacks = passiveState && passiveState.counters
-                    ? (Number(passiveState.counters[`cdr_${ultimate.id}`]) || 0)
-                    : 0;
-                const basePct = Math.round((Number(ultimate?.effect?.base_percent) || 0) * 100);
-                const cdrAt = Math.max(0, Math.floor(Number(ultimate?.effect?.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
-                const cdrAmt = Math.max(0, Math.floor(Number(ultimate?.effect?.reduce_other_skill_cooldowns_amount) || 0));
-                const cdrTail = (cdrAt > 0 && cdrAmt > 0)
-                    ? ` If it was applied ${cdrAt} or more times also reduce cooldown of all your other skills by ${cdrAmt}.`
-                    : '';
-
-                const stackTag = this.querySelector('#ultimate-stack-tag');
-                if (stackTag) {
-                    stackTag.textContent = String(stacks);
-                    stackTag.style.display = 'flex';
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                const res = window.BattleHooks.emit('ui:ultimate:description', {
+                    battlePage: this,
+                    gameState: this.gameState,
+                    skillSystem: this.gameState?.skillSystem,
+                    character: this.gameState?.player?.character,
+                    characterId,
+                    passiveState,
+                    ultimate,
+                    desc
+                });
+                for (const r of (res || [])) {
+                    if (typeof r === 'string') {
+                        desc = r;
+                    }
                 }
-
-                desc = `Deal ${basePct}% of attack as damage. Repeat this skill for each cooldown reduction applied to it.${cdrTail}`;
             }
         } catch (e) {}
 
@@ -2344,47 +2352,24 @@ class BattlePage extends BasePage {
                 const indicatorClass = `effect-indicator stack-counter ${badge.className || ''}`.trim();
                 let indicatorTitle = `${badge.title || key}: ${stacks}`;
 
-                if (character?.id === 'frieren' && key === 'archivePages') {
-                    const pages = Array.isArray(character?.passiveState?.archivePages)
-                        ? character.passiveState.archivePages
-                        : [];
-
-                    {
-                        const counts = {
-                            stance: 0,
-                            utility: 0,
-                            attack: 0,
-                            debuff: 0,
-                            buff: 0,
-                            recovery: 0,
-                            ultimate: 0,
-                            domain: 0
-                        };
-                        for (const p of pages) {
-                            const t = typeof p === 'string' ? p : null;
-                            if (t && counts[t] !== undefined) counts[t] += 1;
-                        }
-
-                        const order = ['debuff', 'buff', 'attack', 'stance', 'utility', 'recovery', 'domain', 'ultimate'];
-                        const parts = [];
-                        for (const t of order) {
-                            const n = counts[t] || 0;
-                            if (n <= 0) continue;
-                            parts.push(`${n} ${t}`);
-                        }
-
-                        const total = pages.length;
-                        if (parts.length === 0) {
-                            indicatorTitle = '0 pages';
-                        } else if (parts.length === 1) {
-                            indicatorTitle = `${parts[0]} ${total === 1 ? 'page' : 'pages'}`;
-                        } else {
-                            const head = parts.slice(0, -1).join(', ');
-                            const tail = parts[parts.length - 1];
-                            indicatorTitle = `${head} and ${tail} ${total === 1 ? 'page' : 'pages'}`;
+                try {
+                    if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                        const res = window.BattleHooks.emit('ui:effect_indicators:badge_title', {
+                            battlePage: this,
+                            playerRole,
+                            character,
+                            badge,
+                            counterKey: key,
+                            stacks,
+                            title: indicatorTitle
+                        });
+                        for (const r of (res || [])) {
+                            if (typeof r === 'string') {
+                                indicatorTitle = r;
+                            }
                         }
                     }
-                }
+                } catch (e) {}
 
                 desired.push({
                     key: indicatorKey,
@@ -2425,11 +2410,15 @@ class BattlePage extends BasePage {
         for (const effect of (effects || [])) {
             if (!effect || !effect.type) continue;
 
-            // Ch'en Sword: hide the indicator entirely until at least 1 stack exists.
             try {
-                if (effect.type === 'buff' && effect._itemPassiveId === 'chen_sword_cd_mastery') {
-                    const stacks = Math.max(0, Math.floor(Number(effect._stackCount ?? effect.value) || 0));
-                    if (stacks <= 0) {
+                if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                    const res = window.BattleHooks.emit('ui:effect_indicators:filter_effect', {
+                        battlePage: this,
+                        playerRole,
+                        character,
+                        effect
+                    });
+                    if (Array.isArray(res) && res.some(x => x === false)) {
                         continue;
                     }
                 }
@@ -2485,10 +2474,27 @@ class BattlePage extends BasePage {
                     ? Math.max(0, Math.floor(Number(g.effect.stacks) || 0))
                     : null);
 
-            const isChenSword = Boolean(g.effect && g.effect.type === 'buff' && g.effect._itemPassiveId === 'chen_sword_cd_mastery');
-            const displayText = (explicitStacks !== null && explicitStacks > 0)
-                ? (isChenSword && explicitStacks <= 1 ? '' : String(explicitStacks))
+            let displayText = (explicitStacks !== null && explicitStacks > 0)
+                ? String(explicitStacks)
                 : (g.count > 1 ? String(g.count) : '');
+
+            try {
+                if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                    const res = window.BattleHooks.emit('ui:effect_indicators:display_text', {
+                        battlePage: this,
+                        playerRole,
+                        character,
+                        group: g,
+                        explicitStacks,
+                        displayText
+                    });
+                    for (const r of (res || [])) {
+                        if (typeof r === 'string') {
+                            displayText = r;
+                        }
+                    }
+                }
+            } catch (e) {}
 
             const ratio = g.duration > 0 ? Math.max(0, Math.min(1, g.turnsLeft / g.duration)) : 1;
             const elapsed = 1 - ratio;
