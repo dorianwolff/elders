@@ -596,6 +596,7 @@ position: relative;
     border-radius: 3px;
     cursor: pointer;
     position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -609,8 +610,8 @@ position: relative;
 .effect-indicator::after {
     content: '';
     position: absolute;
-    inset: 0;
-    border-radius: 3px;
+    inset: -1px;
+    border-radius: inherit;
     pointer-events: none;
     /* Darken the elapsed portion as a radial "pizza slice" from the center */
     background: conic-gradient(
@@ -692,8 +693,8 @@ position: relative;
 }
 
 .effect-indicator.stun {
-    background: linear-gradient(135deg, #2c3e50, #1f2d3a);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, #8e44ad, #732d91);
+    border: 1px solid #5d1a7b;
 }
 
 .effect-indicator.mark {

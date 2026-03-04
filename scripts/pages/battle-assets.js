@@ -147,6 +147,13 @@ window.BattleAssets = {
             ];
         }
 
+        else if (id === 'naofumi_iwatani') {
+            return [
+                'assets/animations/naofumi_isawani/naofumi_iwatani_idle_1.png',
+                'assets/animations/naofumi_isawani/naofumi_iwatani_idle_2.png'
+            ];
+        }
+
         return [
             'assets/animations/zero_two/zero_two_idle_1.png',
             'assets/animations/zero_two/zero_two_idle_2.png'

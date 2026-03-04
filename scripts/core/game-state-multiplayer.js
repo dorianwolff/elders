@@ -149,6 +149,20 @@ GameState.prototype.applyStateSnapshot = async function (snapshot) {
             p.character.passiveState = JSON.parse(JSON.stringify(pSnap.passiveState));
         }
 
+        // Sync skills from authoritative snapshot.
+        // Needed for temporary skill swaps (ex: Naofumi Soul Eater shield) on the receiving client.
+        if (Array.isArray(pSnap.skillIds) && pSnap.skillIds.length > 0) {
+            const cs = this.skillSystem?.characterSystem;
+            if (cs && cs.skills && typeof cs.skills.get === 'function') {
+                const nextSkills = pSnap.skillIds
+                    .map(id => (typeof id === 'string' ? cs.skills.get(id) : null))
+                    .filter(Boolean);
+                if (nextSkills.length > 0) {
+                    p.character.skills = nextSkills;
+                }
+            }
+        }
+
         // Enforce skill slot count from the authoritative snapshot (prevents undefined skill indices).
         if (typeof pSnap.skillCount === 'number' && pSnap.skillCount >= 0 && Array.isArray(p.character.skills)) {
             p.character.skills = p.character.skills.slice(0, Math.floor(pSnap.skillCount));

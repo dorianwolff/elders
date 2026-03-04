@@ -16,7 +16,7 @@
     "image": "assets/items/chen_sword.png",
     "allowedCharacters": ["chen"],
     "stats": {
-      "attack": 2
+      "attack": -2
     },
     "passiveId": "chen_sword_cd_mastery"
   },
@@ -52,5 +52,36 @@
     "image": "assets/items/broken_sword.png",
     "stats": {},
     "passiveId": "broken_sword_shattered_edge"
+  },
+  "pillow": {
+    "id": "pillow",
+    "name": "Pillow",
+    "type": "regular",
+    "image": "assets/items/pillow.png",
+    "stats": {
+      "maxHealth": 1,
+      "health": 1
+    },
+    "passiveId": "pillow_sleepy_surprise"
+  },
+  "assassin_dagger": {
+    "id": "assassin_dagger",
+    "name": "Assassin's Dagger",
+    "type": "regular",
+    "image": "assets/items/assassin_dagger.png",
+    "stats": {
+      "attack": 1
+    },
+    "passiveId": "assassin_dagger_sharpened_instinct"
+  },
+  "wooden_shield": {
+    "id": "wooden_shield",
+    "name": "Wooden Shield",
+    "type": "regular",
+    "image": "assets/items/wooden_shield.png",
+    "stats": {
+      "defense": 1
+    },
+    "passiveId": "wooden_shield_stance_guard"
   }
 }

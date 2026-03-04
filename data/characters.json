@@ -379,5 +379,38 @@
         "reset_stacks_on_use": true
       }
     }
+  },
+  "naofumi_iwatani": {
+    "id": "naofumi_iwatani",
+    "name": "Naofumi Iwatani",
+    "metaPoints": 170,
+    "stats": {
+      "health": 113,
+      "maxHealth": 113,
+      "attack": 5,
+      "defense": 13,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["naofumi_iwatani.jpg"],
+    "passiveId": "naofumi_shield_rotation",
+    "recommended_items": ["wooden_shield"],
+    "skillIds": ["naofumi_shield_bash", "naofumi_defensive_stance"],
+    "ultimate": {
+      "id": "naofumi_heroic_guard",
+      "name": "Heroic Guard",
+      "description": "Inflict Heal Block on the enemy for 3 turns and gain +5 defense for 5 turns.",
+      "cooldown": 2,
+      "type": "attack",
+      "effect": {
+        "type": "naofumi_ultimate",
+        "target": "enemy",
+        "heal_block_duration": 3,
+        "self_defense_buff": 5,
+        "self_defense_duration": 5
+      }
+    }
   }
 }

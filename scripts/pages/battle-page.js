@@ -1075,7 +1075,31 @@ class BattlePage extends BasePage {
                 img.onerror = null;
                 img.src = '';
             };
-            desc.textContent = passive && passive.description ? passive.description : '';
+            let descText = passive && passive.description ? passive.description : '';
+            if (itemId === 'chen_sword') {
+                let stacks = 0;
+                try {
+                    const pid = side === 'player'
+                        ? this.gameCoordinator?.currentPlayerRole
+                        : (this.gameCoordinator?.currentPlayerRole === 'player1' ? 'player2' : 'player1');
+                    const effects = this.gameState?.skillSystem?.activeEffects;
+                    if (pid && effects && typeof effects.entries === 'function') {
+                        for (const [, eff] of effects.entries()) {
+                            if (!eff) continue;
+                            if (eff.type !== 'buff') continue;
+                            if (eff.target !== pid) continue;
+                            if (eff._itemPassiveId !== 'chen_sword_cd_mastery') continue;
+                            if (eff.stat !== 'attack') continue;
+                            if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                            stacks = Math.max(stacks, Math.max(0, Math.floor(Number(eff._stackCount ?? eff.value) || 0)));
+                        }
+                    }
+                } catch (e) {
+                    stacks = 0;
+                }
+                descText = `When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. ${stacks}/10`;
+            }
+            desc.textContent = descText;
         };
 
         try {
@@ -1606,6 +1630,22 @@ class BattlePage extends BasePage {
                         `#skill-${index}-description`,
                         `Deal ${basePct}% of attack as damage. Cooldown reduction applied to this skill grants it +${perPct}% of attack.${defTail}`
                     );
+                } else if (characterId === 'naofumi_iwatani' && skill.id === 'naofumi_shield_bash') {
+                    const isTransform = Boolean(passiveState && passiveState.naofumiTransformActive);
+                    this.updateElement(
+                        `#skill-${index}-description`,
+                        isTransform
+                            ? 'Deal 100% of defense as damage.'
+                            : 'Deal 85% of defense as damage.'
+                    );
+                } else if (characterId === 'naofumi_iwatani' && skill.id === 'naofumi_defensive_stance') {
+                    const isTransform = Boolean(passiveState && passiveState.naofumiTransformActive);
+                    this.updateElement(
+                        `#skill-${index}-description`,
+                        isTransform
+                            ? 'Reduces damage taken by 30% and deals 50% of defense as damage if enemy deals damage to Naofumi with a skill'
+                            : 'Reduces damage taken by 30%'
+                    );
                 } else if (characterId === 'saitama' && skill.id === 'grit') {
                     let stored = 0;
                     let isActive = false;
@@ -1828,8 +1868,36 @@ class BattlePage extends BasePage {
                 ? passive.ultimate_condition
                 : (passive && passive.ultimate_condition ? passive.ultimate_condition : passive));
         
-        this.updateElement('#passive-name', passive.name);
-        this.updateElement('#passive-description', passive.description);
+        let passiveName = passive.name;
+        let passiveDesc = passive.description;
+        if (character && character.id === 'naofumi_iwatani') {
+                const key = typeof passiveState.naofumiCurrentShieldKey === 'string' ? passiveState.naofumiCurrentShieldKey : null;
+                if (key === 'legendary') {
+                    passiveName = 'Legendary Shield';
+                    passiveDesc = 'At the start of battle, gain +7 defense permanently.';
+                } else if (key === 'leaf') {
+                    passiveName = 'Leaf Shield';
+                    passiveDesc = 'At the start of your turn, heal 10 health and cleanse yourself.';
+                } else if (key === 'chimera') {
+                    passiveName = 'Chimera Shield';
+                    passiveDesc = "When taking damage from an enemy skill, deal damage to opponent's attack as true damage.";
+                } else if (key === 'prison') {
+                    passiveName = 'Shield Prison';
+                    passiveDesc = 'At the start of your turn, stun the opponent for 1 turn and deal 10 damage which bypasses defense.';
+                } else if (key === 'balloon') {
+                    passiveName = 'Balloon Shields';
+                    passiveDesc = 'This turn, your attack skills are triggered twice.';
+                } else if (key === 'soul_eater') {
+                    passiveName = 'Soul Eater Shield';
+                    passiveDesc = 'Your skills become Undead Control and Soul Eat for this turn. When using a skill recover 3% of max health.';
+                } else if (key === 'transformation') {
+                    passiveName = 'Transformation Shield';
+                    passiveDesc = 'Gain access to your ultimate and your skills ignore defense. At the end of your turn, take escalating true damage.';
+                }
+            }
+
+        this.updateElement('#passive-name', passiveName);
+        this.updateElement('#passive-description', passiveDesc);
         
         // Update progress display based on passive type
         const progressElement = this.querySelector('#passive-progress');
@@ -2248,8 +2316,17 @@ class BattlePage extends BasePage {
         const container = this.querySelector(containerId);
         if (!container) return;
 
-        // Clear existing indicators
-        container.innerHTML = '';
+        const existingByKey = new Map();
+        try {
+            for (const el of Array.from(container.children || [])) {
+                const key = el && el.dataset ? el.dataset.effectKey : null;
+                if (key) {
+                    existingByKey.set(key, el);
+                }
+            }
+        } catch (e) {}
+
+        const desired = [];
 
         const character = this.gameCoordinator?.gameState?.players?.get(playerRole)?.character;
         const passive = character?.passive;
@@ -2263,10 +2340,9 @@ class BattlePage extends BasePage {
                 if (!key) continue;
                 const stacks = character?.passiveState?.counters?.[key] || 0;
 
-                const indicator = document.createElement('div');
-                indicator.className = `effect-indicator stack-counter ${badge.className || ''}`.trim();
-                indicator.textContent = String(stacks);
-                indicator.title = `${badge.title || key}: ${stacks}`;
+                const indicatorKey = `badge:${key}`;
+                const indicatorClass = `effect-indicator stack-counter ${badge.className || ''}`.trim();
+                let indicatorTitle = `${badge.title || key}: ${stacks}`;
 
                 if (character?.id === 'frieren' && key === 'archivePages') {
                     const pages = Array.isArray(character?.passiveState?.archivePages)
@@ -2299,41 +2375,65 @@ class BattlePage extends BasePage {
 
                         const total = pages.length;
                         if (parts.length === 0) {
-                            indicator.title = '0 pages';
+                            indicatorTitle = '0 pages';
                         } else if (parts.length === 1) {
-                            indicator.title = `${parts[0]} ${total === 1 ? 'page' : 'pages'}`;
+                            indicatorTitle = `${parts[0]} ${total === 1 ? 'page' : 'pages'}`;
                         } else {
                             const head = parts.slice(0, -1).join(', ');
                             const tail = parts[parts.length - 1];
-                            indicator.title = `${head} and ${tail} ${total === 1 ? 'page' : 'pages'}`;
+                            indicatorTitle = `${head} and ${tail} ${total === 1 ? 'page' : 'pages'}`;
                         }
                     }
                 }
-                container.appendChild(indicator);
+
+                desired.push({
+                    key: indicatorKey,
+                    className: indicatorClass,
+                    text: String(stacks),
+                    title: indicatorTitle,
+                    shadeDeg: null,
+                    onClick: null
+                });
             }
         } else if (mission && mission.type === 'stack_threshold') {
             const key = mission.counter;
             const stacks = key ? (character?.passiveState?.counters?.[key] || 0) : 0;
 
-            const indicator = document.createElement('div');
-            indicator.className = 'effect-indicator stack-counter';
-            indicator.textContent = String(stacks);
-            indicator.title = `${passive?.name || 'Stacks'}: ${stacks}`;
-            container.appendChild(indicator);
+            desired.push({
+                key: `mission:${key || 'stacks'}`,
+                className: 'effect-indicator stack-counter',
+                text: String(stacks),
+                title: `${passive?.name || 'Stacks'}: ${stacks}`,
+                shadeDeg: null,
+                onClick: null
+            });
         }
 
         const heatStacks = character?.passiveState?.counters?.heat || 0;
         if (!hasHeatBadge && heatStacks > 0) {
-            const indicator = document.createElement('div');
-            indicator.className = 'effect-indicator stack-counter stack-counter-heat';
-            indicator.textContent = String(heatStacks);
-            indicator.title = `Heat: ${heatStacks}`;
-            container.appendChild(indicator);
+            desired.push({
+                key: 'heat',
+                className: 'effect-indicator stack-counter stack-counter-heat',
+                text: String(heatStacks),
+                title: `Heat: ${heatStacks}`,
+                shadeDeg: null,
+                onClick: null
+            });
         }
 
         const groups = new Map();
         for (const effect of (effects || [])) {
             if (!effect || !effect.type) continue;
+
+            // Ch'en Sword: hide the indicator entirely until at least 1 stack exists.
+            try {
+                if (effect.type === 'buff' && effect._itemPassiveId === 'chen_sword_cd_mastery') {
+                    const stacks = Math.max(0, Math.floor(Number(effect._stackCount ?? effect.value) || 0));
+                    if (stacks <= 0) {
+                        continue;
+                    }
+                }
+            } catch (e) {}
 
             // Stack identical effects into one indicator.
             // For stat-based buffs/debuffs, include stat in the grouping key so different stats don't merge.
@@ -2379,39 +2479,86 @@ class BattlePage extends BasePage {
 
         // Add effect indicators (stacked)
         for (const g of groups.values()) {
-            const indicator = document.createElement('div');
-            indicator.className = `effect-indicator ${g.type}`;
+            const explicitStacks = (g.effect && (g.effect._stackCount !== undefined && g.effect._stackCount !== null))
+                ? Math.max(0, Math.floor(Number(g.effect._stackCount) || 0))
+                : ((g.effect && typeof g.effect.stacks === 'number')
+                    ? Math.max(0, Math.floor(Number(g.effect.stacks) || 0))
+                    : null);
 
-            // Show stacks like the grey counters; hide turn numbers on squares
-            if (g.effect && typeof g.effect.stacks === 'number') {
-                indicator.textContent = String(g.effect.stacks);
-            } else {
-                indicator.textContent = g.count > 1 ? String(g.count) : '';
-            }
+            const isChenSword = Boolean(g.effect && g.effect.type === 'buff' && g.effect._itemPassiveId === 'chen_sword_cd_mastery');
+            const displayText = (explicitStacks !== null && explicitStacks > 0)
+                ? (isChenSword && explicitStacks <= 1 ? '' : String(explicitStacks))
+                : (g.count > 1 ? String(g.count) : '');
 
             const ratio = g.duration > 0 ? Math.max(0, Math.min(1, g.turnsLeft / g.duration)) : 1;
             const elapsed = 1 - ratio;
             const shadeDeg = Math.round(elapsed * 360);
-            indicator.style.setProperty('--shade', `${shadeDeg}deg`);
 
-            {
-                const statKey = g.effect && g.effect.stat ? String(g.effect.stat) : '';
-                const totalValue = (typeof g.totalValue === 'number') ? g.totalValue : null;
-                let title = `${g.effect.name}: ${g.effect.description}`;
-
-                if (totalValue !== null && statKey) {
-                    const statLabel = statKey === 'attack' ? 'ATK' : (statKey === 'defense' ? 'DEF' : statKey.toUpperCase());
-                    const sum = Math.round(totalValue);
-                    const sign = sum > 0 ? '+' : '';
-                    title = `${g.effect.name}: ${sign}${sum} ${statLabel}`;
-                }
-                indicator.title = title;
+            const statKey = g.effect && g.effect.stat ? String(g.effect.stat) : '';
+            const totalValue = (typeof g.totalValue === 'number') ? g.totalValue : null;
+            let title = `${g.effect.name}: ${g.effect.description}`;
+            if (totalValue !== null && statKey) {
+                const statLabel = statKey === 'attack' ? 'ATK' : (statKey === 'defense' ? 'DEF' : statKey.toUpperCase());
+                const sum = Math.round(totalValue);
+                const sign = sum > 0 ? '+' : '';
+                title = `${g.effect.name}: ${sign}${sum} ${statLabel}`;
             }
 
-            // Add click handler for tooltip
-            indicator.addEventListener('click', (e) => this.showEffectTooltip(e, g));
+            desired.push({
+                key: `effect:${g.key}`,
+                className: `effect-indicator ${g.type}`,
+                text: displayText,
+                title,
+                shadeDeg,
+                onClick: (e) => this.showEffectTooltip(e, g)
+            });
+        }
 
-            container.appendChild(indicator);
+        const nextKeys = new Set(desired.map(d => d.key));
+        for (const [key, el] of existingByKey.entries()) {
+            if (!nextKeys.has(key) && el && el.parentNode === container) {
+                try {
+                    el.remove();
+                } catch (e) {
+                    try {
+                        container.removeChild(el);
+                    } catch (e2) {}
+                }
+            }
+        }
+
+        const orderedEls = [];
+        for (const d of desired) {
+            let el = existingByKey.get(d.key);
+            if (!el) {
+                el = document.createElement('div');
+                el.dataset.effectKey = d.key;
+            }
+
+            el.className = d.className;
+            el.textContent = d.text || '';
+            el.title = d.title || '';
+            if (typeof d.shadeDeg === 'number') {
+                el.style.setProperty('--shade', `${d.shadeDeg}deg`);
+            } else {
+                el.style.removeProperty('--shade');
+            }
+
+            if (d.onClick) {
+                el.onclick = d.onClick;
+            } else {
+                el.onclick = null;
+            }
+
+            orderedEls.push(el);
+        }
+
+        for (const el of orderedEls) {
+            if (el.parentNode !== container) {
+                container.appendChild(el);
+            } else {
+                container.appendChild(el);
+            }
         }
     }
 

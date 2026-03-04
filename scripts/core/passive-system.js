@@ -357,6 +357,27 @@ class PassiveSystem {
                     await this.skillSystem.applyHealing(character, amount, playerId);
                 }
             }
+
+            // Pillow item passive: 10% chance to stun the enemy for 1 turn when using a utility skill.
+            if (character && typeof character.itemId === 'string' && character.itemId === 'pillow') {
+                const isUtility = payload && payload.skillType === 'utility';
+                if (isUtility && this.skillSystem && typeof this.skillSystem.applyStun === 'function') {
+                    const opponentId = playerId === 'player1' ? 'player2' : (playerId === 'player2' ? 'player1' : null);
+                    const opponentChar = opponentId ? this.gameState?.players?.get(opponentId)?.character : null;
+                    if (opponentId && opponentChar) {
+                        state._pillowProcSeq = (Number(state._pillowProcSeq) || 0) + 1;
+                        const skillId = payload && payload.skillId ? String(payload.skillId) : 'unknown';
+                        const seed = `${this.gameState?.gameId || 'game'}:${this.gameState?.turnCount || 0}:${playerId}:pillow:${skillId}:${state._pillowProcSeq}`;
+                        const rand = this.skillSystem && typeof this.skillSystem.deterministicRandom === 'function'
+                            ? this.skillSystem.deterministicRandom(seed)
+                            : Math.random();
+
+                        if (rand < 0.1) {
+                            await this.skillSystem.applyStun(opponentChar, 1, opponentId);
+                        }
+                    }
+                }
+            }
         }
 
         if (eventType === 'skill_used') {
@@ -433,6 +454,222 @@ class PassiveSystem {
 
                 if (Number.isFinite(turnCount)) {
                     state.frierenRotatingSkillLastTurnCount = turnCount;
+                }
+            }
+
+            if (character.id === 'naofumi_iwatani') {
+                const state = this.ensureState(character);
+                const turnCount = Number(this.gameState?.turnCount);
+                if (!Number.isFinite(turnCount)) return;
+
+                if (this.gameState?.currentTurn !== playerId) {
+                    return;
+                }
+
+                if (state.naofumiShieldLastTurnCount === turnCount) {
+                    return;
+                }
+                state.naofumiShieldLastTurnCount = turnCount;
+
+                if (!Array.isArray(state.naofumiShieldBag) || state.naofumiShieldBag.length === 0) {
+                    state.naofumiShieldBag = ['leaf', 'chimera', 'prison', 'balloon', 'soul_eater'];
+                }
+
+                if (!Array.isArray(state.naofumiBaseSkillIds) || state.naofumiBaseSkillIds.length === 0) {
+                    state.naofumiBaseSkillIds = ['naofumi_shield_bash', 'naofumi_defensive_stance'];
+                }
+
+                state.naofumiOwnTurnIndex = Math.max(0, Math.floor(Number(state.naofumiOwnTurnIndex) || 0)) + 1;
+
+                if (state.naofumiCurrentShieldKey === 'transformation') {
+                    state.naofumiTransformActive = true;
+                }
+
+                if (state.naofumiOwnTurnIndex === 1) {
+                    state.naofumiCurrentShieldKey = 'legendary';
+                } else if (state.naofumiOwnTurnIndex >= 7) {
+                    state.naofumiCurrentShieldKey = 'transformation';
+                } else if (state.naofumiCurrentShieldKey !== 'transformation') {
+                    const seed = `${this.gameState?.gameId || 'game'}:${turnCount}:${playerId}:naofumi:shield`;
+                    const rand = this.skillSystem && typeof this.skillSystem.deterministicRandom === 'function'
+                        ? this.skillSystem.deterministicRandom(seed)
+                        : Math.random();
+                    const idx = Math.min(state.naofumiShieldBag.length - 1, Math.max(0, Math.floor(rand * state.naofumiShieldBag.length)));
+                    const picked = state.naofumiShieldBag.splice(idx, 1)[0];
+                    state.naofumiCurrentShieldKey = picked;
+                }
+
+                state.naofumiBalloonTurnCount = null;
+                state.naofumiSoulEaterTurnCount = null;
+
+                const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                const opponentChar = this.gameState?.players?.get(opponentId)?.character;
+
+                if (state.naofumiCurrentShieldKey === 'legendary' && !state.naofumiLegendaryBuffApplied) {
+                    state.naofumiLegendaryBuffApplied = true;
+                    if (this.skillSystem && typeof this.skillSystem.applyBuff === 'function') {
+                        await this.skillSystem.applyBuff(character, { stat: 'defense', mode: 'flat', value: 7, duration: 999 }, playerId);
+                        try {
+                            const effects = this.skillSystem.activeEffects;
+                            const ids = [];
+                            for (const [id, eff] of effects.entries()) {
+                                if (!eff) continue;
+                                if (eff.type !== 'buff') continue;
+                                if (eff.target !== playerId) continue;
+                                if (eff.stat !== 'defense') continue;
+                                if (eff.mode !== 'flat') continue;
+                                if ((Number(eff.value) || 0) !== 7) continue;
+                                if ((Number(eff.turnsLeft) || 0) !== 999) continue;
+                                if (eff._naofumiShieldKey) continue;
+                                ids.push(id);
+                            }
+                            if (ids.length > 0) {
+                                const last = ids[ids.length - 1];
+                                const eff = effects.get(last);
+                                if (eff) {
+                                    eff._naofumiShieldKey = 'legendary';
+                                    eff.name = 'Legendary Shield';
+                                    eff.description = '+7 DEF';
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (state.naofumiCurrentShieldKey === 'leaf') {
+                    if (this.skillSystem && typeof this.skillSystem.applyHealing === 'function') {
+                        await this.skillSystem.applyHealing(character, 10, playerId);
+                    }
+                    if (this.skillSystem && typeof this.skillSystem.cleanse === 'function') {
+                        await this.skillSystem.cleanse(character, playerId);
+                    }
+                }
+
+                if (state.naofumiCurrentShieldKey === 'prison') {
+                    if (opponentId && opponentChar) {
+                        const immune = this.skillSystem && typeof this.skillSystem.isImmune === 'function'
+                            ? this.skillSystem.isImmune(opponentId)
+                            : false;
+                        const concealed = this.skillSystem && typeof this.skillSystem.isConcealed === 'function'
+                            ? this.skillSystem.isConcealed(opponentId)
+                            : false;
+                        if (!immune && !concealed && this.skillSystem && this.skillSystem.activeEffects && typeof this.skillSystem.activeEffects.set === 'function') {
+                            const stunId = `stun_${opponentId}_${Date.now()}`;
+                            this.skillSystem.activeEffects.set(stunId, {
+                                type: 'stun',
+                                target: opponentId,
+                                ownerId: playerId,
+                                characterId: opponentChar.id,
+                                duration: 1,
+                                turnsLeft: 1,
+                                name: 'Stunned',
+                                description: 'Cannot act for 1 turn'
+                            });
+                        }
+                        if (this.skillSystem && typeof this.skillSystem.applyTrueDamageNoDomain === 'function') {
+                            await this.skillSystem.applyTrueDamageNoDomain(opponentChar, 10, opponentId, playerId);
+                        }
+                    }
+                }
+
+                if (state.naofumiCurrentShieldKey === 'balloon') {
+                    state.naofumiBalloonTurnCount = turnCount;
+                }
+
+                if (state.naofumiCurrentShieldKey === 'soul_eater') {
+                    state.naofumiSoulEaterTurnCount = turnCount;
+                    const cs = this.gameState?.characterSystem || this.skillSystem?.characterSystem;
+                    if (cs && typeof cs.getSkill === 'function') {
+                        try {
+                            const s1 = await cs.getSkill('naofumi_undead_control');
+                            const s2 = await cs.getSkill('naofumi_soul_eat');
+                            if (s1 && s2) {
+                                character.skills = [s2, s1];
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (state.naofumiCurrentShieldKey === 'transformation') {
+                    state.naofumiTransformActive = true;
+                    state.naofumiTransformTurnCount = turnCount;
+                    player.ultimateReady = true;
+                    state.ultimateReady = true;
+                }
+
+                // Reset back to normal skills each turn unless Soul Eater shield is active.
+                if (state.naofumiCurrentShieldKey !== 'soul_eater' && Array.isArray(state.naofumiBaseSkillIds)) {
+                    const cs = this.gameState?.characterSystem || this.skillSystem?.characterSystem;
+                    if (cs && typeof cs.getSkill === 'function') {
+                        try {
+                            const s1 = await cs.getSkill(state.naofumiBaseSkillIds[0]);
+                            const s2 = await cs.getSkill(state.naofumiBaseSkillIds[1]);
+                            if (s1 && s2) {
+                                character.skills = [s1, s2];
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+        }
+
+        if (eventType === 'turn_end') {
+            if (character.id === 'naofumi_iwatani') {
+                const state = this.ensureState(character);
+                const turnCount = Number(this.gameState?.turnCount);
+                const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                const opponentChar = this.gameState?.players?.get(opponentId)?.character;
+
+                if (state.naofumiCurrentShieldKey === 'transformation') {
+                    state.naofumiTransformTrueDamage = Math.max(0, Math.floor(Number(state.naofumiTransformTrueDamage) || 0)) + 1;
+                    if (this.skillSystem && typeof this.skillSystem.applyTrueDamageNoDomain === 'function') {
+                        await this.skillSystem.applyTrueDamageNoDomain(character, state.naofumiTransformTrueDamage, playerId, null);
+                    }
+                }
+
+                // Soul Eater skills last only for that one turn.
+                if (Number.isFinite(turnCount) && Number(state.naofumiSoulEaterTurnCount) === turnCount) {
+                    const cs = this.gameState?.characterSystem || this.skillSystem?.characterSystem;
+                    if (cs && typeof cs.getSkill === 'function') {
+                        try {
+                            const baseIds = Array.isArray(state.naofumiBaseSkillIds) ? state.naofumiBaseSkillIds : null;
+                            const b1 = baseIds && typeof baseIds[0] === 'string' ? baseIds[0] : 'naofumi_shield_bash';
+                            const b2 = baseIds && typeof baseIds[1] === 'string' ? baseIds[1] : 'naofumi_defensive_stance';
+                            const s1 = await cs.getSkill(b1);
+                            const s2 = await cs.getSkill(b2);
+                            if (s1 && s2) {
+                                character.skills = [s1, s2];
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+        }
+
+        if (eventType === 'skill_used') {
+            if (character.id === 'naofumi_iwatani') {
+                const state = this.ensureState(character);
+                const turnCount = Number(this.gameState?.turnCount);
+                if (Number.isFinite(turnCount) && Number(state.naofumiSoulEaterTurnCount) === turnCount) {
+                    const maxHp = Number(character?.stats?.maxHealth) || 0;
+                    const heal = Math.max(1, Math.floor(maxHp * 0.03));
+                    if (heal > 0 && this.skillSystem && typeof this.skillSystem.applyHealing === 'function') {
+                        await this.skillSystem.applyHealing(character, heal, playerId);
+                    }
+                }
+            }
+        }
+
+        if (eventType === 'damage_taken_enemy_skill') {
+            if (character.id === 'naofumi_iwatani') {
+                const state = this.ensureState(character);
+                const attackerId = payload && payload.attackerId ? String(payload.attackerId) : null;
+                const enemy = attackerId ? this.gameState?.players?.get(attackerId)?.character : null;
+                if (state.naofumiCurrentShieldKey === 'chimera' && enemy && this.skillSystem && typeof this.skillSystem.applyTrueDamageNoDomain === 'function') {
+                    const dmg = Math.max(0, Math.floor(Number(enemy?.stats?.attack) || 0));
+                    if (dmg > 0) {
+                        await this.skillSystem.applyTrueDamageNoDomain(enemy, dmg, attackerId, playerId);
+                    }
                 }
             }
         }

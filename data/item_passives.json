@@ -17,11 +17,26 @@
   "chen_sword_cd_mastery": {
     "id": "chen_sword_cd_mastery",
     "name": "Cooldown Mastery",
-    "description": "When Ch'en reduces the cooldown of 1 or more of her skills, she gains +2 attack as a buff for 2 turns"
+    "description": "When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. 0/10"
   },
   "broken_sword_shattered_edge": {
     "id": "broken_sword_shattered_edge",
     "name": "Shattered Edge",
     "description": "Start the match with +5 ATK. Each turn, lose 1 ATK until you lose 5 ATK."
+  },
+  "pillow_sleepy_surprise": {
+    "id": "pillow_sleepy_surprise",
+    "name": "Sleepy Surprise",
+    "description": "When using a utility skill, 10% chance to stun enemy for 1 turn"
+  },
+  "assassin_dagger_sharpened_instinct": {
+    "id": "assassin_dagger_sharpened_instinct",
+    "name": "Sharpened Instinct",
+    "description": "Gain a +3 ATK buff for 2 turns when gaining the evasion buff"
+  },
+  "wooden_shield_stance_guard": {
+    "id": "wooden_shield_stance_guard",
+    "name": "Stance Guard",
+    "description": "While in a stance, gain +2 DEF"
   }
 }

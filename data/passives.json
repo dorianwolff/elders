@@ -369,5 +369,11 @@
         "maxPages": 5
       }
     ]
+  },
+  "naofumi_shield_rotation": {
+    "id": "naofumi_shield_rotation",
+    "name": "Shield Rotation",
+    "description": "At the start of each of your turns, switch to a new shield (each shield appears once). Your passive is replaced by the current shield. At the 7th shield, rotation stops.",
+    "effects": []
   }
 }

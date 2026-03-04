@@ -9,6 +9,78 @@ class SkillSystem {
         this._effectIdSeq = 0;
     }
 
+    applyChenSwordStackIfAny(playerId, character) {
+        try {
+            if (!playerId || (playerId !== 'player1' && playerId !== 'player2')) return;
+            if (!character || character.itemId !== 'chen_sword') return;
+
+            let existingId = null;
+            let existingEff = null;
+            const dupes = [];
+            for (const [id, eff] of this.activeEffects.entries()) {
+                if (!eff) continue;
+                if (eff.type !== 'buff') continue;
+                if (eff.target !== playerId) continue;
+                if (eff._itemPassiveId !== 'chen_sword_cd_mastery') continue;
+                if (eff.stat !== 'attack') continue;
+                if (eff.mode !== 'flat') continue;
+                if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                if (!existingId) {
+                    existingId = id;
+                    existingEff = eff;
+                } else {
+                    dupes.push(id);
+                }
+            }
+
+            for (const id of dupes) {
+                this.activeEffects.delete(id);
+            }
+
+            const curStacks = existingEff
+                ? Math.max(0, Math.floor(Number(existingEff._stackCount ?? existingEff.value) || 0))
+                : 0;
+            const nextStacks = Math.min(10, curStacks + 1);
+            if (nextStacks === curStacks) return;
+
+            if (existingEff) {
+                existingEff.value = nextStacks;
+                existingEff._stackCount = nextStacks;
+                existingEff.name = 'Cooldown Mastery';
+                existingEff.description = `+${nextStacks} ATK`;
+                this.recalculateStats(playerId);
+                return;
+            }
+
+            if (typeof this.applyBuff === 'function') {
+                this.applyBuff(character, { stat: 'attack', mode: 'flat', value: nextStacks, duration: 999 }, playerId);
+                try {
+                    const ids = [];
+                    for (const [id, eff] of this.activeEffects.entries()) {
+                        if (!eff) continue;
+                        if (eff.type !== 'buff') continue;
+                        if (eff.target !== playerId) continue;
+                        if (eff.stat !== 'attack') continue;
+                        if (eff.mode !== 'flat') continue;
+                        if ((Number(eff.turnsLeft) || 0) !== 999) continue;
+                        if (eff._itemPassiveId) continue;
+                        ids.push(id);
+                    }
+                    if (ids.length > 0) {
+                        const last = ids[ids.length - 1];
+                        const eff = this.activeEffects.get(last);
+                        if (eff) {
+                            eff._itemPassiveId = 'chen_sword_cd_mastery';
+                            eff._stackCount = nextStacks;
+                            eff.name = 'Cooldown Mastery';
+                            eff.description = `+${nextStacks} ATK`;
+                        }
+                    }
+                } catch (e) {}
+            }
+        } catch (e) {}
+    }
+
     getCooldownReductionStackKeyForSkill(skillId) {
         return `cdr_${skillId}`;
     }
@@ -94,10 +166,10 @@ class SkillSystem {
             }
         }
 
-        // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +2 ATK for 2 turns.
+        // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +1 ATK (stacking buff) up to 10.
         try {
-            if (reducedAny && character && character.itemId === 'chen_sword' && typeof this.applyBuff === 'function') {
-                this.applyBuff(character, { stat: 'attack', mode: 'flat', value: 2, duration: 2 }, playerId);
+            if (reducedAny && character && character.itemId === 'chen_sword') {
+                this.applyChenSwordStackIfAny(playerId, character);
             }
         } catch (e) {}
 
@@ -509,20 +581,24 @@ class SkillSystem {
                 continue;
             }
 
-            if (targetId === playerId) {
-                const healAmount = Math.max(0, Math.floor(Number(effect.healOnTurnStart) || 0));
-                if (healAmount > 0) {
-                    const character = this.getPlayerById(playerId);
-                    if (character) {
-                        await this.applyHealing(character, healAmount, playerId);
-                    }
-                }
+            // Stances behave like buffs: they persist for the owner's full turn + the opponent's full turn,
+            // then decrement at the start of the owner's next turn.
+            if (targetId !== playerId) {
+                continue;
+            }
 
-                effect.turnsLeft = stanceTurnsLeft - 1;
-                if (effect.turnsLeft <= 0) {
-                    toRemove.push(effectId);
-                    toRecalc.add(playerId);
+            const healAmount = Math.max(0, Math.floor(Number(effect.healOnTurnStart) || 0));
+            if (healAmount > 0) {
+                const character = this.getPlayerById(playerId);
+                if (character) {
+                    await this.applyHealing(character, healAmount, playerId);
                 }
+            }
+
+            effect.turnsLeft = stanceTurnsLeft - 1;
+            if (effect.turnsLeft <= 0) {
+                toRemove.push(effectId);
+                toRecalc.add(playerId);
             }
         }
 
@@ -763,6 +839,7 @@ class SkillSystem {
         let defenseAdd = 0;
         let damageReductionAdd = 0;
         let maxHealthAdd = 0;
+        let hasActiveStance = false;
 
         // Accumulate buffs/debuffs/stances currently active for this player
         for (const [, effect] of this.activeEffects.entries()) {
@@ -770,9 +847,15 @@ class SkillSystem {
             if (effect.type !== 'buff' && effect.type !== 'debuff' && effect.type !== 'stance') continue;
 
             if (effect.type === 'stance') {
+                hasActiveStance = true;
                 const defenseBonus = Number(effect.defenseBonus) || 0;
                 if (defenseBonus !== 0) {
                     defenseAdd += defenseBonus;
+                }
+
+                const stanceDr = Math.max(0, Math.floor(Number(effect.damageReduction) || 0));
+                if (stanceDr > 0) {
+                    damageReductionAdd += stanceDr;
                 }
                 continue;
             }
@@ -799,6 +882,13 @@ class SkillSystem {
                 maxHealthAdd += value;
             }
         }
+
+        // Wooden Shield item passive: while in a stance, gain +1 DEF.
+        try {
+            if (character && character.itemId === 'wooden_shield' && hasActiveStance) {
+                defenseAdd += 2;
+            }
+        } catch (e) {}
 
         // Apply derived stats from base + modifiers
         character.stats.attack = (baseAttack * attackMultiplier) + attackAdd;
@@ -908,15 +998,44 @@ class SkillSystem {
                 }
             }
 
+            const naofumiTransformActive = Boolean(
+                caster &&
+                caster.id === 'naofumi_iwatani' &&
+                caster.passiveState &&
+                caster.passiveState.naofumiTransformActive
+            );
+            const balloonTurn = (caster && caster.passiveState) ? caster.passiveState.naofumiBalloonTurnCount : null;
+            const naofumiShieldKey = (caster && caster.passiveState && typeof caster.passiveState.naofumiCurrentShieldKey === 'string')
+                ? caster.passiveState.naofumiCurrentShieldKey
+                : null;
+            const naofumiBalloonDouble = Boolean(
+                caster &&
+                caster.id === 'naofumi_iwatani' &&
+                caster.passiveState &&
+                naofumiShieldKey === 'balloon' &&
+                Number.isFinite(balloonTurn) &&
+                balloonTurn === Number(gameState?.turnCount)
+            );
+            const shouldDoubleCast = Boolean(naofumiBalloonDouble && skillTypeForPassive === 'attack');
+
             const result = await this.withActionContext({
                 kind: 'skill',
                 attackerId: playerId,
                 skillId: skill?.id,
                 skillType: skillTypeForPassive,
                 isCounter: false,
-                preSkillCdrStacks
+                preSkillCdrStacks,
+                ignoreDefense: naofumiTransformActive
             }, async () => {
-                return await this.applySkillEffect(skill.effect, caster, target, gameState, playerId);
+                const first = await this.applySkillEffect(skill.effect, caster, target, gameState, playerId);
+                if (!shouldDoubleCast) return first;
+                const second = await this.applySkillEffect(skill.effect, caster, target, gameState, playerId);
+                return {
+                    damage: (Number(first.damage) || 0) + (Number(second.damage) || 0),
+                    healing: (Number(first.healing) || 0) + (Number(second.healing) || 0),
+                    effects: [...(first.effects || []), ...(second.effects || [])],
+                    lightningDamage: (Number(first.lightningDamage) || 0) + (Number(second.lightningDamage) || 0)
+                };
             });
 
             {
@@ -972,16 +1091,99 @@ class SkillSystem {
         }
         try {
 
-        const opponentId = playerId === 'player1' ? 'player2' : 'player1';
-        const targetPlayerId = target === caster ? playerId : opponentId;
+        const opponentPlayerId = playerId === 'player1' ? 'player2' : 'player1';
+        const targetId = target === caster ? playerId : opponentPlayerId;
 
         // Evade: blocks all opponent skills and debuffs for 1 turn
-        if (targetPlayerId !== playerId && this.isEvading(targetPlayerId)) {
+        if (targetId !== playerId && this.isEvading(targetId)) {
             result.effects.push('Evaded');
             return result;
         }
 
         switch (effect.type) {
+            case 'naofumi_shield_bash': {
+                const basePct = Number(effect.base_percent) || 0;
+                const transformPct = Number(effect.transform_percent) || basePct;
+                const transformActive = Boolean(caster && caster.id === 'naofumi_iwatani' && caster.passiveState && caster.passiveState.naofumiTransformActive);
+                const pct = transformActive ? transformPct : basePct;
+                const baseDamage = Math.max(0, (Number(caster?.stats?.defense) || 0) * pct);
+                const ctx = this.getActiveActionContext();
+                const ignoreDefense = Boolean(ctx && ctx.ignoreDefense);
+                const defense = ignoreDefense ? 0 : (Number(target?.stats?.defense) || 0);
+                const damageReduction = (Number(target?.stats?.damageReduction) || 0) / 100;
+                const reduced = Math.max(1, baseDamage - defense);
+                const finalDamage = Math.max(1, Math.ceil(reduced * (1 - damageReduction)));
+                result.damage = await this.applyDamage(target, finalDamage, targetId, playerId);
+                break;
+            }
+
+            case 'naofumi_defensive_stance': {
+                const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || 1));
+                const dr = Math.max(0, Math.floor(Number(effect.damage_reduction) || 0));
+                const id = `stance_${playerId}_${Date.now()}`;
+                this.activeEffects.set(id, {
+                    type: 'stance',
+                    key: 'naofumi_defensive_stance',
+                    stanceKey: 'naofumi_defensive_stance',
+                    target: playerId,
+                    damageReduction: dr,
+                    duration: turnsLeft,
+                    turnsLeft,
+                    transformCounterRatioDefense: Number(effect.transform_counter_ratio_defense) || 0,
+                    name: 'Defensive Stance',
+                    description: 'Reduces damage taken by 30%'
+                });
+                this.recalculateStats(playerId);
+                break;
+            }
+
+            case 'naofumi_ultimate': {
+                const duration = Math.max(1, Math.floor(Number(effect.heal_block_duration) || 2));
+                const enemyId = target === caster ? playerId : opponentPlayerId;
+                await this.applyHealBlock(enemyId, duration);
+
+                const def = Math.floor(Number(effect.self_defense_buff) || 0);
+                const defDur = Math.max(1, Math.floor(Number(effect.self_defense_duration) || 5));
+                if (def !== 0) {
+                    await this.applyBuff(caster, { stat: 'defense', value: def, mode: 'flat', duration: defDur }, playerId);
+                }
+                break;
+            }
+
+            case 'naofumi_soul_eat': {
+                const enemyId = target === caster ? playerId : opponentPlayerId;
+                // Remove enemy stance
+                for (const [id, eff] of this.activeEffects.entries()) {
+                    if (eff && eff.type === 'stance' && eff.target === enemyId) {
+                        this.activeEffects.delete(id);
+                    }
+                }
+                const ratio = Math.max(0, Number(effect.max_health_ratio) || 0);
+                const intended = Math.max(0, Math.floor((Number(target?.stats?.maxHealth) || 0) * ratio));
+                if (intended > 0) {
+                    result.damage = await this.applyTrueDamageNoDomain(target, intended, enemyId, playerId);
+                }
+                break;
+            }
+
+            case 'naofumi_undead_control': {
+                const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || 1));
+                const ratio = Math.max(0, Number(effect.rebound_ratio) || 0);
+                const id = `stance_${playerId}_${Date.now()}`;
+                this.activeEffects.set(id, {
+                    type: 'stance',
+                    key: 'naofumi_undead_control',
+                    stanceKey: 'naofumi_undead_control',
+                    target: playerId,
+                    reboundRatio: ratio,
+                    duration: turnsLeft,
+                    turnsLeft,
+                    name: 'Undead Control',
+                    description: 'Recover 40% of damage taken and reflect it as true damage'
+                });
+                break;
+            }
+
             case 'damage_with_cdr_stacks':
                 {
                     const opponentId = playerId === 'player1' ? 'player2' : 'player1';
@@ -1129,10 +1331,10 @@ class SkillSystem {
                         if (reducedAny) {
                             result.effects.push(`Reduced cooldown of other skills by ${cdrAmt}`);
 
-                            // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +2 ATK for 2 turns.
+                            // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +1 ATK (stacking buff) up to 10.
                             try {
-                                if (caster && caster.itemId === 'chen_sword' && typeof this.applyBuff === 'function') {
-                                    await this.applyBuff(caster, { stat: 'attack', mode: 'flat', value: 2, duration: 2 }, playerId);
+                                if (caster && caster.itemId === 'chen_sword') {
+                                    this.applyChenSwordStackIfAny(playerId, caster);
                                 }
                             } catch (e) {}
                         }
@@ -3012,6 +3214,14 @@ class SkillSystem {
                 (ctx.kind === 'skill' || ctx.kind === 'ultimate') &&
                 ctx.attackerId === attackerId;
 
+            // Allow passives to distinguish enemy skill damage vs. DoTs/other.
+            if (isEnemySkillDamage && this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
+                this.passiveSystem.handleEvent(playerId, 'damage_taken_enemy_skill', {
+                    amount: remaining,
+                    attackerId
+                });
+            }
+
             const isEnemyCounterOrSkillDamage =
                 remaining > 0 &&
                 attackerId &&
@@ -3049,6 +3259,14 @@ class SkillSystem {
                             break;
                         }
                         if (eff.stanceKey === 'infinity_rebound' || eff.key === 'infinity_rebound') {
+                            stance = eff;
+                            break;
+                        }
+                        if (eff.stanceKey === 'naofumi_defensive_stance' || eff.key === 'naofumi_defensive_stance') {
+                            stance = eff;
+                            break;
+                        }
+                        if (eff.stanceKey === 'naofumi_undead_control' || eff.key === 'naofumi_undead_control') {
                             stance = eff;
                             break;
                         }
@@ -3107,6 +3325,37 @@ class SkillSystem {
                                 });
                             }
                         }
+
+                        if (stance.stanceKey === 'naofumi_defensive_stance' || stance.key === 'naofumi_defensive_stance') {
+                            const ratio = Math.max(0, Number(stance.transformCounterRatioDefense) || 0);
+                            const transformActive = Boolean(
+                                victim &&
+                                victim.id === 'naofumi_iwatani' &&
+                                victim.passiveState &&
+                                victim.passiveState.naofumiTransformActive
+                            );
+                            if (transformActive && ratio > 0) {
+                                const dmg = Math.max(0, Math.floor((Number(victim?.stats?.defense) || 0) * ratio));
+                                if (dmg > 0) {
+                                    await this.withActionContext({ kind: 'counter', attackerId: playerId, isCounter: true, ignoreDefense: true }, async () => {
+                                        await this.applyDamage(enemy, dmg, attackerId, playerId);
+                                    });
+                                }
+                            }
+                        }
+
+                        if (stance.stanceKey === 'naofumi_undead_control' || stance.key === 'naofumi_undead_control') {
+                            const ratio = Math.max(0, Number(stance.reboundRatio) || 0);
+                            if (ratio > 0) {
+                                const rebound = Math.max(0, Math.floor(remaining * ratio));
+                                if (rebound > 0) {
+                                    await this.withActionContext({ kind: 'counter', attackerId: playerId, isCounter: true }, async () => {
+                                        await this.applyHealing(victim, rebound, playerId);
+                                        await this.applyTrueDamageNoDomain(enemy, rebound, attackerId, playerId);
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3160,12 +3409,7 @@ class SkillSystem {
                 }
             }
         } catch (e) {
-            console.warn('Reactive stance handling failed:', e);
-        }
-
-        // Check for death and potential revive
-        if (!_deathChecked && target.stats.health === 0 && oldHealth > 0) {
-            await this.handleCharacterDeath(target, playerId);
+            console.warn('Reactive stance processing failed:', e);
         }
 
         return remaining;
@@ -3456,7 +3700,9 @@ class SkillSystem {
                 baseDamage = effect.value;
         }
 
-        const defense = target.stats.defense || 0;
+        const ctx = this.getActiveActionContext();
+        const ignoreDefense = Boolean(ctx && ctx.ignoreDefense);
+        const defense = ignoreDefense ? 0 : (target.stats.defense || 0);
         const damageReduction = (target.stats.damageReduction || 0) / 100;
 
         const reducedDamage = Math.max(1, baseDamage - defense);
@@ -3751,6 +3997,13 @@ class SkillSystem {
             name: `${buffEffect.stat.charAt(0).toUpperCase() + buffEffect.stat.slice(1)} Boost`,
             description: buffText
         });
+
+        // Assassin's Dagger item passive: when gaining Evade, gain +3 ATK for 2 turns.
+        if (normalizedStat === 'evade' && target && target.itemId === 'assassin_dagger') {
+            try {
+                await this.applyBuff(target, { stat: 'attack', mode: 'flat', value: 3, duration: 2 }, playerId);
+            } catch (e) {}
+        }
 
         if (this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
             const opponentId = playerId === 'player1' ? 'player2' : (playerId === 'player2' ? 'player1' : null);

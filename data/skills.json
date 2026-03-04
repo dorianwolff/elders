@@ -1146,5 +1146,71 @@
       "target": "enemy",
       "casts": 5
     }
+  },
+  "naofumi_shield_bash": {
+    "id": "naofumi_shield_bash",
+    "name": "Shield Bash",
+    "description": "Deal 125% of defense as damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "naofumi_shield_bash",
+      "target": "enemy",
+      "base_percent": 1.25,
+      "transform_percent": 1
+    }
+  },
+  "naofumi_defensive_stance": {
+    "id": "naofumi_defensive_stance",
+    "name": "Defensive Stance",
+    "description": "Enter a stance for 2 turns and reduce damage taken by 30%.",
+    "type": "stance",
+    "cooldown": 2,
+    "effect": {
+      "type": "naofumi_defensive_stance",
+      "target": "self",
+      "damage_reduction": 30,
+      "enemy_turn_duration": 2,
+      "transform_counter_ratio_defense": 0.5
+    }
+  },
+  "naofumi_heroic_guard": {
+    "id": "naofumi_heroic_guard",
+    "name": "Heroic Guard",
+    "description": "Inflict Heal Block on the enemy and gain +5 defense for 5 turns.",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "naofumi_ultimate",
+      "target": "enemy",
+      "heal_block_duration": 2,
+      "self_defense_buff": 5,
+      "self_defense_duration": 5
+    }
+  },
+  "naofumi_soul_eat": {
+    "id": "naofumi_soul_eat",
+    "name": "Soul Eat",
+    "description": "Remove enemy stance and deal 10% of their max health as true damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "naofumi_soul_eat",
+      "target": "enemy",
+      "max_health_ratio": 0.1
+    }
+  },
+  "naofumi_undead_control": {
+    "id": "naofumi_undead_control",
+    "name": "Undead Control",
+    "description": "Enter a stance for 2 turns. While active, recover 40% of damage taken from enemy skills and deal that much true damage to the opponent.",
+    "type": "stance",
+    "cooldown": 0,
+    "effect": {
+      "type": "naofumi_undead_control",
+      "target": "self",
+      "enemy_turn_duration": 2,
+      "rebound_ratio": 0.4
+    }
   }
 }

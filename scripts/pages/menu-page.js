@@ -317,6 +317,11 @@ class MenuPage extends BasePage {
                 'assets/animations/frieren/frieren_idle_1.png',
                 'assets/animations/frieren/frieren_idle_2.png'
             ];
+        } else if (id === 'naofumi_iwatani') {
+            return [
+                'assets/animations/naofumi_isawani/naofumi_iwatani_idle_1.png',
+                'assets/animations/naofumi_isawani/naofumi_iwatani_idle_2.png'
+            ];
         } else if (id === 'lloyd_frontera') {
             return [
                 'assets/animations/lloyd_frontera/lloyd_frontera_idle_1.png',
