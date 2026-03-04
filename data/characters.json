@@ -346,11 +346,11 @@
   "chen": {
     "id": "chen",
     "name": "Ch'en",
-    "metaPoints": 160,
+    "metaPoints": 155,
     "stats": {
       "health": 132,
       "maxHealth": 132,
-      "attack": 33,
+      "attack": 32,
       "defense": 18,
       "lifesteal": 0,
       "damageReduction": 0,

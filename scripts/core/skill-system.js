@@ -876,6 +876,22 @@ class SkillSystem {
                 ? 'heal'
                 : (skill && typeof skill.type === 'string' ? skill.type : null);
 
+            // Some effects (ex: Ch'en Piercing Assault) should evaluate conditions using the
+            // pre-skill state, before any "on skill used" passives mutate cooldown-reduction stacks.
+            let preSkillCdrStacks = null;
+            try {
+                if (skill && skill.effect && skill.effect.type === 'chen_piercing_assault') {
+                    const ids = Array.isArray(skill.effect.stack_skill_ids) ? skill.effect.stack_skill_ids : [];
+                    preSkillCdrStacks = {};
+                    for (const sid of ids) {
+                        if (!sid) continue;
+                        preSkillCdrStacks[sid] = this.getCooldownReductionStacksForSkill(playerId, sid);
+                    }
+                }
+            } catch (e) {
+                preSkillCdrStacks = null;
+            }
+
             if (this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
                 const hpBefore = Number(caster?.stats?.health) || 0;
                 const maxHpBefore = Number(caster?.stats?.maxHealth) || 0;
@@ -897,7 +913,8 @@ class SkillSystem {
                 attackerId: playerId,
                 skillId: skill?.id,
                 skillType: skillTypeForPassive,
-                isCounter: false
+                isCounter: false,
+                preSkillCdrStacks
             }, async () => {
                 return await this.applySkillEffect(skill.effect, caster, target, gameState, playerId);
             });
@@ -1004,13 +1021,24 @@ class SkillSystem {
                     const opponentId = playerId === 'player1' ? 'player2' : 'player1';
                     const targetId = target === caster ? playerId : opponentId;
 
+                    const preSkillCdrStacks = (override && override.preSkillCdrStacks && typeof override.preSkillCdrStacks === 'object')
+                        ? override.preSkillCdrStacks
+                        : ((() => {
+                            const ctx = this.getActiveActionContext();
+                            return (ctx && ctx.preSkillCdrStacks && typeof ctx.preSkillCdrStacks === 'object')
+                                ? ctx.preSkillCdrStacks
+                                : null;
+                        })());
+
                     const threshold = Math.max(0, Math.floor(Number(effect.shield_break_if_other_skill_stacks_at_least) || 0));
                     const stackIds = Array.isArray(effect.stack_skill_ids) ? effect.stack_skill_ids : [];
                     let shouldBreakShield = false;
                     if (threshold > 0 && stackIds.length > 0) {
                         for (const sid of stackIds) {
                             if (!sid) continue;
-                            const stacks = this.getCooldownReductionStacksForSkill(playerId, sid);
+                            const stacks = (preSkillCdrStacks && preSkillCdrStacks[sid] !== undefined)
+                                ? Math.max(0, Math.floor(Number(preSkillCdrStacks[sid]) || 0))
+                                : this.getCooldownReductionStacksForSkill(playerId, sid);
                             if (stacks >= threshold) {
                                 shouldBreakShield = true;
                                 break;
@@ -3818,6 +3846,11 @@ class SkillSystem {
     async syncSkillEffects(skill, caster, target, gameState, playerId) {
         // Apply only the non-damage/healing effects to sync between players
         const effect = skill.effect;
+
+        const ctx = this.getActiveActionContext();
+        const preSkillCdrStacks = (ctx && ctx.preSkillCdrStacks && typeof ctx.preSkillCdrStacks === 'object')
+            ? ctx.preSkillCdrStacks
+            : null;
         
         switch (effect.type) {
             case 'chen_piercing_assault':
@@ -3832,7 +3865,9 @@ class SkillSystem {
                     if (threshold > 0 && stackIds.length > 0) {
                         for (const sid of stackIds) {
                             if (!sid) continue;
-                            const stacks = this.getCooldownReductionStacksForSkill(playerId, sid);
+                            const stacks = (preSkillCdrStacks && preSkillCdrStacks[sid] !== undefined)
+                                ? Math.max(0, Math.floor(Number(preSkillCdrStacks[sid]) || 0))
+                                : this.getCooldownReductionStacksForSkill(playerId, sid);
                             if (stacks >= threshold) {
                                 shouldBreakShield = true;
                                 break;
