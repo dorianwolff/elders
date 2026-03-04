@@ -528,6 +528,20 @@ class MenuPage extends BasePage {
             }
         }
 
+        try {
+            const recSet = new Set((recommended || []).filter(Boolean));
+            eligible.sort((a, b) => {
+                const aRec = recSet.has(a?.id);
+                const bRec = recSet.has(b?.id);
+                if (aRec !== bRec) return aRec ? -1 : 1;
+                const aName = String(a?.name || '').toLowerCase();
+                const bName = String(b?.name || '').toLowerCase();
+                const nameCmp = aName.localeCompare(bName);
+                if (nameCmp !== 0) return nameCmp;
+                return String(a?.id || '').localeCompare(String(b?.id || ''));
+            });
+        } catch (e) {}
+
         const existing = document.querySelector('.item-picker-overlay');
         if (existing) existing.remove();
 
