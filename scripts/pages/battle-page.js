@@ -3,6 +3,7 @@ class BattlePage extends BasePage {
         super();
         this.gameCoordinator = null;
         this.gameState = null;
+        this.characterSystem = new CharacterSystem();
         this.isInitialized = false;
         this.lastAutoSkipTurnCount = null;
         this.idleAnimationIntervalId = null;
@@ -705,67 +706,79 @@ class BattlePage extends BasePage {
                             </div>
                         </div>
                         <div class="opponent-section">
-                            <div class="opponent-character">
-                                <div class="character-image">
-                                    <img id="opponent-image" src="" alt="Opponent">
+                            <div class="character-side-wrap opponent-side-wrap">
+                                <div class="opponent-character">
+                                    <div class="character-image">
+                                        <img id="opponent-image" src="" alt="Opponent">
+                                    </div>
+                                    <div class="character-info">
+                                        <div class="character-header">
+                                            <h3 id="opponent-name">Opponent</h3>
+                                            <div class="effect-indicators" id="opponent-effects"></div>
+                                        </div>
+                                        <div class="health-bar-container">
+                                            <div class="health-bar">
+                                                <div class="health-heal-fill" id="opponent-health-heal-fill"></div>
+                                                <div class="health-damage-fill" id="opponent-health-damage-fill"></div>
+                                                <div class="health-fill" id="opponent-health-fill"></div>
+                                                <div class="health-text">
+                                                    <span id="opponent-health-current">100</span> /
+                                                    <span id="opponent-health-max">100</span>
+                                                </div>
+                                            </div>
+                                            <div class="shield-bar" id="opponent-shield-bar" style="display: none;">
+                                                <div class="shield-fill" id="opponent-shield-fill"></div>
+                                                <div class="shield-text">
+                                                    <span id="opponent-shield-current">0</span> /
+                                                    <span id="opponent-shield-max">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="opponent-stats" id="opponent-stats"></div>
+                                    </div>
                                 </div>
-                                <div class="character-info">
-                                    <div class="character-header">
-                                        <h3 id="opponent-name">Opponent</h3>
-                                        <div class="effect-indicators" id="opponent-effects"></div>
-                                    </div>
-                                    <div class="health-bar-container">
-                                        <div class="health-bar">
-                                            <div class="health-heal-fill" id="opponent-health-heal-fill"></div>
-                                            <div class="health-damage-fill" id="opponent-health-damage-fill"></div>
-                                            <div class="health-fill" id="opponent-health-fill"></div>
-                                            <div class="health-text">
-                                                <span id="opponent-health-current">100</span> /
-                                                <span id="opponent-health-max">100</span>
-                                            </div>
-                                        </div>
-                                        <div class="shield-bar" id="opponent-shield-bar" style="display: none;">
-                                            <div class="shield-fill" id="opponent-shield-fill"></div>
-                                            <div class="shield-text">
-                                                <span id="opponent-shield-current">0</span> /
-                                                <span id="opponent-shield-max">0</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="opponent-stats" id="opponent-stats"></div>
+                                <div class="relic-display" id="opponent-relic" style="display: none;">
+                                    <img class="relic-icon" id="opponent-relic-image" src="" alt="Relic" />
+                                    <div class="relic-passive" id="opponent-relic-desc"></div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="player-section">
-                            <div class="player-character">
-                                <div class="character-image">
-                                    <img id="player-image" src="" alt="Your Character">
+                            <div class="character-side-wrap player-side-wrap">
+                                <div class="player-character">
+                                    <div class="character-image">
+                                        <img id="player-image" src="" alt="Your Character">
+                                    </div>
+                                    <div class="character-info">
+                                        <div class="character-header">
+                                            <h3 id="player-name">Your Character</h3>
+                                            <div class="effect-indicators" id="player-effects"></div>
+                                        </div>
+                                        <div class="health-bar-container">
+                                            <div class="health-bar">
+                                                <div class="health-heal-fill" id="player-health-heal-fill"></div>
+                                                <div class="health-damage-fill" id="player-health-damage-fill"></div>
+                                                <div class="health-fill" id="player-health-fill"></div>
+                                                <div class="health-text">
+                                                    <span id="player-health-current">100</span> /
+                                                    <span id="player-health-max">100</span>
+                                                </div>
+                                            </div>
+                                            <div class="shield-bar" id="player-shield-bar" style="display: none;">
+                                                <div class="shield-fill" id="player-shield-fill"></div>
+                                                <div class="shield-text">
+                                                    <span id="player-shield-current">0</span> /
+                                                    <span id="player-shield-max">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="player-stats" id="player-stats"></div>
+                                    </div>
                                 </div>
-                                <div class="character-info">
-                                    <div class="character-header">
-                                        <h3 id="player-name">Your Character</h3>
-                                        <div class="effect-indicators" id="player-effects"></div>
-                                    </div>
-                                    <div class="health-bar-container">
-                                        <div class="health-bar">
-                                            <div class="health-heal-fill" id="player-health-heal-fill"></div>
-                                            <div class="health-damage-fill" id="player-health-damage-fill"></div>
-                                            <div class="health-fill" id="player-health-fill"></div>
-                                            <div class="health-text">
-                                                <span id="player-health-current">100</span> /
-                                                <span id="player-health-max">100</span>
-                                            </div>
-                                        </div>
-                                        <div class="shield-bar" id="player-shield-bar" style="display: none;">
-                                            <div class="shield-fill" id="player-shield-fill"></div>
-                                            <div class="shield-text">
-                                                <span id="player-shield-current">0</span> /
-                                                <span id="player-shield-max">0</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="player-stats" id="player-stats"></div>
+                                <div class="relic-display" id="player-relic" style="display: none;">
+                                    <img class="relic-icon" id="player-relic-image" src="" alt="Relic" />
+                                    <div class="relic-passive" id="player-relic-desc"></div>
                                 </div>
                             </div>
                         </div>
@@ -1022,7 +1035,54 @@ class BattlePage extends BasePage {
             opponentNameEl.textContent = this.gameState.opponent.character.name || 'Opponent';
         }
 
+        this.updateRelics();
         this.setupSprites();
+    }
+
+    async updateRelics() {
+        if (!this.gameState || !this.characterSystem) return;
+
+        const updateSide = async (side) => {
+            const character = side === 'player'
+                ? this.gameState.player?.character
+                : this.gameState.opponent?.character;
+
+            const wrap = this.querySelector(side === 'player' ? '#player-relic' : '#opponent-relic');
+            const img = this.querySelector(side === 'player' ? '#player-relic-image' : '#opponent-relic-image');
+            const desc = this.querySelector(side === 'player' ? '#player-relic-desc' : '#opponent-relic-desc');
+            if (!wrap || !img || !desc) return;
+
+            const itemId = character && typeof character.itemId === 'string' ? character.itemId : null;
+            if (!itemId) {
+                wrap.style.display = 'none';
+                img.src = '';
+                desc.textContent = '';
+                return;
+            }
+
+            const item = await this.characterSystem.getItem(itemId);
+            if (!item) {
+                wrap.style.display = 'none';
+                img.src = '';
+                desc.textContent = '';
+                return;
+            }
+
+            const passive = item.passiveId ? await this.characterSystem.getItemPassive(item.passiveId) : null;
+            wrap.style.display = '';
+            img.src = item.image || '';
+            img.onerror = () => {
+                img.onerror = null;
+                img.src = '';
+            };
+            desc.textContent = passive && passive.description ? passive.description : '';
+        };
+
+        try {
+            await Promise.all([updateSide('player'), updateSide('opponent')]);
+        } catch (e) {
+            // UI-only: ignore
+        }
     }
 
     updateDomainIndicator() {
@@ -2297,13 +2357,23 @@ class BattlePage extends BasePage {
                     count: 1,
                     duration,
                     turnsLeft: displayTurnsLeft,
-                    effect
+                    effect,
+                    effects: [effect],
+                    totalValue: (effect.type === 'buff' || effect.type === 'debuff') && typeof effect.value === 'number'
+                        ? Number(effect.value) || 0
+                        : null
                 });
             } else {
                 const g = groups.get(key);
                 g.count += 1;
                 g.duration = Math.max(g.duration, duration);
                 g.turnsLeft = Math.max(g.turnsLeft, displayTurnsLeft);
+                if (Array.isArray(g.effects)) {
+                    g.effects.push(effect);
+                }
+                if (g.totalValue !== null && (effect.type === 'buff' || effect.type === 'debuff')) {
+                    g.totalValue += (Number(effect.value) || 0);
+                }
             }
         }
 
@@ -2324,28 +2394,55 @@ class BattlePage extends BasePage {
             const shadeDeg = Math.round(elapsed * 360);
             indicator.style.setProperty('--shade', `${shadeDeg}deg`);
 
-            indicator.title = `${g.effect.name}: ${g.effect.description}`;
+            {
+                const statKey = g.effect && g.effect.stat ? String(g.effect.stat) : '';
+                const totalValue = (typeof g.totalValue === 'number') ? g.totalValue : null;
+                let title = `${g.effect.name}: ${g.effect.description}`;
+
+                if (totalValue !== null && statKey) {
+                    const statLabel = statKey === 'attack' ? 'ATK' : (statKey === 'defense' ? 'DEF' : statKey.toUpperCase());
+                    const sum = Math.round(totalValue);
+                    const sign = sum > 0 ? '+' : '';
+                    title = `${g.effect.name}: ${sign}${sum} ${statLabel}`;
+                }
+                indicator.title = title;
+            }
 
             // Add click handler for tooltip
-            indicator.addEventListener('click', (e) => this.showEffectTooltip(e, g.effect));
+            indicator.addEventListener('click', (e) => this.showEffectTooltip(e, g));
 
             container.appendChild(indicator);
         }
     }
 
-    showEffectTooltip(event, effect) {
+    showEffectTooltip(event, effectOrGroup) {
         // Remove existing tooltip
         const existingTooltip = document.querySelector('.effect-tooltip');
         if (existingTooltip) {
             existingTooltip.remove();
         }
 
+        const effect = (effectOrGroup && effectOrGroup.effect) ? effectOrGroup.effect : effectOrGroup;
+        const group = (effectOrGroup && effectOrGroup.effect) ? effectOrGroup : null;
+
+        let name = effect?.name;
+        let description = effect?.description;
+
+        if (group && typeof group.totalValue === 'number' && effect && effect.stat) {
+            const statKey = String(effect.stat);
+            const statLabel = statKey === 'attack' ? 'ATK' : (statKey === 'defense' ? 'DEF' : statKey.toUpperCase());
+            const sum = Math.round(group.totalValue);
+            const sign = sum > 0 ? '+' : '';
+            name = effect.name;
+            description = `${sign}${sum} ${statLabel}`;
+        }
+
         // Create new tooltip
         const tooltip = document.createElement('div');
         tooltip.className = 'effect-tooltip';
         tooltip.innerHTML = `
-            <div class="effect-name">${effect.name}</div>
-            <div class="effect-description">${effect.description}</div>
+            <div class="effect-name">${name}</div>
+            <div class="effect-description">${description}</div>
             <div class="effect-duration">Turns left: ${effect.turnsLeft}</div>
         `;
 

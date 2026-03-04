@@ -3,6 +3,8 @@ class CharacterSystem {
         this.characters = new Map();
         this.skills = new Map();
         this.passives = new Map();
+        this.items = new Map();
+        this.itemPassives = new Map();
         this.dataLoaded = false;
         this.loadingPromise = this.initializeData();
     }
@@ -29,6 +31,26 @@ class CharacterSystem {
 
             Object.values(passivesData).forEach(passive => {
                 this.passives.set(passive.id, passive);
+            });
+
+            // Load item passives data
+            const itemPassivesResponse = await fetch('./data/item_passives.json');
+            if (!itemPassivesResponse.ok) {
+                throw new Error(`Failed to load item_passives.json: ${itemPassivesResponse.status}`);
+            }
+            const itemPassivesData = await itemPassivesResponse.json();
+            Object.values(itemPassivesData).forEach(passive => {
+                this.itemPassives.set(passive.id, passive);
+            });
+
+            // Load items data
+            const itemsResponse = await fetch('./data/items.json');
+            if (!itemsResponse.ok) {
+                throw new Error(`Failed to load items.json: ${itemsResponse.status}`);
+            }
+            const itemsData = await itemsResponse.json();
+            Object.values(itemsData).forEach(item => {
+                this.items.set(item.id, item);
             });
 
             // Load characters data
@@ -85,7 +107,11 @@ class CharacterSystem {
         // Store original stats snapshots for UI + combat systems
         characterCopy.initialStats = { ...characterCopy.stats };
         characterCopy.baseStats = { ...characterCopy.stats };
-        
+
+        characterCopy.recommended_items = Array.isArray(characterCopy.recommended_items)
+            ? characterCopy.recommended_items
+            : [];
+
         return characterCopy;
     }
 
@@ -107,5 +133,20 @@ class CharacterSystem {
     async getAllSkills() {
         await this.waitForData();
         return Array.from(this.skills.values());
+    }
+
+    async getItem(id) {
+        await this.waitForData();
+        return this.items.get(id) || null;
+    }
+
+    async getAllItems() {
+        await this.waitForData();
+        return Array.from(this.items.values());
+    }
+
+    async getItemPassive(id) {
+        await this.waitForData();
+        return this.itemPassives.get(id) || null;
     }
 }

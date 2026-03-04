@@ -1,0 +1,48 @@
+{
+  "mace": {
+    "id": "mace",
+    "name": "Mace",
+    "type": "regular",
+    "image": "assets/items/mace.png",
+    "stats": {
+      "attack": 1
+    },
+    "passiveId": "mace_bloodlust"
+  },
+  "chen_sword": {
+    "id": "chen_sword",
+    "name": "Ch'en Sword",
+    "type": "signature",
+    "image": "assets/items/chen_sword.png",
+    "allowedCharacters": ["chen"],
+    "stats": {
+      "attack": 2
+    },
+    "passiveId": "chen_sword_cd_mastery"
+  },
+  "edward_elric_cape": {
+    "id": "edward_elric_cape",
+    "name": "Edward Elric Cape",
+    "type": "signature",
+    "image": "assets/items/edward_elric_cape.png",
+    "allowedCharacters": ["edward_elric"],
+    "stats": {
+      "maxHealth": 3,
+      "health": 3
+    },
+    "passiveId": "edward_cape_heat_resist"
+  },
+  "gojo_satoru_glasses": {
+    "id": "gojo_satoru_glasses",
+    "name": "Gojo Satoru Glasses",
+    "type": "signature",
+    "image": "assets/items/gojo_satoru_glasses.png",
+    "allowedCharacters": ["gojo_satoru"],
+    "stats": {
+      "defense": 1,
+      "maxHealth": 1,
+      "health": 1
+    },
+    "passiveId": "gojo_glasses_predatory_focus"
+  }
+}

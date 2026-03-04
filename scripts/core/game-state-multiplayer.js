@@ -25,6 +25,9 @@ GameState.prototype.getGameStateForPlayer = function (playerId) {
                 id: opponent.character.id,
                 name: opponent.character.name,
                 images: opponent.character.images,
+                itemId: opponent.character.itemId,
+                initialStats: opponent.character.initialStats ? { ...opponent.character.initialStats } : null,
+                baseStats: opponent.character.baseStats ? { ...opponent.character.baseStats } : null,
                 stats: {
                     health: opponent.character.stats.health,
                     maxHealth: opponent.character.stats.maxHealth,
@@ -50,9 +53,11 @@ GameState.prototype.buildStateSnapshot = function () {
         return {
             id: p?.id,
             characterId: c?.id,
+            itemId: c?.itemId,
             skillCount: Array.isArray(c?.skills) ? c.skills.length : 0,
             skillIds: Array.isArray(c?.skills) ? c.skills.map(s => s && s.id).filter(Boolean) : [],
             ultimateReady: Boolean(p?.ultimateReady),
+            initialStats: c?.initialStats ? JSON.parse(JSON.stringify(c.initialStats)) : null,
             baseStats: c?.baseStats ? JSON.parse(JSON.stringify(c.baseStats)) : null,
             stats: {
                 health: Number(c?.stats?.health) || 0,
@@ -113,6 +118,16 @@ GameState.prototype.applyStateSnapshot = async function (snapshot) {
             console.warn('Snapshot transform pre-check failed:', e);
         }
         p.ultimateReady = Boolean(pSnap.ultimateReady);
+
+        if (typeof pSnap.itemId === 'string') {
+            p.character.itemId = pSnap.itemId;
+        }
+
+        if (pSnap.initialStats && typeof pSnap.initialStats === 'object') {
+            p.character.initialStats = JSON.parse(JSON.stringify(pSnap.initialStats));
+        } else if (!p.character.initialStats) {
+            p.character.initialStats = { ...p.character.stats };
+        }
 
         if (pSnap.baseStats && typeof pSnap.baseStats === 'object') {
             p.character.baseStats = JSON.parse(JSON.stringify(pSnap.baseStats));

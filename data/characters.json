@@ -15,6 +15,7 @@
     },
     "images": ["lloyd_frontera.jpg"],
     "passiveId": "development",
+    "recommended_items": ["mace"],
     "skillIds": ["value_over_self", "plannification", "construction_site"],
     "ultimate": {
       "id": "greatest_real_estate",
@@ -48,6 +49,7 @@
     },
     "images": ["rimuru_tempest.webp"],
     "passiveId": "gluttony",
+    "recommended_items": ["mace"],
     "skillIds": ["predation", "rimuru_stance", "devour"],
     "ultimate": {
       "id": "beelzebub",
@@ -82,6 +84,7 @@
     },
     "images": ["trafalgar_law.webp"],
     "passiveId": "room_surgeon",
+    "recommended_items": ["mace"],
     "skillIds": ["room_incision", "takt_breaker", "shambles_precision", "room_domain"],
     "ultimate": {
       "id": "shambles",
@@ -111,6 +114,7 @@
     },
     "images": ["saitama_base.jpg"],
     "passiveId": "push_the_limits",
+    "recommended_items": ["mace"],
     "skillIds": ["slap", "endure", "grit"],
     "ultimate": {
       "id": "get_serious",
@@ -142,6 +146,7 @@
     },
     "images": ["saitama_transformed.jpg"],
     "passiveId": "serious_growth",
+    "recommended_items": ["mace"],
     "skillIds": ["serious_punch", "serious_side_steps"],
     "ultimate": {
       "id": "omnidirectional_serious_punch",
@@ -171,6 +176,7 @@
     },
     "images": ["gojo_satoru.jpeg"],
     "passiveId": "blossoming_emotion",
+    "recommended_items": ["gojo_satoru_glasses"],
     "skillIds": ["gojo_strike", "reversed_curse_technique", "infinity_rebound"],
     "ultimate": {
       "id": "limitless_dominion",
@@ -198,6 +204,7 @@
     },
     "images": ["zero_two.png"],
     "passiveId": "kiss_of_death_passive",
+    "recommended_items": ["mace"],
     "skillIds": ["darling_bite", "heartbreak_harvest", "dont_hurt_me_baby", "unrivaled_love"],
     "ultimate": {
       "id": "kiss_of_death",
@@ -228,6 +235,7 @@
     },
     "images": ["edward_elric.jpg"],
     "passiveId": "automail_overclock",
+    "recommended_items": ["edward_elric_cape"],
     "skillIds": ["ed_rocket_punch", "ed_coolant_vent", "equivalent_exchange", "alchemy"],
     "ultimate": {
       "id": "ed_redline_combo",
@@ -258,6 +266,7 @@
     },
     "images": ["naruto_uzumaki.jpg"],
     "passiveId": "naruto_natural_energy",
+    "recommended_items": ["mace"],
     "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
     "ultimate": {
       "id": "naruto_enter_sage_mode",
@@ -289,6 +298,7 @@
     },
     "images": ["naruto_uzumaki_sage.jpg"],
     "passiveId": "naruto_sage_mode",
+    "recommended_items": ["mace"],
     "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
     "ultimate": {
       "id": "naruto_sage_judgement",
@@ -319,6 +329,7 @@
     },
     "images": ["frieren.jpg"],
     "passiveId": "spell_archive",
+    "recommended_items": ["mace"],
     "skillIds": ["frieren_minor_utility", "frieren_copycat_glyph", "frieren_rotating_page"],
     "ultimate": {
       "id": "frieren_archive_release",
@@ -348,6 +359,7 @@
     },
     "images": ["chen.png"],
     "passiveId": "chen_melee_cooldown_master",
+    "recommended_items": ["chen_sword"],
     "skillIds": ["chen_dragon_strike", "chen_piercing_assault", "chen_tactical_reduction"],
     "ultimate": {
       "id": "chen_crimson_ult",

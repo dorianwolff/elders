@@ -415,7 +415,7 @@
     "id": "royal_command",
     "name": "Royal Command",
     "description": "Deal 90% attack damage and stun enemy for 1 turn",
-    "type": "control",
+    "type": "debuff",
     "cooldown": 4,
     "effect": {
       "type": "damage_and_stun",
@@ -1094,7 +1094,7 @@
     "id": "frieren_minor_utility",
     "name": "Minor Utility Spell",
     "description": "Deal 75% of attack as damage. Gains a bonus effect based on your opponent's last skill type used.",
-    "type": "control",
+    "type": "attack",
     "cooldown": 0,
     "effect": {
       "type": "archive_minor_utility",
@@ -1139,7 +1139,7 @@
     "id": "frieren_archive_release",
     "name": "An Era of Spells",
     "description": "Cast Minor Utility Spell 5 times at full power. Cannot be doubled.",
-    "type": "control",
+    "type": "attack",
     "cooldown": 1,
     "effect": {
       "type": "frieren_minor_utility_barrage",

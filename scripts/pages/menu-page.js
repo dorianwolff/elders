@@ -10,6 +10,8 @@ class MenuPage extends BasePage {
         this.viewMode = 'menu';
         this.dataManager = null;
 
+        this.selectedItemId = null;
+
         this.transformLinks = {};
         this.precombatBaseCharacterId = null;
         this.skillPreviewToken = 0;
@@ -119,9 +121,14 @@ class MenuPage extends BasePage {
                             </div>
 
                             <div class="kit-actions">
-                                <button class="btn btn-primary btn-large" id="find-match-button" disabled>
-                                    Find Match
-                                </button>
+                                <div class="precombat-action-row">
+                                    <button class="btn btn-primary btn-large" id="find-match-button" disabled>
+                                        Find Match
+                                    </button>
+                                    <button class="precombat-item-slot" id="precombat-item-slot" type="button" aria-label="Select item" title="Select item">
+                                        <img id="precombat-item-image" alt="Item" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -136,6 +143,7 @@ class MenuPage extends BasePage {
         this.addEventListener('#stage-arrow-right', 'click', () => this.cycleCharacter(1));
         this.addEventListener('#find-match-button', 'click', this.handleFindMatch.bind(this));
         this.addEventListener('#precombat-transform-toggle', 'click', this.toggleTransformPreview.bind(this));
+        this.addEventListener('#precombat-item-slot', 'click', this.openItemPicker.bind(this));
     }
 
     async onPageLoad() {
@@ -422,6 +430,8 @@ class MenuPage extends BasePage {
         this.precombatBaseCharacterId = full.id;
         this.currentCharacterIndex = next;
 
+        await this.loadSelectedItemForCharacter(full);
+
         this.querySelectorAll('.character-card').forEach(card => {
             card.classList.remove('selected');
         });
@@ -449,6 +459,153 @@ class MenuPage extends BasePage {
         this.startIdleSpriteAnimation(full);
     }
 
+    async loadSelectedItemForCharacter(character) {
+        if (!character || !character.id) {
+            this.selectedItemId = null;
+            return;
+        }
+
+        let desired = null;
+        if (this.dataManager && typeof this.dataManager.loadSelectedItemForCharacter === 'function') {
+            desired = await this.dataManager.loadSelectedItemForCharacter(character.id);
+        }
+        if (!desired) {
+            const rec = Array.isArray(character.recommended_items) ? character.recommended_items : [];
+            desired = rec.length > 0 ? rec[0] : null;
+        }
+
+        const eligible = await this.isItemEligibleForCharacter(desired, character);
+        if (eligible) {
+            this.selectedItemId = desired;
+            return;
+        }
+
+        const rec = Array.isArray(character.recommended_items) ? character.recommended_items : [];
+        if (rec.length > 0 && await this.isItemEligibleForCharacter(rec[0], character)) {
+            this.selectedItemId = rec[0];
+            return;
+        }
+
+        if (await this.isItemEligibleForCharacter('mace', character)) {
+            this.selectedItemId = 'mace';
+            return;
+        }
+
+        this.selectedItemId = null;
+    }
+
+    async isItemEligibleForCharacter(itemId, character) {
+        if (!itemId || !character || !character.id) return false;
+        const item = await this.characterSystem.getItem(itemId);
+        if (!item) return false;
+        if (item.type === 'regular') return true;
+
+        const allowed = Array.isArray(item.allowedCharacters) ? item.allowedCharacters : [];
+        return allowed.includes(character.id);
+    }
+
+    async openItemPicker() {
+        if (!this.selectedCharacter) return;
+
+        const characterId = this.selectedCharacter.id;
+        const recommended = Array.isArray(this.selectedCharacter.recommended_items)
+            ? this.selectedCharacter.recommended_items
+            : [];
+
+        const allItems = await this.characterSystem.getAllItems();
+        const items = Array.isArray(allItems) ? allItems.filter(Boolean) : [];
+
+        const eligible = [];
+        for (const item of items) {
+            if (!item || !item.id) continue;
+            if (await this.isItemEligibleForCharacter(item.id, this.selectedCharacter)) {
+                eligible.push(item);
+            }
+        }
+
+        const existing = document.querySelector('.item-picker-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'item-picker-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'item-picker-modal';
+
+        const title = document.createElement('div');
+        title.className = 'item-picker-title';
+        title.textContent = 'Select Item';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'item-picker-close';
+        closeBtn.textContent = '×';
+        closeBtn.addEventListener('click', () => overlay.remove());
+
+        const header = document.createElement('div');
+        header.className = 'item-picker-header';
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        const grid = document.createElement('div');
+        grid.className = 'item-picker-grid';
+
+        for (const item of eligible) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `item-picker-card${item.id === this.selectedItemId ? ' is-selected' : ''}`;
+
+            const img = document.createElement('img');
+            img.className = 'item-picker-image';
+            img.src = item.image;
+            img.alt = item.name || item.id;
+
+            const name = document.createElement('div');
+            name.className = 'item-picker-name';
+            name.textContent = item.name || item.id;
+
+            const passive = item.passiveId ? await this.characterSystem.getItemPassive(item.passiveId) : null;
+            const desc = document.createElement('div');
+            desc.className = 'item-picker-desc';
+            desc.textContent = passive && passive.description ? passive.description : '';
+
+            const tagRow = document.createElement('div');
+            tagRow.className = 'item-picker-tags';
+
+            if (recommended.includes(item.id)) {
+                const tag = document.createElement('span');
+                tag.className = 'item-tag item-tag-recommended';
+                tag.textContent = 'Recommended';
+                tagRow.appendChild(tag);
+            }
+
+            btn.appendChild(img);
+            btn.appendChild(name);
+            btn.appendChild(tagRow);
+            btn.appendChild(desc);
+
+            btn.addEventListener('click', async () => {
+                this.selectedItemId = item.id;
+                if (this.dataManager && typeof this.dataManager.saveSelectedItemForCharacter === 'function') {
+                    await this.dataManager.saveSelectedItemForCharacter(characterId, item.id);
+                }
+                overlay.remove();
+                this.renderPrecombatUI(this.selectedCharacter);
+            });
+
+            grid.appendChild(btn);
+        }
+
+        modal.appendChild(header);
+        modal.appendChild(grid);
+        overlay.appendChild(modal);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+
+        document.body.appendChild(overlay);
+    }
+
     renderPrecombatUI(character) {
         if (!character) return;
 
@@ -473,6 +630,24 @@ class MenuPage extends BasePage {
 
         this.updateElement('#precombat-passive-name', character.passive?.name || '');
         this.updateElement('#precombat-passive-desc', character.passive?.description || '');
+
+        {
+            const img = this.querySelector('#precombat-item-image');
+            if (img) {
+                if (this.selectedItemId) {
+                    const item = this.characterSystem && typeof this.characterSystem.getItem === 'function'
+                        ? this.characterSystem.items.get(this.selectedItemId)
+                        : null;
+                    img.src = item && item.image ? item.image : 'assets/items/mace.png';
+                } else {
+                    img.src = 'assets/items/mace.png';
+                }
+                img.onerror = () => {
+                    img.onerror = null;
+                    img.src = 'assets/items/mace.png';
+                };
+            }
+        }
 
         this.updateElement('#precombat-ultimate-name', character.ultimate?.name || '');
         this.updateElement('#precombat-ultimate-desc', character.ultimate?.description || '');
@@ -660,6 +835,8 @@ class MenuPage extends BasePage {
         if (needsTwo) {
             characterForMatch.skills = selected;
         }
+
+        characterForMatch.itemId = this.selectedItemId;
 
         try {
             const btn = this.querySelector('#find-match-button');

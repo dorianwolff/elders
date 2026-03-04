@@ -57,6 +57,19 @@ class DataManager {
         return await this.loadData('selected_character');
     }
 
+    async saveSelectedItemForCharacter(characterId, itemId) {
+        if (!characterId) return false;
+        const map = (await this.loadData('selected_items')) || {};
+        map[String(characterId)] = itemId || null;
+        return await this.saveData('selected_items', map);
+    }
+
+    async loadSelectedItemForCharacter(characterId) {
+        if (!characterId) return null;
+        const map = (await this.loadData('selected_items')) || {};
+        return map[String(characterId)] || null;
+    }
+
     async saveGameSettings(settings) {
         return await this.saveData('game_settings', settings);
     }

@@ -6,6 +6,7 @@ class SkillSystem {
         this._combatTextSeqStack = [];
         this._actionContextStack = [];
         this._cooldownsSkipNextDecrement = new Set();
+        this._effectIdSeq = 0;
     }
 
     getCooldownReductionStackKeyForSkill(skillId) {
@@ -55,6 +56,9 @@ class SkillSystem {
                 ? s.cooldownReductionBuff
                 : null;
             const canBuff = Boolean(buffCfg);
+            if (remaining === 1 && !canBuff) {
+                continue;
+            }
             if (remaining > 0 || canBuff) {
                 eligible.push({ item, remaining, buffCfg });
             }
@@ -69,9 +73,13 @@ class SkillSystem {
         const picked = eligible[index];
         const pickedSkill = picked.item.skill;
 
+        let reducedAny = false;
         if (picked.remaining > 0) {
             const nextCd = Math.max(0, picked.remaining - amount);
             this.setSkillCooldown(pickedSkill.id, playerId, nextCd);
+            if (nextCd !== picked.remaining) {
+                reducedAny = true;
+            }
         }
 
         if (picked.buffCfg) {
@@ -81,7 +89,17 @@ class SkillSystem {
             const cur = this.getCooldownReductionStacksForSkill(playerId, pickedSkill.id);
             const next = maxStacks === null ? (cur + amount) : Math.min(maxStacks, cur + amount);
             this.setCooldownReductionStacksForSkill(playerId, pickedSkill.id, next);
+            if (next !== cur) {
+                reducedAny = true;
+            }
         }
+
+        // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +2 ATK for 2 turns.
+        try {
+            if (reducedAny && character && character.itemId === 'chen_sword' && typeof this.applyBuff === 'function') {
+                this.applyBuff(character, { stat: 'attack', mode: 'flat', value: 2, duration: 2 }, playerId);
+            }
+        } catch (e) {}
 
         return { skillId: pickedSkill.id };
     }
@@ -132,6 +150,11 @@ class SkillSystem {
 
     setSkillCooldownFromUse(skillId, playerId, cooldown) {
         this.setSkillCooldown(skillId, playerId, cooldown);
+        if (!skillId || (playerId !== 'player1' && playerId !== 'player2')) return;
+        const key = this.getSkillCooldownKey(skillId, playerId);
+        if (this._cooldownsSkipNextDecrement && typeof this._cooldownsSkipNextDecrement.add === 'function') {
+            this._cooldownsSkipNextDecrement.add(key);
+        }
     }
 
     decrementCooldowns(playerId) {
@@ -140,6 +163,10 @@ class SkillSystem {
         const prefix = `${playerId}:`;
         for (const [key, value] of this.skillCooldowns.entries()) {
             if (typeof key !== 'string' || !key.startsWith(prefix)) continue;
+            if (this._cooldownsSkipNextDecrement && this._cooldownsSkipNextDecrement.has(key)) {
+                this._cooldownsSkipNextDecrement.delete(key);
+                continue;
+            }
             const cur = Math.max(0, Math.floor(Number(value) || 0));
             if (cur <= 0) continue;
             this.skillCooldowns.set(key, cur - 1);
@@ -850,7 +877,14 @@ class SkillSystem {
                 : (skill && typeof skill.type === 'string' ? skill.type : null);
 
             if (this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
-                this.passiveSystem.handleEvent(playerId, 'skill_used', { skillId: skill.id, skillType: skillTypeForPassive });
+                const hpBefore = Number(caster?.stats?.health) || 0;
+                const maxHpBefore = Number(caster?.stats?.maxHealth) || 0;
+                this.passiveSystem.handleEvent(playerId, 'skill_used', {
+                    skillId: skill.id,
+                    skillType: skillTypeForPassive,
+                    hpBefore,
+                    maxHpBefore
+                });
 
                 const opponentId = playerId === 'player1' ? 'player2' : (playerId === 'player2' ? 'player1' : null);
                 if (opponentId) {
@@ -1066,6 +1100,13 @@ class SkillSystem {
                         }
                         if (reducedAny) {
                             result.effects.push(`Reduced cooldown of other skills by ${cdrAmt}`);
+
+                            // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +2 ATK for 2 turns.
+                            try {
+                                if (caster && caster.itemId === 'chen_sword' && typeof this.applyBuff === 'function') {
+                                    await this.applyBuff(caster, { stat: 'attack', mode: 'flat', value: 2, duration: 2 }, playerId);
+                                }
+                            } catch (e) {}
                         }
                     }
 
@@ -2831,7 +2872,12 @@ class SkillSystem {
             const victim = this.getPlayerById(playerId);
             if (victim && victim.id === 'edward_elric' && finalDamage > 0) {
                 const heat = this.getCounterValue(playerId, 'heat');
-                const extra = Math.max(0, Math.floor(heat / 10));
+                let extra = Math.max(0, Math.floor(heat / 10));
+
+                // Edward Elric Cape item passive: reduce Heat damage taken by 50%.
+                if (victim && victim.itemId === 'edward_elric_cape') {
+                    extra = Math.max(0, Math.floor(extra * 0.5));
+                }
                 if (extra > 0) {
                     await this.applyTrueDamageNoDomain(victim, extra, playerId, attackerIdOverride);
 
@@ -3098,6 +3144,20 @@ class SkillSystem {
     }
 
     async applyHealingNoDomain(target, healing, playerId = null) {
+        // Some callers apply healing without specifying which player is being healed.
+        // Infer the playerId when possible so healing events (and item passives like Gojo's glasses)
+        // still fire correctly.
+        if (!playerId) {
+            try {
+                const p1 = (typeof this.getPlayerById === 'function') ? this.getPlayerById('player1') : null;
+                const p2 = (typeof this.getPlayerById === 'function') ? this.getPlayerById('player2') : null;
+                if (p1 && (target === p1 || (target && p1 && target.id && p1.id && target.id === p1.id))) {
+                    playerId = 'player1';
+                } else if (p2 && (target === p2 || (target && p2 && target.id && p2.id && target.id === p2.id))) {
+                    playerId = 'player2';
+                }
+            } catch (e) {}
+        }
         if (playerId && this.isHealBlocked(playerId)) {
             return 0;
         }
@@ -3605,7 +3665,8 @@ class SkillSystem {
 
     async applyBuff(target, buffEffect, playerId) {
         // Immunity does not block buffs (self/ally positive effects)
-        const buffId = `buff_${playerId}_${buffEffect.stat}_${Date.now()}`;
+        const seq = (this._effectIdSeq = (Number(this._effectIdSeq) || 0) + 1);
+        const buffId = `buff_${playerId}_${buffEffect.stat}_${Date.now()}_${seq}`;
         const ctx = this.getActiveActionContext();
         const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
             ? ctx.attackerId
@@ -4393,6 +4454,28 @@ class SkillSystem {
         }
         
         console.log(`💀 FINAL DEATH: ${character.name} has no more revives available`);
+
+        // Ensure the match ends even if death occurs during reactive damage/healing flows
+        // (e.g., healing converted to damage under a domain), which may bypass the immediate
+        // post-action winner checks.
+        try {
+            if (this.gameState && this.gameState.gamePhase === 'active') {
+                const opponentId = playerId === 'player1' ? 'player2' : (playerId === 'player2' ? 'player1' : null);
+                if (opponentId) {
+                    const victimHp = Number(character?.stats?.health) || 0;
+                    const oppChar = (typeof this.getPlayerById === 'function') ? this.getPlayerById(opponentId) : null;
+                    const oppHp = Number(oppChar?.stats?.health) || 0;
+
+                    if (victimHp <= 0 && oppHp <= 0) {
+                        this.gameState.gamePhase = 'finished';
+                        this.gameState.winner = 'draw';
+                    } else if (victimHp <= 0) {
+                        this.gameState.gamePhase = 'finished';
+                        this.gameState.winner = opponentId;
+                    }
+                }
+            }
+        } catch (e) {}
         return false; // Character stays dead
     }
 }

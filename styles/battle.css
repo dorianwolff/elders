@@ -363,6 +363,24 @@
     flex: 1;
 }
 
+.character-side-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: nowrap;
+}
+
+.player-side-wrap {
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+}
+
+.opponent-side-wrap {
+    justify-content: flex-start;
+}
+
 .player-character {
     flex-direction: row-reverse;
     text-align: right;
@@ -421,6 +439,53 @@
     flex-wrap: wrap;
     gap: 0.25rem;
     min-width: 120px;
+}
+
+.relic-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 0 0 auto;
+    max-width: 300px;
+    padding: 0.55rem 0.7rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(10px);
+}
+
+.player-side-wrap .relic-display {
+    flex-direction: row;
+    text-align: left;
+}
+
+.opponent-side-wrap .relic-display {
+    flex-direction: row;
+    text-align: left;
+}
+
+.relic-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.18);
+    padding: 4px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.relic-passive {
+    min-width: 0;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.9rem;
+    line-height: 1.25;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    line-clamp: 5;
+    -webkit-line-clamp: 5;
 }
 
 .battle-actions {
@@ -835,7 +900,8 @@ position: relative;
 
 .battle-log {
     position: fixed;
-    top: 5.25rem;
+    top: 50vh;
+    transform: translateY(-50%);
     right: 1rem;
     width: 300px;
     max-height: 200px;

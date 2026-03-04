@@ -169,12 +169,43 @@ class GameState {
         const p1Character = JSON.parse(JSON.stringify(player1Data.character));
         const p2Character = JSON.parse(JSON.stringify(player2Data.character));
 
+        // Store initial stats BEFORE item bonuses so UI can show permanent +X from items.
+        p1Character.initialStats = { ...p1Character.stats };
+        p2Character.initialStats = { ...p2Character.stats };
+
+        const applyItemBonuses = (character) => {
+            if (!character || !character.stats) return;
+            const itemId = typeof character.itemId === 'string' ? character.itemId : null;
+            if (!itemId) return;
+            const item = this.characterSystem && this.characterSystem.items && typeof this.characterSystem.items.get === 'function'
+                ? this.characterSystem.items.get(itemId)
+                : null;
+            if (!item || !item.stats) return;
+
+            const s = item.stats;
+            const atk = Number(s.attack) || 0;
+            const def = Number(s.defense) || 0;
+            const maxHp = Number(s.maxHealth) || 0;
+
+            if (!character.itemStatsBonus) character.itemStatsBonus = { attack: 0, defense: 0, maxHealth: 0 };
+            character.itemStatsBonus.attack = atk;
+            character.itemStatsBonus.defense = def;
+            character.itemStatsBonus.maxHealth = maxHp;
+
+            character.stats.attack = (Number(character.stats.attack) || 0) + atk;
+            character.stats.defense = (Number(character.stats.defense) || 0) + def;
+            if (maxHp) {
+                character.stats.maxHealth = (Number(character.stats.maxHealth) || 0) + maxHp;
+                character.stats.health = (Number(character.stats.health) || 0) + maxHp;
+            }
+        };
+
+        applyItemBonuses(p1Character);
+        applyItemBonuses(p2Character);
+
         // Store base stats so temporary buffs/debuffs can always be restored cleanly
         p1Character.baseStats = { ...p1Character.stats };
         p2Character.baseStats = { ...p2Character.stats };
-
-        p1Character.initialStats = { ...p1Character.stats };
-        p2Character.initialStats = { ...p2Character.stats };
 
         // Initialize legacy passive tracking (kept for UI compatibility)
         p1Character.passiveProgress = this.initializePassiveProgress(p1Character.passive);

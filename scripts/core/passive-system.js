@@ -216,7 +216,113 @@ class PassiveSystem {
         const character = player.character;
         if (!character || !character.passive) return;
 
+        const isBloodlustCarrier = () => {
+            return Boolean(character && typeof character.itemId === 'string' && character.itemId === 'mace');
+        };
+
+        const hasBloodlustBuff = () => {
+            const effects = this.skillSystem && this.skillSystem.activeEffects;
+            if (!effects || typeof effects.entries !== 'function') return false;
+            for (const [, eff] of effects.entries()) {
+                if (!eff) continue;
+                if (eff.type !== 'buff') continue;
+                if (eff.target !== playerId) continue;
+                if (eff._itemPassiveId !== 'mace_bloodlust') continue;
+                if (eff.stat !== 'attack') continue;
+                if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                return true;
+            }
+            return false;
+        };
+
+        const removeBloodlustBuff = () => {
+            const effects = this.skillSystem && this.skillSystem.activeEffects;
+            if (!effects || typeof effects.entries !== 'function') return;
+            const toRemove = [];
+            for (const [id, eff] of effects.entries()) {
+                if (!eff) continue;
+                if (eff.type !== 'buff') continue;
+                if (eff.target !== playerId) continue;
+                if (eff._itemPassiveId !== 'mace_bloodlust') continue;
+                toRemove.push(id);
+            }
+            for (const id of toRemove) {
+                effects.delete(id);
+            }
+            if (toRemove.length > 0 && this.skillSystem && typeof this.skillSystem.recalculateStats === 'function') {
+                this.skillSystem.recalculateStats(playerId);
+            }
+        };
+
+        const ensureBloodlustState = async () => {
+            if (!isBloodlustCarrier()) return;
+            const hp = Number(character?.stats?.health) || 0;
+            const maxHp = Number(character?.stats?.maxHealth) || 0;
+            if (maxHp <= 0) return;
+            const below = hp / maxHp < 0.5;
+
+            if (below) {
+                if (!hasBloodlustBuff() && this.skillSystem && typeof this.skillSystem.applyBuff === 'function') {
+                    await this.skillSystem.applyBuff(character, {
+                        stat: 'attack',
+                        mode: 'flat',
+                        value: 2,
+                        duration: 999
+                    }, playerId);
+
+                    // Tag the latest buff for cleanup and identification.
+                    try {
+                        const effects = this.skillSystem.activeEffects;
+                        const ids = [];
+                        for (const [id, eff] of effects.entries()) {
+                            if (!eff) continue;
+                            if (eff.type !== 'buff') continue;
+                            if (eff.target !== playerId) continue;
+                            if (eff.stat !== 'attack') continue;
+                            if (eff.value !== 2) continue;
+                            if ((Number(eff.turnsLeft) || 0) !== 999) continue;
+                            if (eff._itemPassiveId) continue;
+                            ids.push(id);
+                        }
+                        // Mark the most recent candidate.
+                        if (ids.length > 0) {
+                            const last = ids[ids.length - 1];
+                            const eff = effects.get(last);
+                            if (eff) {
+                                eff._itemPassiveId = 'mace_bloodlust';
+                                eff.name = 'Bloodlust';
+                                eff.description = 'Gain +2 ATK while below 50% HP';
+                            }
+                        }
+                    } catch (e) {}
+                }
+            } else {
+                removeBloodlustBuff();
+            }
+        };
+
         const state = this.ensureState(character);
+
+        if (eventType === 'turn_start' || eventType === 'damage_taken') {
+            await ensureBloodlustState();
+        }
+
+        if (eventType === 'skill_used') {
+            await ensureBloodlustState();
+
+            if (isBloodlustCarrier()) {
+                const hpBefore = (payload && payload.hpBefore !== undefined) ? Number(payload.hpBefore) : (Number(character?.stats?.health) || 0);
+                const maxHpBefore = (payload && payload.maxHpBefore !== undefined) ? Number(payload.maxHpBefore) : (Number(character?.stats?.maxHealth) || 0);
+                const below = maxHpBefore > 0 ? (hpBefore / maxHpBefore < 0.5) : false;
+                const isUltimate = payload && payload.skillType === 'ultimate';
+                const isAttackSkill = payload && payload.skillType === 'attack';
+                if (below && !isUltimate && isAttackSkill && this.skillSystem && typeof this.skillSystem.applyHealing === 'function') {
+                    const curMax = Number(character?.stats?.maxHealth) || 0;
+                    const amount = Math.max(1, Math.floor(curMax * 0.05));
+                    await this.skillSystem.applyHealing(character, amount, playerId);
+                }
+            }
+        }
 
         if (eventType === 'skill_used') {
             if (payload && payload.skillType === 'ultimate') {
@@ -322,6 +428,21 @@ class PassiveSystem {
         }
 
         if (eventType === 'opponent_healing_done') {
+            // Gojo Glasses item passive: when your opponent recovers health, gain that much ATK as a buff for 1 turn.
+            // Must run BEFORE mission logic returns early (e.g., Gojo's Blossoming Emotion).
+            if (character && typeof character.itemId === 'string' && character.itemId === 'gojo_satoru_glasses') {
+                const amount = Math.max(0, Math.floor(Number(payload?.amount) || 0));
+                const targetId = typeof payload?.targetId === 'string' ? payload.targetId : null;
+                if (amount > 0 && targetId && targetId !== playerId && this.skillSystem && typeof this.skillSystem.applyBuff === 'function') {
+                    await this.skillSystem.applyBuff(character, {
+                        stat: 'attack',
+                        mode: 'flat',
+                        value: amount,
+                        duration: 1
+                    }, playerId);
+                }
+            }
+
             const mission = this.getMission(character);
             if (mission && mission.type === 'total_healing_done') {
                 // Trafalgar Law: should never charge from opponent healing (prevents Law vs Law mirror bug).

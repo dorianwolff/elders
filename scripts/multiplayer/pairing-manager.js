@@ -32,7 +32,8 @@ class PairingManager {
                 skills: this.selectedCharacter.skills,
                 ultimate: this.selectedCharacter.ultimate,
                 passive: this.selectedCharacter.passive,
-                images: this.selectedCharacter.images
+                images: this.selectedCharacter.images,
+                itemId: this.selectedCharacter.itemId
             }
         });
     }
@@ -64,7 +65,8 @@ class PairingManager {
                 skills: character.skills,
                 ultimate: character.ultimate,
                 passive: character.passive,
-                images: character.images
+                images: character.images,
+                itemId: character.itemId
             }
         });
 

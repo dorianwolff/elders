@@ -1,0 +1,22 @@
+{
+  "mace_bloodlust": {
+    "id": "mace_bloodlust",
+    "name": "Bloodlust",
+    "description": "While below 50% HP, gain a +2 ATK buff. When you use an attack skill while below 50% HP, restore 5% of max HP."
+  },
+  "edward_cape_heat_resist": {
+    "id": "edward_cape_heat_resist",
+    "name": "Heat Resistant",
+    "description": "Reduce damage taken by Heat by 50%"
+  },
+  "gojo_glasses_predatory_focus": {
+    "id": "gojo_glasses_predatory_focus",
+    "name": "Predatory Focus",
+    "description": "Each time your opponent recovers health, gain that much attack as a buff for 1 turn"
+  },
+  "chen_sword_cd_mastery": {
+    "id": "chen_sword_cd_mastery",
+    "name": "Cooldown Mastery",
+    "description": "When Ch'en reduces the cooldown of 1 or more of her skills, she gains +2 attack as a buff for 2 turns"
+  }
+}
