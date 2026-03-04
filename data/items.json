@@ -44,5 +44,13 @@
       "health": 1
     },
     "passiveId": "gojo_glasses_predatory_focus"
+  },
+  "broken_sword": {
+    "id": "broken_sword",
+    "name": "Broken Sword",
+    "type": "regular",
+    "image": "assets/items/broken_sword.png",
+    "stats": {},
+    "passiveId": "broken_sword_shattered_edge"
   }
 }

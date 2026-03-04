@@ -303,8 +303,43 @@ class PassiveSystem {
 
         const state = this.ensureState(character);
 
+        const isBrokenSwordCarrier = () => {
+            return Boolean(character && typeof character.itemId === 'string' && character.itemId === 'broken_sword');
+        };
+
+        const ensureBrokenSwordStartBonus = () => {
+            if (!isBrokenSwordCarrier()) return;
+            if (state._brokenSwordApplied) return;
+            state._brokenSwordApplied = true;
+            state._brokenSwordLost = 0;
+            state._brokenSwordAppliedTurnCount = Number(this.gameState?.turnCount) || 0;
+            this.applyPermanentStatDelta(playerId, { attack: 5 });
+        };
+
         if (eventType === 'turn_start' || eventType === 'damage_taken') {
             await ensureBloodlustState();
+        }
+
+        if (eventType === 'turn_start') {
+            ensureBrokenSwordStartBonus();
+            if (isBrokenSwordCarrier()) {
+                const nowTurn = Number(this.gameState?.turnCount) || 0;
+                const appliedTurn = (state._brokenSwordAppliedTurnCount !== undefined && state._brokenSwordAppliedTurnCount !== null)
+                    ? (Number(state._brokenSwordAppliedTurnCount) || 0)
+                    : null;
+
+                // Do not decay on the same turn the +5 is applied.
+                // Game init triggers multiple turn_start events at turnCount=0, so we guard by turnCount.
+                if (appliedTurn !== null && nowTurn === appliedTurn) {
+                    // skip
+                } else {
+                    const lost = Math.max(0, Math.floor(Number(state._brokenSwordLost) || 0));
+                    if (lost < 5) {
+                        state._brokenSwordLost = lost + 1;
+                        this.applyPermanentStatDelta(playerId, { attack: -1 });
+                    }
+                }
+            }
         }
 
         if (eventType === 'skill_used') {

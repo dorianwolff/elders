@@ -238,6 +238,19 @@
     font-weight: 900;
 }
 
+.precombat-stat-delta {
+    font-weight: 900;
+    font-size: 0.9em;
+}
+
+.precombat-stat-delta.is-positive {
+    color: rgba(80, 220, 140, 0.95);
+}
+
+.precombat-stat-delta.is-negative {
+    color: rgba(255, 110, 110, 0.95);
+}
+
 .precombat-main {
     flex: 1;
     min-height: 0;
@@ -665,6 +678,21 @@
 .item-picker-name {
     font-weight: 900;
     color: rgba(255, 255, 255, 0.96);
+}
+
+.item-picker-name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.item-picker-stats {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 900;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    text-align: right;
 }
 
 .item-picker-tags {

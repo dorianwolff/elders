@@ -18,5 +18,10 @@
     "id": "chen_sword_cd_mastery",
     "name": "Cooldown Mastery",
     "description": "When Ch'en reduces the cooldown of 1 or more of her skills, she gains +2 attack as a buff for 2 turns"
+  },
+  "broken_sword_shattered_edge": {
+    "id": "broken_sword_shattered_edge",
+    "name": "Shattered Edge",
+    "description": "Start the match with +5 ATK. Each turn, lose 1 ATK until you lose 5 ATK."
   }
 }

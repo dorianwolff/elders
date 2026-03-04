@@ -564,6 +564,15 @@ class MenuPage extends BasePage {
             name.className = 'item-picker-name';
             name.textContent = item.name || item.id;
 
+            const itemStats = document.createElement('div');
+            itemStats.className = 'item-picker-stats';
+            itemStats.textContent = this.formatItemStats(item);
+
+            const nameRow = document.createElement('div');
+            nameRow.className = 'item-picker-name-row';
+            nameRow.appendChild(name);
+            nameRow.appendChild(itemStats);
+
             const passive = item.passiveId ? await this.characterSystem.getItemPassive(item.passiveId) : null;
             const desc = document.createElement('div');
             desc.className = 'item-picker-desc';
@@ -580,7 +589,7 @@ class MenuPage extends BasePage {
             }
 
             btn.appendChild(img);
-            btn.appendChild(name);
+            btn.appendChild(nameRow);
             btn.appendChild(tagRow);
             btn.appendChild(desc);
 
@@ -606,6 +615,42 @@ class MenuPage extends BasePage {
         document.body.appendChild(overlay);
     }
 
+    formatItemStats(item) {
+        const stats = item && item.stats && typeof item.stats === 'object' ? item.stats : {};
+        const parts = [];
+
+        const atk = Math.floor(Number(stats.attack) || 0);
+        const def = Math.floor(Number(stats.defense) || 0);
+        const hp = Math.floor(Number(stats.maxHealth) || 0);
+
+        if (atk !== 0) parts.push(`${atk > 0 ? '+' : ''}${atk} ATK`);
+        if (def !== 0) parts.push(`${def > 0 ? '+' : ''}${def} DEF`);
+        if (hp !== 0) parts.push(`${hp > 0 ? '+' : ''}${hp} HP`);
+
+        return parts.length > 0 ? parts.join(' ') : '—';
+    }
+
+    getItemStatDelta(statKey) {
+        if (!this.selectedItemId || !this.characterSystem || typeof this.characterSystem.getItem !== 'function') {
+            return 0;
+        }
+        const item = this.characterSystem.items && typeof this.characterSystem.items.get === 'function'
+            ? this.characterSystem.items.get(this.selectedItemId)
+            : null;
+        const stats = item && item.stats && typeof item.stats === 'object' ? item.stats : {};
+
+        if (statKey === 'health') {
+            return Math.floor(Number(stats.maxHealth) || 0);
+        }
+        if (statKey === 'attack') {
+            return Math.floor(Number(stats.attack) || 0);
+        }
+        if (statKey === 'defense') {
+            return Math.floor(Number(stats.defense) || 0);
+        }
+        return 0;
+    }
+
     renderPrecombatUI(character) {
         if (!character) return;
 
@@ -624,9 +669,21 @@ class MenuPage extends BasePage {
 
         this.updateElement('#precombat-name', character.name);
         this.updateElement('#precombat-meta', character.metaPoints);
-        this.updateElement('#precombat-stat-health', character.stats.health);
-        this.updateElement('#precombat-stat-attack', character.stats.attack);
-        this.updateElement('#precombat-stat-defense', character.stats.defense);
+        {
+            const hpDelta = this.getItemStatDelta('health');
+            const atkDelta = this.getItemStatDelta('attack');
+            const defDelta = this.getItemStatDelta('defense');
+            const hpSuffix = hpDelta !== 0 ? ` <span class="precombat-stat-delta ${hpDelta > 0 ? 'is-positive' : 'is-negative'}">(${hpDelta > 0 ? '+' : ''}${hpDelta})</span>` : '';
+            const atkSuffix = atkDelta !== 0 ? ` <span class="precombat-stat-delta ${atkDelta > 0 ? 'is-positive' : 'is-negative'}">(${atkDelta > 0 ? '+' : ''}${atkDelta})</span>` : '';
+            const defSuffix = defDelta !== 0 ? ` <span class="precombat-stat-delta ${defDelta > 0 ? 'is-positive' : 'is-negative'}">(${defDelta > 0 ? '+' : ''}${defDelta})</span>` : '';
+
+            const hpEl = this.querySelector('#precombat-stat-health');
+            const atkEl = this.querySelector('#precombat-stat-attack');
+            const defEl = this.querySelector('#precombat-stat-defense');
+            if (hpEl) hpEl.innerHTML = `${character.stats.health}${hpSuffix}`;
+            if (atkEl) atkEl.innerHTML = `${character.stats.attack}${atkSuffix}`;
+            if (defEl) defEl.innerHTML = `${character.stats.defense}${defSuffix}`;
+        }
 
         this.updateElement('#precombat-passive-name', character.passive?.name || '');
         this.updateElement('#precombat-passive-desc', character.passive?.description || '');

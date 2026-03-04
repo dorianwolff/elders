@@ -192,9 +192,17 @@ export class Lobby {
   }
 
   handlePlayerAction(sessionId, message) {
-    const { gameId, playerId, actionType, actionData } = message;
+    const { gameId, actionType, actionData } = message;
+    if (!gameId || typeof gameId !== 'string') return;
     const game = this.activeGames.get(gameId);
     if (!game) return;
+
+    // Validate that the sender belongs to this game and derive their role.
+    // This avoids cross-match interference when many games run concurrently.
+    let playerId = null;
+    if (game.player1 === sessionId) playerId = 'player1';
+    else if (game.player2 === sessionId) playerId = 'player2';
+    else return;
 
     const startAt = (typeof message.startAt === 'number' && message.startAt > 0)
       ? message.startAt
