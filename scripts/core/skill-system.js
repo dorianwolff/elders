@@ -3290,6 +3290,13 @@ class SkillSystem {
         if (!character) return;
         if (!this.characterSystem || typeof this.characterSystem.getCharacter !== 'function') return;
 
+        const prevSkillIds = Array.isArray(character?.skills)
+            ? character.skills.map(s => s && s.id).filter(Boolean)
+            : [];
+        const prevUltimateId = character?.ultimate && typeof character.ultimate.id === 'string'
+            ? character.ultimate.id
+            : null;
+
         const template = await this.characterSystem.getCharacter(transformToId);
         if (!template) return;
 
@@ -3330,6 +3337,25 @@ class SkillSystem {
         }
         character.ultimate = template.ultimate;
         character.passive = template.passive;
+
+        // Saitama: serious form uses a different kit (different skill ids), so we must not
+        // carry over cooldowns from the previous kit.
+        if (transformToId === 'saitama_serious' && playerId && (playerId === 'player1' || playerId === 'player2')) {
+            const prefix = `${playerId}:`;
+            for (const key of Array.from(this.skillCooldowns.keys())) {
+                if (typeof key === 'string' && key.startsWith(prefix)) {
+                    this.skillCooldowns.delete(key);
+                }
+            }
+            if (this._cooldownsSkipNextDecrement && typeof this._cooldownsSkipNextDecrement.delete === 'function') {
+                for (const sid of prevSkillIds) {
+                    this._cooldownsSkipNextDecrement.delete(this.getSkillCooldownKey(sid, playerId));
+                }
+                if (prevUltimateId) {
+                    this._cooldownsSkipNextDecrement.delete(this.getSkillCooldownKey(prevUltimateId, playerId));
+                }
+            }
+        }
 
         if (preservedStats) character.stats = preservedStats;
         if (preservedBase) character.baseStats = preservedBase;
