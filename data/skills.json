@@ -738,7 +738,7 @@
     "name": "Dragon Strike",
     "description": "Deal 105% of attack as damage. Cooldown reduction applied to this skill grants it +15% of attack. If it was applied 3 or more times also gain +3 defense permanently.",
     "type": "attack",
-    "cooldown": 4,
+    "cooldown": 3,
     "cooldownReductionBuff": {
       "perStackPercent": 0.15,
       "maxStacks": 4
@@ -759,7 +759,7 @@
     "name": "Piercing Assault",
     "description": "Deal 95% of attack as damage. If another one of your skills has at least 3 cooldown reduction stacks, remove enemy shield before dealing damage.",
     "type": "attack",
-    "cooldown": 0,
+    "cooldown": 1,
     "effect": {
       "type": "chen_piercing_assault",
       "target": "enemy",

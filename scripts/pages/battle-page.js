@@ -2278,12 +2278,16 @@ class BattlePage extends BasePage {
             // Stack identical effects into one indicator.
             // For stat-based buffs/debuffs, include stat in the grouping key so different stats don't merge.
             const statKey = effect.stat ? String(effect.stat) : '';
-            const key = `${effect.type}:${statKey}`;
-
             const duration = Number(effect.duration) || Number(effect.turnsLeft) || 1;
             const turnsLeft = (effect.turnsLeft === undefined || effect.turnsLeft === null)
-                ? duration
+                ? null
                 : (Number(effect.turnsLeft) || 0);
+
+            // Only stack if remaining duration matches (or both are timeless / no turnsLeft).
+            const durationKey = (turnsLeft === null) ? 'perm' : String(turnsLeft);
+            const key = `${effect.type}:${statKey}:${durationKey}`;
+
+            const displayTurnsLeft = (turnsLeft === null) ? duration : turnsLeft;
 
             if (!groups.has(key)) {
                 groups.set(key, {
@@ -2292,14 +2296,14 @@ class BattlePage extends BasePage {
                     stat: effect.stat,
                     count: 1,
                     duration,
-                    turnsLeft,
+                    turnsLeft: displayTurnsLeft,
                     effect
                 });
             } else {
                 const g = groups.get(key);
                 g.count += 1;
                 g.duration = Math.max(g.duration, duration);
-                g.turnsLeft = Math.max(g.turnsLeft, turnsLeft);
+                g.turnsLeft = Math.max(g.turnsLeft, displayTurnsLeft);
             }
         }
 

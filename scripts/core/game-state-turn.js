@@ -43,6 +43,11 @@ GameState.prototype.endTurn = async function () {
 
     this.skillSystem.decrementCooldowns(this.currentTurn);
 
+    const opponentOfCurrent = this.currentTurn === 'player1' ? 'player2' : 'player1';
+    if (this.skillSystem && typeof this.skillSystem.decrementNonDotDurationsForOwner === 'function') {
+        this.skillSystem.decrementNonDotDurationsForOwner(opponentOfCurrent);
+    }
+
     const currentRound = Math.floor(this.turnCount / 2) + 1;
     if (currentRound >= 10) {
         await this.applyProgressiveHPLoss(this.currentTurn);
@@ -71,10 +76,6 @@ GameState.prototype.endTurn = async function () {
 
     this.currentTurn = this.currentTurn === 'player1' ? 'player2' : 'player1';
     this.turnCount++;
-
-    if (this.skillSystem && typeof this.skillSystem.decrementNonDotDurationsForPlayer === 'function') {
-        this.skillSystem.decrementNonDotDurationsForPlayer(this.currentTurn);
-    }
 
     if (this.passiveSystem) {
         await this.passiveSystem.handleEvent(this.currentTurn, 'turn_start');

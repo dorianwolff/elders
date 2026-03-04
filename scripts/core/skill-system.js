@@ -111,6 +111,58 @@ class SkillSystem {
         return null;
     }
 
+    getSkillCooldownKey(skillId, playerId) {
+        return `${playerId}:${skillId}`;
+    }
+
+    getSkillCooldown(skill, playerId) {
+        const skillId = skill && typeof skill.id === 'string' ? skill.id : null;
+        if (!skillId) return 0;
+        if (playerId !== 'player1' && playerId !== 'player2') return 0;
+        const key = this.getSkillCooldownKey(skillId, playerId);
+        return Math.max(0, Math.floor(Number(this.skillCooldowns.get(key)) || 0));
+    }
+
+    setSkillCooldown(skillId, playerId, cooldown) {
+        if (!skillId || (playerId !== 'player1' && playerId !== 'player2')) return;
+        const key = this.getSkillCooldownKey(skillId, playerId);
+        const next = Math.max(0, Math.floor(Number(cooldown) || 0));
+        this.skillCooldowns.set(key, next);
+    }
+
+    setSkillCooldownFromUse(skillId, playerId, cooldown) {
+        this.setSkillCooldown(skillId, playerId, cooldown);
+    }
+
+    decrementCooldowns(playerId) {
+        if (playerId !== 'player1' && playerId !== 'player2') return;
+
+        const prefix = `${playerId}:`;
+        for (const [key, value] of this.skillCooldowns.entries()) {
+            if (typeof key !== 'string' || !key.startsWith(prefix)) continue;
+            const cur = Math.max(0, Math.floor(Number(value) || 0));
+            if (cur <= 0) continue;
+            this.skillCooldowns.set(key, cur - 1);
+        }
+    }
+
+    canUseSkill(skill, playerId) {
+        const remaining = this.getSkillCooldown(skill, playerId);
+        return remaining <= 0;
+    }
+
+    getActiveEffectsForPlayer(playerId) {
+        if (playerId !== 'player1' && playerId !== 'player2') return [];
+        const list = [];
+        for (const [, effect] of this.activeEffects.entries()) {
+            if (!effect) continue;
+            if (effect.target !== playerId) continue;
+            if (typeof effect.turnsLeft === 'number' && effect.turnsLeft <= 0) continue;
+            list.push(effect);
+        }
+        return list;
+    }
+
     getActiveActionContext() {
         return this._actionContextStack.length > 0
             ? this._actionContextStack[this._actionContextStack.length - 1]
@@ -275,11 +327,18 @@ class SkillSystem {
 
     async applyHealBlock(targetPlayerId, duration) {
         const turnsLeft = Math.max(1, Math.floor(Number(duration) || 1));
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
         const id = `heal_block_${targetPlayerId}_${Date.now()}`;
         this.activeEffects.set(id, {
             type: 'debuff',
             key: 'heal_block',
             target: targetPlayerId,
+            ownerId,
             duration: turnsLeft,
             turnsLeft,
             name: 'Heal Block',
@@ -449,6 +508,44 @@ class SkillSystem {
         }
     }
 
+    decrementNonDotDurationsForOwner(ownerId) {
+        if (ownerId !== 'player1' && ownerId !== 'player2') return;
+
+        const effectsToRemove = [];
+        const targetsToRecalc = new Set();
+
+        for (const [effectId, effect] of this.activeEffects.entries()) {
+            if (!effect) continue;
+            if (effect.target !== 'player1' && effect.target !== 'player2') continue;
+            if (effect.type === 'poison' || effect.type === 'curse' || effect.type === 'bleed') continue;
+            if (effect.type === 'stance') continue;
+
+            const effOwner = typeof effect.ownerId === 'string' ? effect.ownerId : null;
+            if (effOwner !== ownerId) continue;
+
+            if (effect && effect._skipNextDecrement) {
+                effect._skipNextDecrement = false;
+                continue;
+            }
+
+            if (typeof effect.turnsLeft === 'number') {
+                effect.turnsLeft--;
+                if (effect.turnsLeft <= 0) {
+                    effectsToRemove.push(effectId);
+                    targetsToRecalc.add(effect.target);
+                }
+            }
+        }
+
+        for (const id of effectsToRemove) {
+            this.activeEffects.delete(id);
+        }
+
+        for (const pid of targetsToRecalc) {
+            this.recalculateStats(pid);
+        }
+    }
+
     isDomainActive() {
         for (const [, effect] of this.activeEffects.entries()) {
             if (effect && effect.type === 'array_domain' && (Number(effect.turnsLeft) || 0) > 0) {
@@ -548,9 +645,17 @@ class SkillSystem {
 
         const id = `kiss_mark_${playerId}_${Date.now()}`;
         const turnsLeft = Math.max(1, Math.floor(Number(duration) || 1));
+
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
         this.activeEffects.set(id, {
             type: 'kiss_mark',
             target: playerId,
+            ownerId,
             duration: turnsLeft,
             turnsLeft,
             name: 'Kiss Mark',
@@ -945,6 +1050,18 @@ class SkillSystem {
                             if (remaining > 0) {
                                 this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
                                 reducedAny = true;
+                            }
+
+                            const buffCfg = s.cooldownReductionBuff && typeof s.cooldownReductionBuff === 'object'
+                                ? s.cooldownReductionBuff
+                                : null;
+                            if (buffCfg) {
+                                const maxStacks = (typeof buffCfg.maxStacks === 'number')
+                                    ? Math.max(0, Math.floor(buffCfg.maxStacks))
+                                    : null;
+                                const cur = this.getCooldownReductionStacksForSkill(playerId, s.id);
+                                const next = maxStacks === null ? (cur + cdrAmt) : Math.min(maxStacks, cur + cdrAmt);
+                                this.setCooldownReductionStacksForSkill(playerId, s.id, next);
                             }
                         }
                         if (reducedAny) {
@@ -3489,6 +3606,12 @@ class SkillSystem {
     async applyBuff(target, buffEffect, playerId) {
         // Immunity does not block buffs (self/ally positive effects)
         const buffId = `buff_${playerId}_${buffEffect.stat}_${Date.now()}`;
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : playerId);
         const normalizedStat = this.normalizeStatKey(buffEffect.stat);
         const buffMode = buffEffect.mode;
         const buffValue = Number(buffEffect.value) || 0;
@@ -3503,6 +3626,7 @@ class SkillSystem {
         this.activeEffects.set(buffId, {
             type: 'buff',
             target: playerId,
+            ownerId,
             characterId: target.id,
             stat: normalizedStat,
             value: buffValue,
@@ -3524,17 +3648,10 @@ class SkillSystem {
     }
 
     async processEndOfTurnEffects(playerId) {
-        console.log(`🔄 TURN END: Processing end-of-turn effects for ${playerId}`);
-        console.log(`🔄 TURN END: Total active effects: ${this.activeEffects.size}`);
-        
         const effectsToRemove = [];
         
         for (const [effectId, effect] of this.activeEffects.entries()) {
-            console.log(`🔄 TURN END: Checking effect ${effectId}:`, effect);
-            
             if (effect.target === playerId || effect.target === 'global') {
-                console.log(`🔄 TURN END: Processing effect for ${playerId}: ${effect.type} (${effect.turnsLeft} turns left)`);
-                
                 const isDot = (effect.type === 'poison' || effect.type === 'curse');
                 const isGlobal = effect.target === 'global';
 
@@ -3544,7 +3661,6 @@ class SkillSystem {
                         await this.applyDamage(target, effect.damage, playerId, null);
                     }
                     effect.turnsLeft--;
-                    console.log(`🔄 TURN END: Effect ${effectId} turns left after decrement: ${effect.turnsLeft}`);
                 } else if (isGlobal) {
                     // Global effects (e.g. Domain) tick each endTurn.
                     const isDomain = effect.type === 'array_domain' || effect.type === 'room_domain' || effect.type === 'frieren_domain' || effect.type === 'construction_site_domain' || effect.type === 'alchemy_domain';
@@ -3569,45 +3685,26 @@ class SkillSystem {
 
                         // Tick down only on the opponent's endTurn.
                         if (ownerId && ownerId === playerId) {
-                            console.log(`🔄 TURN END: Domain ${effectId} does not decrement on owner turn end (turns left: ${effect.turnsLeft})`);
                         } else {
                             effect.turnsLeft--;
-                            console.log(`🔄 TURN END: Domain ${effectId} turns left after decrement: ${effect.turnsLeft}`);
                         }
                     } else if (isDomain && ownerId && ownerId === playerId) {
-                        console.log(`🔄 TURN END: Domain ${effectId} does not decrement on owner turn end (turns left: ${effect.turnsLeft})`);
                     } else if (isDomain) {
                         effect.turnsLeft--;
-                        console.log(`🔄 TURN END: Domain ${effectId} turns left after decrement: ${effect.turnsLeft}`);
                     } else if (effect && effect._skipNextDecrement) {
                         effect._skipNextDecrement = false;
-                        console.log(`🔄 TURN END: Effect ${effectId} skipping first decrement (turns left: ${effect.turnsLeft})`);
                     } else {
                         effect.turnsLeft--;
-                        console.log(`🔄 TURN END: Effect ${effectId} turns left after decrement: ${effect.turnsLeft}`);
                     }
                 }
                 
                 if (effect.turnsLeft <= 0) {
-                    console.log(`🔄 TURN END: Effect ${effectId} expired, marking for removal`);
                     effectsToRemove.push(effectId);
-
-                    if (effect.type === 'conceal') {
-                        console.log(`🛡️ CONCEAL EXPIRED: Conceal effect removed for ${playerId}`);
-                    } else if (effect.type === 'stun') {
-                        console.log(`� STUN EXPIRED: Stun effect removed for ${playerId}`);
-                    } else if (effect.type === 'mark') {
-                        console.log(`🎯 MARK EXPIRED: Mark effect removed for ${playerId}`);
-                    } else if (effect.type === 'immunity') {
-                        console.log(`🛡️ IMMUNITY EXPIRED: Immunity effect removed for ${playerId}`);
-                    }
                 }
             }
         }
 
-        console.log(`🔄 TURN END: Removing ${effectsToRemove.length} expired effects`);
         effectsToRemove.forEach(id => {
-            console.log(`🔄 TURN END: Removing effect ${id}`);
             this.activeEffects.delete(id);
         });
 
@@ -3639,126 +3736,6 @@ class SkillSystem {
 
     removeDebuff(playerId, debuffEffect) {
         this.recalculateStats(playerId);
-    }
-
-    applyImmunity(playerId, characterId, duration) {
-        const immunityId = `immunity_${playerId}_${Date.now()}`;
-
-        this.activeEffects.set(immunityId, {
-            type: 'immunity',
-            target: playerId,
-            characterId,
-            duration,
-            turnsLeft: duration,
-            name: 'Immunity',
-            description: `Immune to all negative effects for ${duration} turns`
-        });
-    }
-
-    canUseSkill(skill, playerId) {
-        if (!skill || !skill.id) return false;
-        if (skill && skill.effect && skill.effect.type === 'archive_copycat_glyph') {
-            const pages = this.getArchivePages(playerId);
-            const cost = Math.max(1, Math.floor(Number(skill.effect.page_cost) || 2));
-            if (pages.length < cost) {
-                return false;
-            }
-        }
-
-        const cooldownKey = `${skill.id}_${playerId}`;
-        const cooldown = this.skillCooldowns.get(cooldownKey);
-        return !cooldown || cooldown <= 0;
-    }
-
-    getSkillCooldown(skill, playerId) {
-        if (!skill || !skill.id) return 0;
-        const cooldownKey = `${skill.id}_${playerId}`;
-        const cooldown = this.skillCooldowns.get(cooldownKey);
-        return cooldown || 0;
-    }
-
-    setSkillCooldown(skillId, playerId, turns) {
-        const cooldownKey = `${skillId}_${playerId}`;
-        this.skillCooldowns.set(cooldownKey, turns);
-    }
-
-    setSkillCooldownFromUse(skillId, playerId, turns) {
-        const n = Math.max(0, Math.floor(Number(turns) || 0));
-        const cooldownKey = `${skillId}_${playerId}`;
-        this.skillCooldowns.set(cooldownKey, n);
-        if (n > 0) {
-            // Do not decrement on the same turn the cooldown is applied.
-            this._cooldownsSkipNextDecrement.add(cooldownKey);
-        }
-    }
-
-    decrementCooldowns(playerId) {
-        for (const [key, value] of this.skillCooldowns.entries()) {
-            if (key.endsWith(`_${playerId}`) && value > 0) {
-                if (this._cooldownsSkipNextDecrement.has(key)) {
-                    this._cooldownsSkipNextDecrement.delete(key);
-                    continue;
-                }
-                this.skillCooldowns.set(key, value - 1);
-            }
-        }
-    }
-
-    getPlayerById(playerId) {
-        // This will be implemented by the game coordinator
-        return null;
-    }
-
-    getActiveEffectsForPlayer(playerId) {
-        const effects = [];
-        for (const [effectId, effect] of this.activeEffects.entries()) {
-            if (effect.target === playerId) {
-                effects.push({ id: effectId, ...effect });
-            }
-        }
-        return effects;
-    }
-
-    consumePoisonStacks(playerId) {
-        let poisonStacks = 0;
-        const effectsToRemove = [];
-
-        // Find all poison effects on the target player
-        for (const [effectId, effect] of this.activeEffects) {
-            if (effect.target === playerId && effect.type === 'poison') {
-                poisonStacks++;
-                effectsToRemove.push(effectId);
-            }
-        }
-
-        // Remove all poison effects
-        effectsToRemove.forEach(effectId => {
-            this.activeEffects.delete(effectId);
-        });
-
-        return poisonStacks;
-    }
-
-    applyConceal(target, playerId, duration) {
-        const concealId = `conceal_${playerId}_${Date.now()}`;
-        
-        console.log(`🛡️ CONCEAL: Applying conceal to ${playerId} (${target.name}) for ${duration} turns`);
-        console.log(`🛡️ CONCEAL: Effect ID: ${concealId}`);
-        
-        this.activeEffects.set(concealId, {
-            type: 'conceal',
-            target: playerId,
-            characterId: target.id,
-            duration: duration,
-            turnsLeft: duration,
-            name: 'Conceal',
-            description: 'Invincible - cannot take damage or debuffs'
-        });
-        
-        console.log(`🛡️ CONCEAL: Active effects count: ${this.activeEffects.size}`);
-        console.log(`🛡️ CONCEAL: All active effects:`, Array.from(this.activeEffects.entries()));
-        
-        console.log(`Active conceal effects:`, Array.from(this.activeEffects.entries()).filter(([id, effect]) => effect.type === 'conceal'));
     }
 
     isConcealed(playerId) {
@@ -3862,6 +3839,18 @@ class SkillSystem {
                             const remaining = Math.max(0, Math.floor(this.getSkillCooldown({ id: s.id }, playerId)));
                             if (remaining > 0) {
                                 this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
+                            }
+
+                            const buffCfg = s.cooldownReductionBuff && typeof s.cooldownReductionBuff === 'object'
+                                ? s.cooldownReductionBuff
+                                : null;
+                            if (buffCfg) {
+                                const maxStacks = (typeof buffCfg.maxStacks === 'number')
+                                    ? Math.max(0, Math.floor(buffCfg.maxStacks))
+                                    : null;
+                                const cur = this.getCooldownReductionStacksForSkill(playerId, s.id);
+                                const next = maxStacks === null ? (cur + cdrAmt) : Math.min(maxStacks, cur + cdrAmt);
+                                this.setCooldownReductionStacksForSkill(playerId, s.id, next);
                             }
                         }
                     }
@@ -4129,6 +4118,13 @@ class SkillSystem {
 
         const debuffId = `debuff_${playerId}_${debuffEffect.stat}_${Date.now()}`;
 
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
+
         const normalizedStat = this.normalizeStatKey(debuffEffect.stat);
         const debuffMode = debuffEffect.mode;
         const debuffValue = Number(debuffEffect.value) || 0;
@@ -4143,6 +4139,7 @@ class SkillSystem {
         this.activeEffects.set(debuffId, {
             type: 'debuff',
             target: playerId,
+            ownerId,
             characterId: target.id,
             stat: normalizedStat,
             value: debuffValue,
@@ -4168,10 +4165,18 @@ class SkillSystem {
         }
 
         const stunId = `stun_${playerId}_${Date.now()}`;
+
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
         
         this.activeEffects.set(stunId, {
             type: 'stun',
             target: playerId,
+            ownerId,
             characterId: target.id,
             duration: duration,
             turnsLeft: duration,
@@ -4193,10 +4198,18 @@ class SkillSystem {
         }
 
         const markId = `mark_${playerId}_${Date.now()}`;
+
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
         
         this.activeEffects.set(markId, {
             type: 'mark',
             target: playerId,
+            ownerId,
             characterId: target.id,
             damage_bonus: markEffect.damage_bonus,
             duration: markEffect.duration,
