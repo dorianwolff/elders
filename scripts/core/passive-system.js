@@ -181,13 +181,21 @@ class PassiveSystem {
         const pool = opponentSkills.filter(s => s && s.id && s.id !== 'devour');
         if (pool.length === 0) return;
 
+        const prevId = (state.devourSkill && typeof state.devourSkill.id === 'string')
+            ? state.devourSkill.id
+            : (rimuru.devourSkill && typeof rimuru.devourSkill.id === 'string' ? rimuru.devourSkill.id : null);
+
         const seed = `${this.gameState.gameId || 'game'}:${this.gameState.turnCount || 0}:${playerId}:devour`;
         const rand = this.skillSystem && typeof this.skillSystem.deterministicRandom === 'function'
             ? this.skillSystem.deterministicRandom(seed)
             : Math.random();
 
         const idx = Math.floor(rand * pool.length);
-        const picked = pool[Math.min(pool.length - 1, Math.max(0, idx))];
+        let picked = pool[Math.min(pool.length - 1, Math.max(0, idx))];
+        if (pool.length > 1 && prevId && picked && picked.id === prevId) {
+            const altIdx = (Math.min(pool.length - 1, Math.max(0, idx)) + 1) % pool.length;
+            picked = pool[altIdx] || picked;
+        }
 
         const pickedCopy = JSON.parse(JSON.stringify(picked));
         if (pickedCopy && typeof pickedCopy === 'object') {
@@ -217,7 +225,7 @@ class PassiveSystem {
 
         try {
             if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
-                window.BattleHooks.emit('passive_system:event', {
+                const res = window.BattleHooks.emit('passive_system:event', {
                     passiveSystem: this,
                     skillSystem: this.skillSystem,
                     gameState: this.gameState,
@@ -227,6 +235,12 @@ class PassiveSystem {
                     eventType,
                     payload
                 });
+
+                // Allow listeners to be async and ensure their side-effects (ex: skill swaps)
+                // apply before the rest of the turn pipeline proceeds.
+                for (const rr of (res || [])) {
+                    await Promise.resolve(rr);
+                }
             }
         } catch (e) {}
 
@@ -271,8 +285,15 @@ class PassiveSystem {
         }
 
         if (eventType === 'turn_start') {
-            this.rollDevourSkill('player1');
-            this.rollDevourSkill('player2');
+            // Roll Devour only for the active player's turn start.
+            // Some game flows emit extra turn_start events (ex: pre-game setup),
+            // so gate on currentTurn to avoid rolling multiple times per turn.
+            const active = this.gameState && typeof this.gameState.currentTurn === 'string'
+                ? this.gameState.currentTurn
+                : null;
+            if (active && playerId === active) {
+                this.rollDevourSkill(playerId);
+            }
         }
 
         if (eventType === 'turn_end') {

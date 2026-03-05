@@ -61,6 +61,12 @@ window.BattleAssets = {
         else if (id === 'chen') {
             return 'assets/animations/chen/chen_ultimate.mp4';
         }
+        else if (id === 'naofumi_iwatani') {
+            return 'assets/animations/naofumi_isawani/naofumi_iwatani_ultimate.mp4';
+        }
+        else if (id === 'naofumi_isawani') {
+            return 'assets/animations/naofumi_isawani/naofumi_iwatani_ultimate.mp4';
+        }
         return null;
     },
 

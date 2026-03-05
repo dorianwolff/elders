@@ -703,8 +703,9 @@ position: relative;
 }
 
 .effect-indicator.revive {
-    background: linear-gradient(135deg, #f1c40f, #d4ac0d);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(160, 160, 160, 0.35);
+    border-color: rgba(220, 220, 220, 0.6);
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .effect-indicator.conceal {

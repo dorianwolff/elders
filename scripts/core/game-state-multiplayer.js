@@ -282,9 +282,21 @@ GameState.prototype.applyOpponentActionResult = async function (playerId, action
         const skill = player.character.skills[skillIndex];
         if (skill) {
             if (this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
-                const effectiveType = (skill.id === 'gojo_strike' && this.skillSystem && typeof this.skillSystem.isDomainActive === 'function' && this.skillSystem.isDomainActive())
+                let effectiveType = (skill.id === 'gojo_strike' && this.skillSystem && typeof this.skillSystem.isDomainActive === 'function' && this.skillSystem.isDomainActive())
                     ? 'heal'
                     : skill.type;
+
+                // Rimuru: Devour should count as casting the copied skill type.
+                try {
+                    if (skill.id === 'devour' && player.character && player.character.id === 'rimuru_tempest') {
+                        const copiedType = player.character.devourSkill && typeof player.character.devourSkill.type === 'string'
+                            ? player.character.devourSkill.type
+                            : null;
+                        if (copiedType) {
+                            effectiveType = copiedType;
+                        }
+                    }
+                } catch (e) {}
                 this.passiveSystem.handleEvent(playerId, 'skill_used', { skillId: skill.id, skillType: effectiveType });
                 this.passiveSystem.handleEvent(opponent.id, 'opponent_skill_used', { skillId: skill.id, skillType: effectiveType, attackerId: playerId });
             }
@@ -324,9 +336,20 @@ GameState.prototype.applyOpponentActionResult = async function (playerId, action
                 kind: 'skill',
                 attackerId: playerId,
                 skillId: skill?.id,
-                skillType: (skill.id === 'gojo_strike' && this.skillSystem && typeof this.skillSystem.isDomainActive === 'function' && this.skillSystem.isDomainActive())
-                    ? 'heal'
-                    : skill.type,
+                skillType: (() => {
+                    let t = (skill.id === 'gojo_strike' && this.skillSystem && typeof this.skillSystem.isDomainActive === 'function' && this.skillSystem.isDomainActive())
+                        ? 'heal'
+                        : skill.type;
+                    try {
+                        if (skill.id === 'devour' && player.character && player.character.id === 'rimuru_tempest') {
+                            const copiedType = player.character.devourSkill && typeof player.character.devourSkill.type === 'string'
+                                ? player.character.devourSkill.type
+                                : null;
+                            if (copiedType) t = copiedType;
+                        }
+                    } catch (e) {}
+                    return t;
+                })(),
                 isCounter: false
             }, async () => {
                 await this.skillSystem.applySkillEffect(

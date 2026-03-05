@@ -1581,7 +1581,9 @@ class BattlePage extends BasePage {
             } catch (e) {}
 
             if (skill.id === 'devour' && (skill._copiedName || skill._copiedDescription)) {
-                this.updateElement(`#skill-${index}-name`, skill._copiedName || skill.name);
+                const baseName = skill._copiedName || skill.name;
+                const displayName = typeof baseName === 'string' ? `${baseName}, twice` : baseName;
+                this.updateElement(`#skill-${index}-name`, displayName);
                 this.updateElement(`#skill-${index}-description`, skill._copiedDescription || skill.description);
             } else {
                 this.updateElement(`#skill-${index}-name`, skill.name);

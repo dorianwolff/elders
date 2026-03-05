@@ -38,10 +38,10 @@
     "name": "Rimuru Tempest",
     "metaPoints": 160,
     "stats": {
-      "health": 100,
-      "maxHealth": 100,
+      "health": 140,
+      "maxHealth": 140,
       "attack": 21,
-      "defense": 16,
+      "defense": 14,
       "lifesteal": 0,
       "damageReduction": 0,
       "shield": 0,
@@ -84,13 +84,12 @@
     },
     "images": ["trafalgar_law.webp"],
     "passiveId": "room_surgeon",
-    "recommended_items": ["mace"],
+    "recommended_items": ["trafalgar_law_cap"],
     "skillIds": ["room_incision", "takt_breaker", "shambles_precision", "room_domain"],
     "ultimate": {
       "id": "shambles",
       "name": "Shambles",
-      "description": "Swap health with enemy. If the enemy's health is reduced to 0, execute them.",
-      "limit": 3,
+      "description": "Swap health with enemy. If the enemy's health is reduced to 10% or lower, execute them.",
       "effect": {
         "type": "swap_health_and_execute",
         "target": "enemy",
@@ -114,7 +113,7 @@
     },
     "images": ["saitama_base.jpg"],
     "passiveId": "push_the_limits",
-    "recommended_items": ["mace"],
+    "recommended_items": ["comb"],
     "skillIds": ["slap", "endure", "grit"],
     "ultimate": {
       "id": "get_serious",
@@ -146,7 +145,7 @@
     },
     "images": ["saitama_transformed.jpg"],
     "passiveId": "serious_growth",
-    "recommended_items": ["mace"],
+    "recommended_items": ["comb"],
     "skillIds": ["serious_punch", "serious_side_steps"],
     "ultimate": {
       "id": "omnidirectional_serious_punch",
@@ -329,7 +328,7 @@
     },
     "images": ["frieren.jpg"],
     "passiveId": "spell_archive",
-    "recommended_items": ["mace"],
+    "recommended_items": ["frieren_staff"],
     "skillIds": ["frieren_minor_utility", "frieren_copycat_glyph", "frieren_rotating_page"],
     "ultimate": {
       "id": "frieren_archive_release",

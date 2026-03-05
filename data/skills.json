@@ -529,7 +529,7 @@
   "predation": {
     "id": "predation",
     "name": "Predation",
-    "description": "Deal 70% attack, 70% defense, and 10% current health as damage",
+    "description": "Deal 80% attack, 70% defense, and 10% current health as damage",
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -538,7 +538,7 @@
       "multiHit": true,
       "randomizeComponentsEachTurn": true,
       "components": [
-        { "scaling": "attack", "value": 0.7 },
+        { "scaling": "attack", "value": 0.8 },
         { "scaling": "defense", "value": 0.7 },
         { "scaling": "current_health", "value": 0.1 }
       ]
@@ -547,7 +547,7 @@
   "devour": {
     "id": "devour",
     "name": "Devour",
-    "description": "Every turn, becomes a random skill your opponent has",
+    "description": "Every turn, becomes a random skill your opponent has. Upon use cast it twice.",
     "type": "utility",
     "cooldown": 2,
     "effect": {
@@ -736,7 +736,7 @@
   "chen_dragon_strike": {
     "id": "chen_dragon_strike",
     "name": "Dragon Strike",
-    "description": "Deal 105% of attack as damage. Cooldown reduction applied to this skill grants it +15% of attack. If it was applied 3 or more times also gain +3 defense permanently.",
+    "description": "Deal 110% of attack as damage. Cooldown reduction applied to this skill grants it +15% of attack. If it was applied 3 or more times also gain +3 defense permanently.",
     "type": "attack",
     "cooldown": 3,
     "cooldownReductionBuff": {
@@ -746,7 +746,7 @@
     "effect": {
       "type": "damage_with_cdr_stacks",
       "target": "enemy",
-      "base_percent": 1.05,
+      "base_percent": 1.10,
       "per_stack_percent": 0.15,
       "stack_skill_id": "chen_dragon_strike",
       "permanent_defense_if_stacks_at_least": 3,
@@ -757,13 +757,13 @@
   "chen_piercing_assault": {
     "id": "chen_piercing_assault",
     "name": "Piercing Assault",
-    "description": "Deal 95% of attack as damage. If another one of your skills has at least 3 cooldown reduction stacks, remove enemy shield before dealing damage.",
+    "description": "Deal 90% of attack as damage. If another one of your skills has at least 3 cooldown reduction stacks, remove enemy shield before dealing damage.",
     "type": "attack",
     "cooldown": 1,
     "effect": {
       "type": "chen_piercing_assault",
       "target": "enemy",
-      "damage_percent": 0.95,
+      "damage_percent": 0.90,
       "shield_break_if_other_skill_stacks_at_least": 3,
       "stack_skill_ids": ["chen_dragon_strike", "chen_crimson_ult"]
     }

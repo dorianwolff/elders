@@ -83,5 +83,40 @@
       "defense": 1
     },
     "passiveId": "wooden_shield_stance_guard"
+  },
+  "frieren_staff": {
+    "id": "frieren_staff",
+    "name": "Frieren's Staff",
+    "type": "signature",
+    "image": "assets/items/frieren_staff.png",
+    "allowedCharacters": ["frieren"],
+    "stats": {},
+    "passiveId": "frieren_staff_spell_archive_plus"
+  },
+  "trafalgar_law_cap": {
+    "id": "trafalgar_law_cap",
+    "name": "Trafalgar Law's Cap",
+    "type": "signature",
+    "image": "assets/items/trafalgar_law_cap.png",
+    "allowedCharacters": ["trafalgar_law"],
+    "stats": {
+      "attack": 1,
+      "health": 2,
+      "maxHealth": 2
+    },
+    "passiveId": "trafalgar_law_cap_shambles_execute"
+  },
+  "comb": {
+    "id": "comb",
+    "name": "Comb",
+    "type": "signature",
+    "image": "assets/items/comb.png",
+    "allowedCharacters": ["saitama", "saitama_serious"],
+    "stats": {
+      "health": 5,
+      "maxHealth": 5,
+      "defense": -1
+    },
+    "passiveId": "comb_steady_recovery"
   }
 }

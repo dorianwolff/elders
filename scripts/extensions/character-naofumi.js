@@ -6,6 +6,68 @@
         return Boolean(c && c.id === 'naofumi_iwatani');
     }
 
+    function upsertNaofumiStageIndicator(skillSystem, playerId, shieldKey) {
+        if (!skillSystem || !skillSystem.activeEffects || typeof skillSystem.activeEffects.entries !== 'function') return;
+        const effects = skillSystem.activeEffects;
+
+        const toRemove = [];
+        for (const [id, eff] of effects.entries()) {
+            if (!eff) continue;
+            if (eff.target !== playerId) continue;
+            if (!eff._naofumiPassiveIndicator) continue;
+            toRemove.push(id);
+        }
+        for (const id of toRemove) effects.delete(id);
+
+        const labelMap = {
+            legendary: 'Legendary Shield',
+            leaf: 'Leaf Shield',
+            chimera: 'Chimera Shield',
+            prison: 'Prison Shield',
+            balloon: 'Balloon Shield',
+            soul_eater: 'Soul Eater Shield',
+            transformation: 'Wrath Shield'
+        };
+
+        const name = labelMap[shieldKey] || 'Shield';
+        const desc = shieldKey ? `Current shield: ${shieldKey}` : 'Current shield';
+
+        effects.set(`naofumi_stage_${playerId}_${Date.now()}`, {
+            type: 'stack-counter',
+            target: playerId,
+            characterId: 'naofumi_iwatani',
+            ownerId: playerId,
+            duration: 1,
+            turnsLeft: 1,
+            name,
+            description: desc,
+            _naofumiPassiveIndicator: true
+        });
+    }
+
+    function resetCooldownsForSkills(skillSystem, playerId, skillIds) {
+        try {
+            if (!skillSystem || typeof skillSystem.setSkillCooldown !== 'function') return;
+            if (playerId !== 'player1' && playerId !== 'player2') return;
+            const ids = Array.isArray(skillIds) ? skillIds : [];
+            for (const sid of ids) {
+                if (typeof sid !== 'string' || !sid) continue;
+                skillSystem.setSkillCooldown(sid, playerId, 0);
+
+                // If the skill was used last action, SkillSystem may have a one-turn skip flag.
+                // Clear it so swaps never carry cooldown timing artifacts.
+                try {
+                    const key = (typeof skillSystem.getSkillCooldownKey === 'function')
+                        ? skillSystem.getSkillCooldownKey(sid, playerId)
+                        : `${playerId}:${sid}`;
+                    if (skillSystem._cooldownsSkipNextDecrement && typeof skillSystem._cooldownsSkipNextDecrement.delete === 'function') {
+                        skillSystem._cooldownsSkipNextDecrement.delete(key);
+                    }
+                } catch (e) {}
+            }
+        } catch (e) {}
+    }
+
     window.BattleHooks.register('passive_system:event', async (ctx) => {
         try {
             if (!isNaofumi(ctx)) return;
@@ -149,6 +211,7 @@
                             const s2 = await cs.getSkill('naofumi_soul_eat');
                             if (s1 && s2) {
                                 character.skills = [s2, s1];
+                                resetCooldownsForSkills(skillSystem, playerId, ['naofumi_soul_eat', 'naofumi_undead_control']);
                             }
                         } catch (e) {}
                     }
@@ -171,10 +234,13 @@
                             const s2 = await cs.getSkill(state.naofumiBaseSkillIds[1]);
                             if (s1 && s2) {
                                 character.skills = [s1, s2];
+                                resetCooldownsForSkills(skillSystem, playerId, [state.naofumiBaseSkillIds[0], state.naofumiBaseSkillIds[1]]);
                             }
                         } catch (e) {}
                     }
                 }
+
+                upsertNaofumiStageIndicator(skillSystem, playerId, state.naofumiCurrentShieldKey);
             }
 
             if (eventType === 'turn_end') {
@@ -199,6 +265,7 @@
                             const s2 = await cs.getSkill(b2);
                             if (s1 && s2) {
                                 character.skills = [s1, s2];
+                                resetCooldownsForSkills(skillSystem, playerId, [b1, b2]);
                             }
                         } catch (e) {}
                     }

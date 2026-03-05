@@ -962,9 +962,21 @@ class SkillSystem {
                 console.warn('Alchemy domain heat grant failed:', e);
             }
 
-            const skillTypeForPassive = (skill && skill.id === 'gojo_strike' && this.isDomainActive())
+            let skillTypeForPassive = (skill && skill.id === 'gojo_strike' && this.isDomainActive())
                 ? 'heal'
                 : (skill && typeof skill.type === 'string' ? skill.type : null);
+
+            // Rimuru: Devour should count as casting the copied skill type.
+            try {
+                if (skill && skill.id === 'devour' && caster && caster.id === 'rimuru_tempest') {
+                    const copiedType = caster.devourSkill && typeof caster.devourSkill.type === 'string'
+                        ? caster.devourSkill.type
+                        : null;
+                    if (copiedType) {
+                        skillTypeForPassive = copiedType;
+                    }
+                }
+            } catch (e) {}
 
             // Some effects (ex: Ch'en Piercing Assault) should evaluate conditions using the
             // pre-skill state, before any "on skill used" passives mutate cooldown-reduction stacks.
@@ -1100,90 +1112,30 @@ class SkillSystem {
             return result;
         }
 
-        switch (effect.type) {
-            case 'naofumi_shield_bash': {
-                const basePct = Number(effect.base_percent) || 0;
-                const transformPct = Number(effect.transform_percent) || basePct;
-                const transformActive = Boolean(caster && caster.id === 'naofumi_iwatani' && caster.passiveState && caster.passiveState.naofumiTransformActive);
-                const pct = transformActive ? transformPct : basePct;
-                const baseDamage = Math.max(0, (Number(caster?.stats?.defense) || 0) * pct);
-                const ctx = this.getActiveActionContext();
-                const ignoreDefense = Boolean(ctx && ctx.ignoreDefense);
-                const defense = ignoreDefense ? 0 : (Number(target?.stats?.defense) || 0);
-                const damageReduction = (Number(target?.stats?.damageReduction) || 0) / 100;
-                const reduced = Math.max(1, baseDamage - defense);
-                const finalDamage = Math.max(1, Math.ceil(reduced * (1 - damageReduction)));
-                result.damage = await this.applyDamage(target, finalDamage, targetId, playerId);
-                break;
-            }
-
-            case 'naofumi_defensive_stance': {
-                const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || 1));
-                const dr = Math.max(0, Math.floor(Number(effect.damage_reduction) || 0));
-                const id = `stance_${playerId}_${Date.now()}`;
-                this.activeEffects.set(id, {
-                    type: 'stance',
-                    key: 'naofumi_defensive_stance',
-                    stanceKey: 'naofumi_defensive_stance',
-                    target: playerId,
-                    damageReduction: dr,
-                    duration: turnsLeft,
-                    turnsLeft,
-                    transformCounterRatioDefense: Number(effect.transform_counter_ratio_defense) || 0,
-                    name: 'Defensive Stance',
-                    description: 'Reduces damage taken by 30%'
+        try {
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                const res = window.BattleHooks.emit('skill_system:apply_skill_effect', {
+                    skillSystem: this,
+                    effect,
+                    caster,
+                    target,
+                    gameState,
+                    playerId,
+                    opponentPlayerId,
+                    targetId,
+                    override,
+                    result
                 });
-                this.recalculateStats(playerId);
-                break;
-            }
-
-            case 'naofumi_ultimate': {
-                const duration = Math.max(1, Math.floor(Number(effect.heal_block_duration) || 2));
-                const enemyId = target === caster ? playerId : opponentPlayerId;
-                await this.applyHealBlock(enemyId, duration);
-
-                const def = Math.floor(Number(effect.self_defense_buff) || 0);
-                const defDur = Math.max(1, Math.floor(Number(effect.self_defense_duration) || 5));
-                if (def !== 0) {
-                    await this.applyBuff(caster, { stat: 'defense', value: def, mode: 'flat', duration: defDur }, playerId);
-                }
-                break;
-            }
-
-            case 'naofumi_soul_eat': {
-                const enemyId = target === caster ? playerId : opponentPlayerId;
-                // Remove enemy stance
-                for (const [id, eff] of this.activeEffects.entries()) {
-                    if (eff && eff.type === 'stance' && eff.target === enemyId) {
-                        this.activeEffects.delete(id);
+                for (const rr of (res || [])) {
+                    const r = await Promise.resolve(rr);
+                    if (r && typeof r === 'object' && r.handled) {
+                        return result;
                     }
                 }
-                const ratio = Math.max(0, Number(effect.max_health_ratio) || 0);
-                const intended = Math.max(0, Math.floor((Number(target?.stats?.maxHealth) || 0) * ratio));
-                if (intended > 0) {
-                    result.damage = await this.applyTrueDamageNoDomain(target, intended, enemyId, playerId);
-                }
-                break;
             }
+        } catch (e) {}
 
-            case 'naofumi_undead_control': {
-                const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || 1));
-                const ratio = Math.max(0, Number(effect.rebound_ratio) || 0);
-                const id = `stance_${playerId}_${Date.now()}`;
-                this.activeEffects.set(id, {
-                    type: 'stance',
-                    key: 'naofumi_undead_control',
-                    stanceKey: 'naofumi_undead_control',
-                    target: playerId,
-                    reboundRatio: ratio,
-                    duration: turnsLeft,
-                    turnsLeft,
-                    name: 'Undead Control',
-                    description: 'Recover 40% of damage taken and reflect it as true damage'
-                });
-                break;
-            }
-
+        switch (effect.type) {
             case 'damage_with_cdr_stacks':
                 {
                     const opponentId = playerId === 'player1' ? 'player2' : 'player1';
@@ -1207,58 +1159,6 @@ class SkillSystem {
                     }
 
                     // Ch'en: Dragon Strike permanent defense bonus when sufficiently enhanced.
-                    const permDefAt = Math.max(0, Math.floor(Number(effect.permanent_defense_if_stacks_at_least) || 0));
-                    const permDef = Math.floor(Number(effect.permanent_defense_amount) || 0);
-                    if (permDefAt > 0 && permDef !== 0 && stacks >= permDefAt) {
-                        if (!caster.baseStats) caster.baseStats = { ...caster.stats };
-                        caster.baseStats.defense = (Number(caster.baseStats.defense) || 0) + permDef;
-                        this.recalculateStats(playerId);
-                        result.effects.push(`Permanently gained +${permDef} defense`);
-                    }
-                }
-                break;
-
-            case 'chen_piercing_assault':
-                {
-                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
-                    const targetId = target === caster ? playerId : opponentId;
-
-                    const preSkillCdrStacks = (override && override.preSkillCdrStacks && typeof override.preSkillCdrStacks === 'object')
-                        ? override.preSkillCdrStacks
-                        : ((() => {
-                            const ctx = this.getActiveActionContext();
-                            return (ctx && ctx.preSkillCdrStacks && typeof ctx.preSkillCdrStacks === 'object')
-                                ? ctx.preSkillCdrStacks
-                                : null;
-                        })());
-
-                    const threshold = Math.max(0, Math.floor(Number(effect.shield_break_if_other_skill_stacks_at_least) || 0));
-                    const stackIds = Array.isArray(effect.stack_skill_ids) ? effect.stack_skill_ids : [];
-                    let shouldBreakShield = false;
-                    if (threshold > 0 && stackIds.length > 0) {
-                        for (const sid of stackIds) {
-                            if (!sid) continue;
-                            const stacks = (preSkillCdrStacks && preSkillCdrStacks[sid] !== undefined)
-                                ? Math.max(0, Math.floor(Number(preSkillCdrStacks[sid]) || 0))
-                                : this.getCooldownReductionStacksForSkill(playerId, sid);
-                            if (stacks >= threshold) {
-                                shouldBreakShield = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (shouldBreakShield && target && target.stats && (Number(target.stats.shield) || 0) > 0) {
-                        target.stats.shield = 0;
-                        target.stats.maxShield = 0;
-                        result.effects.push('Shield Broken');
-                    }
-
-                    const ratio = Math.max(0, Number(effect.damage_percent) || 0);
-                    const intended = this.calculateDamage({ scaling: 'attack', value: ratio }, caster, target);
-                    if (intended > 0) {
-                        result.damage = await this.applyDamage(target, intended, targetId, playerId);
-                    }
                 }
                 break;
 
@@ -1281,70 +1181,6 @@ class SkillSystem {
                 }
                 break;
 
-            case 'chen_ultimate_barrage':
-                {
-                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
-                    const targetId = target === caster ? playerId : opponentId;
-
-                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
-                        ? effect.stack_skill_id
-                        : null;
-                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
-                    const base = Number(effect.base_percent) || 0;
-                    const hits = Math.max(1, 1 + Math.max(0, Math.floor(stacks)));
-
-                    for (let i = 0; i < hits; i++) {
-                        const intended = this.calculateDamage({ scaling: 'attack', value: base }, caster, target);
-                        if (intended > 0) {
-                            const dealt = await this.applyDamage(target, intended, targetId, playerId);
-                            result.damage = (Number(result.damage) || 0) + dealt;
-                        }
-                    }
-
-                    // Ch'en: If sufficiently enhanced, reduce cooldown of all other skills.
-                    const cdrAt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
-                    const cdrAmt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_amount) || 0));
-                    if (cdrAt > 0 && cdrAmt > 0 && stacks >= cdrAt) {
-                        const skills = Array.isArray(caster?.skills) ? caster.skills : [];
-                        let reducedAny = false;
-                        for (const s of skills) {
-                            if (!s || !s.id) continue;
-                            if (s.id === stackSkillId) continue;
-                            const remaining = Math.max(0, Math.floor(this.getSkillCooldown({ id: s.id }, playerId)));
-                            if (remaining > 0) {
-                                this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
-                                reducedAny = true;
-                            }
-
-                            const buffCfg = s.cooldownReductionBuff && typeof s.cooldownReductionBuff === 'object'
-                                ? s.cooldownReductionBuff
-                                : null;
-                            if (buffCfg) {
-                                const maxStacks = (typeof buffCfg.maxStacks === 'number')
-                                    ? Math.max(0, Math.floor(buffCfg.maxStacks))
-                                    : null;
-                                const cur = this.getCooldownReductionStacksForSkill(playerId, s.id);
-                                const next = maxStacks === null ? (cur + cdrAmt) : Math.min(maxStacks, cur + cdrAmt);
-                                this.setCooldownReductionStacksForSkill(playerId, s.id, next);
-                            }
-                        }
-                        if (reducedAny) {
-                            result.effects.push(`Reduced cooldown of other skills by ${cdrAmt}`);
-
-                            // Ch'en Sword item passive: when you reduce cooldown of 1+ skills, gain +1 ATK (stacking buff) up to 10.
-                            try {
-                                if (caster && caster.itemId === 'chen_sword') {
-                                    this.applyChenSwordStackIfAny(playerId, caster);
-                                }
-                            } catch (e) {}
-                        }
-                    }
-
-                    if (stackSkillId && effect.reset_stacks_on_use) {
-                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
-                    }
-                }
-                break;
             case 'stance':
                 {
                     const turnsLeft = Math.max(1, Math.floor(Number(effect.enemy_turn_duration) || Number(effect.duration) || 1));
@@ -2550,11 +2386,15 @@ class SkillSystem {
                     const copied = caster.devourSkill;
                     if (copied && copied.effect) {
                         const tmp = { ...copied, cooldown: 0 };
-                        const copiedResult = await this.applySkillEffect(tmp.effect, caster, target, gameState, playerId, override);
-                        result.damage = (result.damage || 0) + (copiedResult.damage || 0);
-                        result.healing = (result.healing || 0) + (copiedResult.healing || 0);
-                        if (copiedResult.poisonApplied) result.poisonApplied = true;
-                        if (typeof copiedResult.lightningDamage === 'number') result.lightningDamage = copiedResult.lightningDamage;
+                        const first = await this.applySkillEffect(tmp.effect, caster, target, gameState, playerId, override);
+                        const second = await this.applySkillEffect(tmp.effect, caster, target, gameState, playerId, override);
+
+                        result.damage = (result.damage || 0) + (first.damage || 0) + (second.damage || 0);
+                        result.healing = (result.healing || 0) + (first.healing || 0) + (second.healing || 0);
+                        if (first.poisonApplied || second.poisonApplied) result.poisonApplied = true;
+                        const ld = (typeof first.lightningDamage === 'number' ? first.lightningDamage : 0)
+                            + (typeof second.lightningDamage === 'number' ? second.lightningDamage : 0);
+                        if (ld) result.lightningDamage = (result.lightningDamage || 0) + ld;
                     }
                 }
                 break;
@@ -4132,37 +3972,29 @@ class SkillSystem {
         const preSkillCdrStacks = (ctx && ctx.preSkillCdrStacks && typeof ctx.preSkillCdrStacks === 'object')
             ? ctx.preSkillCdrStacks
             : null;
-        
-        switch (effect.type) {
-            case 'chen_piercing_assault':
-                {
-                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
-                    const targetId = target === caster ? playerId : opponentId;
-                    if (targetId === playerId) break;
 
-                    const threshold = Math.max(0, Math.floor(Number(effect.shield_break_if_other_skill_stacks_at_least) || 0));
-                    const stackIds = Array.isArray(effect.stack_skill_ids) ? effect.stack_skill_ids : [];
-                    let shouldBreakShield = false;
-                    if (threshold > 0 && stackIds.length > 0) {
-                        for (const sid of stackIds) {
-                            if (!sid) continue;
-                            const stacks = (preSkillCdrStacks && preSkillCdrStacks[sid] !== undefined)
-                                ? Math.max(0, Math.floor(Number(preSkillCdrStacks[sid]) || 0))
-                                : this.getCooldownReductionStacksForSkill(playerId, sid);
-                            if (stacks >= threshold) {
-                                shouldBreakShield = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (shouldBreakShield && target && target.stats && (Number(target.stats.shield) || 0) > 0) {
-                        target.stats.shield = 0;
-                        target.stats.maxShield = 0;
+        try {
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                const res = window.BattleHooks.emit('skill_system:sync_skill_effects', {
+                    skillSystem: this,
+                    skill,
+                    effect,
+                    caster,
+                    target,
+                    gameState,
+                    playerId,
+                    preSkillCdrStacks
+                });
+                for (const rr of (res || [])) {
+                    const r = await Promise.resolve(rr);
+                    if (r && typeof r === 'object' && r.handled) {
+                        return;
                     }
                 }
-                break;
-
+            }
+        } catch (e) {}
+        
+        switch (effect.type) {
             case 'true_damage_and_apply_cdr_random_other':
                 {
                     // Sync only the cooldown reduction targeting; damage is pre-calculated.
@@ -4193,46 +4025,6 @@ class SkillSystem {
 
                     // This effect only mutates stacks when reset_on_use is enabled.
                     if (effect.reset_stacks_on_use && stackSkillId) {
-                        this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
-                    }
-                }
-                break;
-
-            case 'chen_ultimate_barrage':
-                {
-                    const stackSkillId = typeof effect.stack_skill_id === 'string' && effect.stack_skill_id
-                        ? effect.stack_skill_id
-                        : null;
-                    const stacks = stackSkillId ? this.getCooldownReductionStacksForSkill(playerId, stackSkillId) : 0;
-
-                    // Sync Ch'en ultimate cooldown reduction of other skills when sufficiently enhanced.
-                    const cdrAt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_if_stacks_at_least) || 0));
-                    const cdrAmt = Math.max(0, Math.floor(Number(effect.reduce_other_skill_cooldowns_amount) || 0));
-                    if (cdrAt > 0 && cdrAmt > 0 && stacks >= cdrAt) {
-                        const skills = Array.isArray(caster?.skills) ? caster.skills : [];
-                        for (const s of skills) {
-                            if (!s || !s.id) continue;
-                            if (s.id === stackSkillId) continue;
-                            const remaining = Math.max(0, Math.floor(this.getSkillCooldown({ id: s.id }, playerId)));
-                            if (remaining > 0) {
-                                this.setSkillCooldown(s.id, playerId, Math.max(0, remaining - cdrAmt));
-                            }
-
-                            const buffCfg = s.cooldownReductionBuff && typeof s.cooldownReductionBuff === 'object'
-                                ? s.cooldownReductionBuff
-                                : null;
-                            if (buffCfg) {
-                                const maxStacks = (typeof buffCfg.maxStacks === 'number')
-                                    ? Math.max(0, Math.floor(buffCfg.maxStacks))
-                                    : null;
-                                const cur = this.getCooldownReductionStacksForSkill(playerId, s.id);
-                                const next = maxStacks === null ? (cur + cdrAmt) : Math.min(maxStacks, cur + cdrAmt);
-                                this.setCooldownReductionStacksForSkill(playerId, s.id, next);
-                            }
-                        }
-                    }
-
-                    if (stackSkillId && effect.reset_stacks_on_use) {
                         this.setCooldownReductionStacksForSkill(playerId, stackSkillId, 0);
                     }
                 }
@@ -4755,9 +4547,9 @@ class SkillSystem {
                 
                 console.log(`✨ REVIVE: ${character.name} revived with ${reviveHealth} health! (${character.reviveCount}/${reviveEffect.max_revives} revives used)`);
                 
-                // Add visual effect
+                // Add visual effect (grey/unremovable indicator)
                 this.activeEffects.set(`revive_${playerId}_${Date.now()}`, {
-                    type: 'revive',
+                    type: 'stack-counter',
                     target: playerId,
                     characterId: character.id,
                     turnsLeft: 1,

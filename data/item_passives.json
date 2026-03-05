@@ -38,5 +38,20 @@
     "id": "wooden_shield_stance_guard",
     "name": "Stance Guard",
     "description": "While in a stance, gain +2 DEF"
+  },
+  "frieren_staff_spell_archive_plus": {
+    "id": "frieren_staff_spell_archive_plus",
+    "name": "Spell Archive+",
+    "description": "Frieren may stack up to 6 Pages and her Ultimate will cast Minor Utility Spell 6 times instead of 5."
+  },
+  "trafalgar_law_cap_shambles_execute": {
+    "id": "trafalgar_law_cap_shambles_execute",
+    "name": "Room of Death",
+    "description": "Shambles now executes at 20% or less health."
+  },
+  "comb_steady_recovery": {
+    "id": "comb_steady_recovery",
+    "name": "Steady Recovery",
+    "description": "At the start of your turn, if you received any damage since your last turn, recover 1 health. If you are at 66% health or below, recover 2 instead. If you are at 33% health or below, recover 3 instead."
   }
 }

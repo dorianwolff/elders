@@ -349,7 +349,7 @@
   "spell_archive": {
     "id": "spell_archive",
     "name": "Spell Archive",
-    "description": "Whenever your opponent uses a skill, record its type as a Page (max 5). Pages empower your spells. At 5 Pages, Ultimate becomes available.",
+    "description": "Whenever your opponent uses a skill, record its type as a Page (max 5). Pages empower your spells. At maximum Pages, Ultimate becomes available.",
     "mission": {
       "type": "stack_threshold",
       "counter": "archivePages",
