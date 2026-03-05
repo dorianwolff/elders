@@ -53,5 +53,10 @@
     "id": "comb_steady_recovery",
     "name": "Steady Recovery",
     "description": "At the start of your turn, if you received any damage since your last turn, recover 1 health. If you are at 66% health or below, recover 2 instead. If you are at 33% health or below, recover 3 instead."
+  },
+  "communication_device_parity_link": {
+    "id": "communication_device_parity_link",
+    "name": "Parity Link",
+    "description": "If your current health is even, gain +4 ATK. Otherwise, gain -5 ATK."
   }
 }

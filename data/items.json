@@ -118,5 +118,15 @@
       "defense": -1
     },
     "passiveId": "comb_steady_recovery"
+  },
+  "communication_device": {
+    "id": "communication_device",
+    "name": "Communication Device",
+    "type": "regular",
+    "image": "assets/items/comunication_device.png",
+    "stats": {
+      "attack": 1
+    },
+    "passiveId": "communication_device_parity_link"
   }
 }

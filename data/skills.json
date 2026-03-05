@@ -1113,13 +1113,12 @@
   "frieren_copycat_glyph": {
     "id": "frieren_copycat_glyph",
     "name": "Copycat Glyph",
-    "description": "Requires at least 2 Pages. Your next Minor Utility Spell triggers twice.",
+    "description": "Your next Minor Utility Spell triggers twice. After each use, increase this effect by 1 (up to the number of pages) and cooldown by 1.",
     "type": "utility",
-    "cooldown": 2,
+    "cooldown": 1,
     "effect": {
       "type": "archive_copycat_glyph",
       "target": "self",
-      "page_cost": 2,
       "duration": 2
     }
   },

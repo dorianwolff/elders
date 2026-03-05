@@ -67,17 +67,12 @@
         try {
             const characterId = ctx && ctx.characterId;
             const skill = ctx && ctx.skill;
-            const passiveState = ctx && ctx.passiveState;
             const canUse = Boolean(ctx && ctx.canUse);
 
             if (characterId !== 'frieren' || !skill || !skill.id) return;
 
             if (skill.id === 'frieren_copycat_glyph') {
-                const archivePagesCount = passiveState && passiveState.counters
-                    ? (Number(passiveState.counters.archivePages) || 0)
-                    : 0;
-
-                return !canUse || archivePagesCount < 2;
+                return !canUse;
             }
         } catch (e) {}
     }, { id: 'ui:skills:frieren_disabled', order: 0 });

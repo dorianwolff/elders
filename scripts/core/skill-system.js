@@ -424,6 +424,41 @@ class SkillSystem {
         return removed;
     }
 
+    getCopycatGlyphEffect(playerId) {
+        for (const [, eff] of this.activeEffects.entries()) {
+            if (
+                eff &&
+                eff.type === 'copycat_glyph' &&
+                eff.target === playerId &&
+                (Number(eff.turnsLeft) || 0) > 0
+            ) {
+                return eff;
+            }
+        }
+        return null;
+    }
+
+    getArchiveMaxPagesForCharacter(character) {
+        try {
+            const effs = Array.isArray(character?.passive?.effects) ? character.passive.effects : [];
+            for (const e of effs) {
+                if (e && e.type === 'spell_archive_pages') {
+                    const n = Math.floor(Number(e.maxPages) || 0);
+                    if (n > 0) return n;
+                }
+            }
+        } catch (e) {}
+        return 5;
+    }
+
+    formatCopycatTriggerText(casts) {
+        const n = Math.max(1, Math.floor(Number(casts) || 1));
+        if (n === 1) return 'once';
+        if (n === 2) return 'twice';
+        if (n === 3) return 'thrice';
+        return `${n} times`;
+    }
+
     async applyHealBlock(targetPlayerId, duration) {
         const turnsLeft = Math.max(1, Math.floor(Number(duration) || 1));
         const ctx = this.getActiveActionContext();
@@ -887,6 +922,14 @@ class SkillSystem {
         try {
             if (character && character.itemId === 'wooden_shield' && hasActiveStance) {
                 defenseAdd += 2;
+            }
+        } catch (e) {}
+
+        // Communication Device item passive: parity-based ATK modifier.
+        try {
+            if (character && character.itemId === 'communication_device') {
+                const hp = Math.floor(Number(character.stats.health) || 0);
+                attackAdd += (hp % 2 === 0) ? 4 : -5;
             }
         } catch (e) {}
 
@@ -1551,14 +1594,16 @@ class SkillSystem {
                         }
                     };
 
-                    const shouldDouble = this.hasCopycatGlyph(playerId);
-                    if (shouldDouble) {
+                    const glyph = this.getCopycatGlyphEffect(playerId);
+                    const casts = glyph ? Math.max(2, Math.floor(Number(glyph.casts) || 2)) : 1;
+                    if (glyph) {
                         this.consumeCopycatGlyph(playerId);
                     }
 
-                    await executeOnce();
-                    if (shouldDouble) {
+                    for (let i = 0; i < casts; i++) {
                         await executeOnce();
+                    }
+                    if (casts > 1) {
                         result.effects.push('Doublecast');
                     }
                 }
@@ -1685,16 +1730,58 @@ class SkillSystem {
             case 'archive_copycat_glyph':
                 {
                     const turnsLeft = Math.max(1, Math.floor(Number(effect.duration) || 1));
+                    const player = this.gameState?.players?.get(playerId);
+                    const state = player?.character?.passiveState;
+                    const maxPages = this.getArchiveMaxPagesForCharacter(caster);
+
+                    if (state) {
+                        if (!Number.isFinite(state.frierenCopycatCasts)) state.frierenCopycatCasts = 2;
+                        if (!Number.isFinite(state.frierenCopycatCooldown)) {
+                            const ctx = this.getActiveActionContext();
+                            const skillId = ctx && typeof ctx.skillId === 'string' ? ctx.skillId : null;
+                            const sObj = skillId && Array.isArray(caster?.skills)
+                                ? caster.skills.find(s => s && s.id === skillId)
+                                : null;
+                            state.frierenCopycatCooldown = sObj ? Math.max(0, Math.floor(Number(sObj.cooldown) || 0)) : 1;
+                        }
+                    }
+
+                    const castsNow = state
+                        ? Math.max(1, Math.min(maxPages, Math.floor(Number(state.frierenCopycatCasts) || 2)))
+                        : 2;
+                    const triggerWord = this.formatCopycatTriggerText(castsNow);
+
                     const id = `copycat_glyph_${playerId}_${Date.now()}`;
                     this.activeEffects.set(id, {
                         type: 'copycat_glyph',
                         target: playerId,
                         duration: turnsLeft,
                         turnsLeft,
+                        casts: castsNow,
                         name: 'Copycat Glyph',
-                        description: 'Your next Minor Utility Spell triggers twice.'
+                        description: `Your next Minor Utility Spell triggers ${triggerWord}.`
                     });
                     result.effects.push('Copycat');
+
+                    // After each use, increase casts (+1) and cooldown (+1), capped by max pages.
+                    if (state) {
+                        const nextCasts = Math.min(maxPages, castsNow + 1);
+                        const nextCooldown = Math.min(maxPages, (Number(state.frierenCopycatCooldown) || 1) + 1);
+                        state.frierenCopycatCasts = nextCasts;
+                        state.frierenCopycatCooldown = nextCooldown;
+
+                        // Persist the scaling onto the actual skill object so UI and cooldown application match.
+                        const ctx = this.getActiveActionContext();
+                        const skillId = ctx && typeof ctx.skillId === 'string' ? ctx.skillId : null;
+                        const sObj = skillId && Array.isArray(caster?.skills)
+                            ? caster.skills.find(s => s && s.id === skillId)
+                            : null;
+                        if (sObj) {
+                            sObj.cooldown = nextCooldown;
+                            const nextWord = this.formatCopycatTriggerText(nextCasts);
+                            sObj.description = `Your next Minor Utility Spell triggers ${nextWord}. After each use, increase this effect by 1 (up to the number of pages) and cooldown by 1.`;
+                        }
+                    }
                 }
                 break;
 
@@ -3028,6 +3115,14 @@ class SkillSystem {
             this.emitCombatText('damage', remaining, playerId);
         }
 
+        // Communication Device item passive depends on current HP parity.
+        // Recompute derived stats immediately so the ATK modifier updates as soon as HP changes.
+        try {
+            if (playerId && remaining !== 0 && target && target.itemId === 'communication_device') {
+                this.recalculateStats(playerId);
+            }
+        } catch (e) {}
+
         console.log(`❤️ HEALTH UPDATE: ${target.name} health after damage: ${target.stats.health}`);
 
         // Track damage taken for passives / ultimate conditions
@@ -3282,6 +3377,14 @@ class SkillSystem {
         if (playerId && actual > 0) {
             this.emitCombatText('heal', actual, playerId);
         }
+
+        // Communication Device item passive depends on current HP parity.
+        // Recompute derived stats immediately so the ATK modifier updates as soon as HP changes.
+        try {
+            if (playerId && actual !== 0 && target && target.itemId === 'communication_device') {
+                this.recalculateStats(playerId);
+            }
+        } catch (e) {}
 
         // Gojo Satoru: Infinity Rebound inverts under Limitless Dominion.
         // While Limitless Dominion is active, enemy skill "damage" becomes healing.
