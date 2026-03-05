@@ -2971,6 +2971,31 @@ class SkillSystem {
             return 0;
         }
 
+        // Yato: Teleportation (reduce next attack skill damage to 0)
+        try {
+            const ctx = this.getActiveActionContext();
+            const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+            const isEnemyAttackSkill =
+                attackerId &&
+                attackerId !== playerId &&
+                ctx &&
+                (ctx.kind === 'skill' || ctx.kind === 'ultimate') &&
+                ctx.skillType === 'attack';
+
+            if (isEnemyAttackSkill && this.activeEffects && typeof this.activeEffects.entries === 'function') {
+                for (const [id, eff] of this.activeEffects.entries()) {
+                    if (!eff) continue;
+                    if (eff.type !== 'buff') continue;
+                    if (eff.key !== 'yato_teleportation_nullify') continue;
+                    if (eff.target !== playerId) continue;
+                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                    this.activeEffects.delete(id);
+                    this.emitCombatText('damage', 0, playerId);
+                    return 0;
+                }
+            }
+        } catch (e) {}
+
         const character = this.getPlayerById(playerId);
         if (character && character.passive && character.passive.type === 'dual_passive' && character.passive.ongoing_effect) {
             const ongoing = character.passive.ongoing_effect;
@@ -3726,6 +3751,29 @@ class SkillSystem {
         if (this.isConcealed(playerId)) {
             return 0;
         }
+
+        // Yato: Teleportation (true damage immunity)
+        try {
+            const ctx = this.getActiveActionContext();
+            const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+            const isEnemyAttackSkill =
+                attackerId &&
+                attackerId !== playerId &&
+                ctx &&
+                (ctx.kind === 'skill' || ctx.kind === 'ultimate') &&
+                ctx.skillType === 'attack';
+
+            if (isEnemyAttackSkill && this.activeEffects && typeof this.activeEffects.entries === 'function') {
+                for (const [, eff] of this.activeEffects.entries()) {
+                    if (!eff) continue;
+                    if (eff.type !== 'buff') continue;
+                    if (eff.key !== 'yato_true_damage_immunity') continue;
+                    if (eff.target !== playerId) continue;
+                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                    return 0;
+                }
+            }
+        } catch (e) {}
 
         const character = this.getPlayerById(playerId);
         if (character && character.passive && character.passive.type === 'dual_passive' && character.passive.ongoing_effect) {
@@ -4632,6 +4680,25 @@ class SkillSystem {
 
     async handleCharacterDeath(character, playerId) {
         console.log(`💀 CHARACTER DEATH: ${character.name} has died, checking for revive...`);
+
+        // Allow extensions (ex: Yato immortality stacks) to intercept death.
+        try {
+            if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                const res = window.BattleHooks.emit('skill_system:handle_character_death', {
+                    skillSystem: this,
+                    passiveSystem: this.passiveSystem,
+                    gameState: this.gameState,
+                    character,
+                    playerId
+                });
+                for (const rr of (res || [])) {
+                    const r = await Promise.resolve(rr);
+                    if (r && typeof r === 'object' && r.handled) {
+                        return Boolean(r.revived);
+                    }
+                }
+            }
+        } catch (e) {}
         
         // Check if character has revive passive
         if (character.passive && character.passive.ongoing_effect && character.passive.ongoing_effect.type === 'revive') {

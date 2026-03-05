@@ -220,6 +220,18 @@
       }
     ]
   },
+  "limited_immortality": {
+    "id": "limited_immortality",
+    "name": "Limited Immortality",
+    "description": "Yato starts with 9 stacks of Immortality. Each time he would take fatal damage, remove one stack instead. Once the last stack is removed, Yato recovers 8% of max health. Every third stack of Immortality Yato loses, Yato will gain his Ultimate.",
+    "stackBadges": [
+      {
+        "counter": "immortalityStacks",
+        "title": "Immortality"
+      }
+    ],
+    "effects": []
+  },
   "kiss_of_death_passive": {
     "id": "kiss_of_death_passive",
     "name": "Partner Killer",

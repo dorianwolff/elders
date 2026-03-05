@@ -411,5 +411,37 @@
         "self_defense_duration": 5
       }
     }
+  },
+  "yato": {
+    "id": "yato",
+    "name": "Yato",
+    "metaPoints": 125,
+    "stats": {
+      "health": 99,
+      "maxHealth": 99,
+      "attack": 26,
+      "defense": 14,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["yato.jpg"],
+    "passiveId": "limited_immortality",
+    "recommended_items": ["mace"],
+    "skillIds": ["yato_normal_strike", "yato_teleportation", "yato_divine_possession"],
+    "ultimate": {
+      "id": "yato_twin_strike",
+      "name": "Twin Strike",
+      "description": "Deal 125% of attack as damage, twice. For the rest of the game, all of Yato's attack skills trigger an additional time.",
+      "cooldown": 0,
+      "type": "attack",
+      "effect": {
+        "type": "yato_twin_strike",
+        "target": "enemy",
+        "value": 1.25,
+        "scaling": "attack"
+      }
+    }
   }
 }

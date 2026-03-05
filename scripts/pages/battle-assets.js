@@ -86,6 +86,13 @@ window.BattleAssets = {
             ];
         }
 
+        else if (id === 'yato') {
+            return [
+                'assets/animations/yato/yato_idle_1.png',
+                'assets/animations/yato/yato_idle_2.png'
+            ];
+        }
+
         else if (id === 'frieren') {
             return [
                 'assets/animations/frieren/frieren_idle_1.png',

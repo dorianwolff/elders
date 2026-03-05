@@ -1211,5 +1211,54 @@
       "enemy_turn_duration": 2,
       "rebound_ratio": 0.4
     }
+  },
+  "yato_teleportation": {
+    "id": "yato_teleportation",
+    "name": "Teleportation",
+    "description": "Reduce the next attack skill damage to 0. Gain a buff which prevents true damage for 3 turns.",
+    "type": "utility",
+    "cooldown": 2,
+    "effect": {
+      "type": "yato_teleportation",
+      "target": "self",
+      "true_damage_immunity_duration": 3
+    }
+  },
+  "yato_divine_possession": {
+    "id": "yato_divine_possession",
+    "name": "Divine Possession",
+    "description": "Remove 1 stack of Immortality. Once your last stack of Immortality is removed, this skill becomes Last Strike.",
+    "type": "utility",
+    "cooldown": 0,
+    "effect": {
+      "type": "yato_divine_possession",
+      "target": "self"
+    }
+  },
+  "yato_last_strike": {
+    "id": "yato_last_strike",
+    "name": "Last Strike",
+    "description": "Deal 80% of attack as true damage.",
+    "type": "attack",
+    "cooldown": 5,
+    "effect": {
+      "type": "yato_last_strike",
+      "target": "enemy",
+      "value": 0.8,
+      "scaling": "attack"
+    }
+  },
+  "yato_normal_strike": {
+    "id": "yato_normal_strike",
+    "name": "Normal Strike",
+    "description": "Deal 100% of attack as damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "yato_normal_strike",
+      "target": "enemy",
+      "value": 1,
+      "scaling": "attack"
+    }
   }
 }
