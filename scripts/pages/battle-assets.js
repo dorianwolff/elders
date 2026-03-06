@@ -161,6 +161,39 @@ window.BattleAssets = {
         }
 
         else if (id === 'naofumi_iwatani') {
+            const key = typeof character?.passiveState?.naofumiCurrentShieldKey === 'string'
+                ? character.passiveState.naofumiCurrentShieldKey
+                : null;
+
+            if (key === 'leaf') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_leaf_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_leaf_2.png'
+                ];
+            }
+
+            if (key === 'chimera') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_chimera_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_chimera_2.png'
+                ];
+            }
+
+            if (key === 'transformation') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_transformation_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_transformation_2.png'
+                ];
+            }
+
+            // Temporary mapping: use "void" idle frames for Soul Eater Shield.
+            if (key === 'void' || key === 'soul_eater') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_void_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_void_2.png'
+                ];
+            }
+
             return [
                 'assets/animations/naofumi_isawani/naofumi_iwatani_idle_1.png',
                 'assets/animations/naofumi_isawani/naofumi_iwatani_idle_2.png'

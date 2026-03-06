@@ -363,6 +363,11 @@
     flex: 1;
 }
 
+.character-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .character-side-wrap {
     display: flex;
     align-items: center;
@@ -370,6 +375,7 @@
     flex: 1;
     min-width: 0;
     flex-wrap: nowrap;
+    overflow: visible;
 }
 
 .player-side-wrap {
@@ -416,6 +422,10 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.25rem;
+    width: 100%;
+    flex-wrap: nowrap;
+    min-width: 0;
+    position: relative;
 }
 
 .player-character .character-header {
@@ -431,12 +441,44 @@
     margin: 0;
     color: white;
     line-height: 1.2;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.character-header .effect-indicators {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    height: 20px;
+    max-height: 20px;
+    overflow: visible;
+    z-index: 3;
+}
+
+.player-character .character-header .effect-indicators {
+    justify-content: flex-start;
+}
+
+.opponent-character .character-header .effect-indicators {
+    justify-content: flex-start;
+}
+
+.player-character .character-info h3 {
+    padding-right: 0.5rem;
+    padding-left: 0;
+}
+
+.opponent-character .character-info h3 {
+    padding-left: 0.5rem;
+    padding-right: 0;
 }
 
 .opponent-effects,
 .player-effects {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.25rem;
     min-width: 120px;
 }
@@ -448,6 +490,11 @@
     min-width: 0;
     flex: 0 0 auto;
     max-width: 300px;
+    height: 92px;
+    align-self: flex-start;
+    margin-top: 1.75rem;
+    position: relative;
+    z-index: 1;
     padding: 0.55rem 0.7rem;
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.14);

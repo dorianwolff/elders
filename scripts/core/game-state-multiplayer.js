@@ -28,6 +28,7 @@ GameState.prototype.getGameStateForPlayer = function (playerId) {
                 itemId: opponent.character.itemId,
                 initialStats: opponent.character.initialStats ? { ...opponent.character.initialStats } : null,
                 baseStats: opponent.character.baseStats ? { ...opponent.character.baseStats } : null,
+                passiveState: opponent.character.passiveState ? JSON.parse(JSON.stringify(opponent.character.passiveState)) : { counters: {} },
                 stats: {
                     health: opponent.character.stats.health,
                     maxHealth: opponent.character.stats.maxHealth,

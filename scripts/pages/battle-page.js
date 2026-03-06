@@ -620,7 +620,8 @@ class BattlePage extends BasePage {
         const stanceKey = stance && (stance.stanceKey || stance.key) ? String(stance.stanceKey || stance.key) : '';
         const overrideKey = this.spriteAnimation.override[side] ? String(this.spriteAnimation.override[side].key || 'override') : '';
         const len = Array.isArray(frames) ? frames.length : 0;
-        return `${overrideKey}|${playerId || ''}|${stanceKey}|${len}`;
+        const first = Array.isArray(frames) && frames.length ? String(frames[0]) : '';
+        return `${overrideKey}|${playerId || ''}|${stanceKey}|${len}|${first}`;
     }
 
     playSpriteOverride(side, frames, durationMs, key = 'action') {
@@ -752,8 +753,8 @@ class BattlePage extends BasePage {
                                     </div>
                                     <div class="character-info">
                                         <div class="character-header">
-                                            <h3 id="player-name">Your Character</h3>
                                             <div class="effect-indicators" id="player-effects"></div>
+                                            <h3 id="player-name">Your Character</h3>
                                         </div>
                                         <div class="health-bar-container">
                                             <div class="health-bar">
