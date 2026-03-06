@@ -1895,8 +1895,8 @@ class BattlePage extends BasePage {
                 } else if (key === 'prison') {
                     passiveName = 'Shield Prison';
                     passiveDesc = 'At the start of your turn, stun the opponent for 1 turn and deal 10 damage which bypasses defense.';
-                } else if (key === 'balloon') {
-                    passiveName = 'Balloon Shields';
+                } else if (key === 'slime') {
+                    passiveName = 'Slime Shield';
                     passiveDesc = 'This turn, your attack skills are triggered twice.';
                 } else if (key === 'soul_eater') {
                     passiveName = 'Soul Eater Shield';

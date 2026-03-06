@@ -1059,19 +1059,19 @@ class SkillSystem {
                 caster.passiveState &&
                 caster.passiveState.naofumiTransformActive
             );
-            const balloonTurn = (caster && caster.passiveState) ? caster.passiveState.naofumiBalloonTurnCount : null;
+            const slimeTurn = (caster && caster.passiveState) ? caster.passiveState.naofumiSlimeTurnCount : null;
             const naofumiShieldKey = (caster && caster.passiveState && typeof caster.passiveState.naofumiCurrentShieldKey === 'string')
                 ? caster.passiveState.naofumiCurrentShieldKey
                 : null;
-            const naofumiBalloonDouble = Boolean(
+            const naofumiSlimeDouble = Boolean(
                 caster &&
                 caster.id === 'naofumi_iwatani' &&
                 caster.passiveState &&
-                naofumiShieldKey === 'balloon' &&
-                Number.isFinite(balloonTurn) &&
-                balloonTurn === Number(gameState?.turnCount)
+                naofumiShieldKey === 'slime' &&
+                Number.isFinite(slimeTurn) &&
+                slimeTurn === Number(gameState?.turnCount)
             );
-            const shouldDoubleCast = Boolean(naofumiBalloonDouble && skillTypeForPassive === 'attack');
+            const shouldDoubleCast = Boolean(naofumiSlimeDouble && skillTypeForPassive === 'attack');
 
             const result = await this.withActionContext({
                 kind: 'skill',

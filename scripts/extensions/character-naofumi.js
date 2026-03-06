@@ -24,7 +24,7 @@
             leaf: 'Leaf Shield',
             chimera: 'Chimera Shield',
             prison: 'Prison Shield',
-            balloon: 'Balloon Shield',
+            slime: 'Slime Shield',
             soul_eater: 'Soul Eater Shield',
             transformation: 'Wrath Shield'
         };
@@ -98,7 +98,7 @@
                 state.naofumiShieldLastTurnCount = turnCount;
 
                 if (!Array.isArray(state.naofumiShieldBag) || state.naofumiShieldBag.length === 0) {
-                    state.naofumiShieldBag = ['leaf', 'chimera', 'prison', 'balloon', 'soul_eater'];
+                    state.naofumiShieldBag = ['leaf', 'chimera', 'prison', 'slime', 'soul_eater'];
                 }
 
                 if (!Array.isArray(state.naofumiBaseSkillIds) || state.naofumiBaseSkillIds.length === 0) {
@@ -125,7 +125,7 @@
                     state.naofumiCurrentShieldKey = picked;
                 }
 
-                state.naofumiBalloonTurnCount = null;
+                state.naofumiSlimeTurnCount = null;
                 state.naofumiSoulEaterTurnCount = null;
 
                 const opponentId = playerId === 'player1' ? 'player2' : 'player1';
@@ -198,8 +198,8 @@
                     }
                 }
 
-                if (state.naofumiCurrentShieldKey === 'balloon') {
-                    state.naofumiBalloonTurnCount = turnCount;
+                if (state.naofumiCurrentShieldKey === 'slime') {
+                    state.naofumiSlimeTurnCount = turnCount;
                 }
 
                 if (state.naofumiCurrentShieldKey === 'soul_eater') {

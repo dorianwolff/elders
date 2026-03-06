@@ -186,6 +186,20 @@ window.BattleAssets = {
                 ];
             }
 
+            if (key === 'slime') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_slime_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_slime_2.png'
+                ];
+            }
+
+            if (key === 'prison') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_prison_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_prison_2.png'
+                ];
+            }
+
             // Temporary mapping: use "void" idle frames for Soul Eater Shield.
             if (key === 'void' || key === 'soul_eater') {
                 return [
