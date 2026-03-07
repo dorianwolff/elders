@@ -1128,7 +1128,7 @@ class BattlePage extends BasePage {
 
         const considerEffect = (eff) => {
             if (!eff || domain) return;
-            if ((eff.type === 'array_domain' || eff.type === 'room_domain' || eff.type === 'frieren_domain' || eff.type === 'construction_site_domain' || eff.type === 'alchemy_domain') && (Number(eff.turnsLeft) || 0) > 0) {
+            if ((eff.type === 'array_domain' || eff.type === 'room_domain' || eff.type === 'frieren_domain' || eff.type === 'construction_site_domain' || eff.type === 'alchemy_domain' || eff.type === 'kaito_recovery_zone_array') && (Number(eff.turnsLeft) || 0) > 0) {
                 domain = eff;
             }
         };
@@ -1842,8 +1842,30 @@ class BattlePage extends BasePage {
         }
         
         const ultimateButton = this.querySelector('#ultimate-button');
-        ultimateButton.disabled = !canUse;
-        
+        if (ultimateButton) {
+            let disabled = !canUse;
+            try {
+                if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+                    const res = window.BattleHooks.emit('ui:ultimate:disabled', {
+                        battlePage: this,
+                        gameState: this.gameState,
+                        skillSystem: this.gameState?.skillSystem,
+                        character: this.gameState?.player?.character,
+                        characterId,
+                        passiveState,
+                        ultimate,
+                        canUse,
+                        disabled
+                    });
+                    for (const r of (res || [])) {
+                        if (typeof r === 'boolean') {
+                            disabled = r;
+                        }
+                    }
+                }
+            } catch (e) {}
+            ultimateButton.disabled = disabled;
+        }
         const statusElement = this.querySelector('#ultimate-status');
         {
             const remaining = (this.gameState?.skillSystem && typeof this.gameState.skillSystem.getSkillCooldown === 'function')
@@ -1856,6 +1878,8 @@ class BattlePage extends BasePage {
                 statusElement.style.display = 'none';
             } else {
                 statusElement.style.display = '';
+                // Ultimate should show as Ready once cooldown is 0 and the readiness condition is met,
+                // even if it is currently blocked by restrictions/debuffs (button remains disabled).
                 if (this.gameState.player.ultimateReady) {
                     statusElement.textContent = 'Ready';
                     statusElement.className = 'ultimate-ready';
@@ -1906,6 +1930,15 @@ class BattlePage extends BasePage {
                     passiveDesc = 'Gain access to your ultimate and your skills ignore defense. At the end of your turn, take escalating true damage.';
                 }
             }
+
+        if (character && character.id === 'kaito') {
+            const weaponKey = typeof passiveState?.kaitoWeaponKey === 'string' ? passiveState.kaitoWeaponKey : null;
+            if (weaponKey && window.KaitoCharacter && typeof window.KaitoCharacter.getWeaponByKey === 'function') {
+                const w = window.KaitoCharacter.getWeaponByKey(weaponKey);
+                const label = w && typeof w.name === 'string' ? w.name : weaponKey;
+                passiveDesc = `${passiveDesc}<span class="kaito-current-weapon-inline"> Current weapon : ${label}</span>`;
+            }
+        }
 
         this.updateElement('#passive-name', passiveName);
         this.updateElement('#passive-description', passiveDesc);

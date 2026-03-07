@@ -387,5 +387,11 @@
     "name": "Shield Rotation",
     "description": "At the start of each of your turns, switch to a new shield (each shield appears once). Your passive is replaced by the current shield. At the 7th shield, rotation stops.",
     "effects": []
+  },
+  "kaito_nen_restrictions": {
+    "id": "kaito_nen_restrictions",
+    "name": "Nen Restrictions",
+    "description": "Kaito's damaging skills are enhanced per restriction. He starts with one restriction. Kaito loses his weapon after using 2 skills.",
+    "effects": []
   }
 }

@@ -644,6 +644,21 @@ class SkillSystem {
         for (const pid of toRecalc) {
             this.recalculateStats(pid);
         }
+
+        // Array-style effects cleanup at the start of their owner's turn.
+        // Kaito Recovery Zone specifically heals at end of opponent turn, then expires here.
+        try {
+            for (const [effectId, effect] of this.activeEffects.entries()) {
+                if (!effect || effect.target !== 'global') continue;
+                if (effect.type !== 'kaito_recovery_zone_array') continue;
+                if (effect.ownerId !== playerId) continue;
+
+                const turnsLeft = Math.max(0, Math.floor(Number(effect.turnsLeft) || 0));
+                if (turnsLeft <= 0) {
+                    this.activeEffects.delete(effectId);
+                }
+            }
+        } catch (e) {}
     }
 
     decrementNonDotDurationsForOwner(ownerId) {
@@ -1096,7 +1111,21 @@ class SkillSystem {
             {
                 const baseCd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
                 const bonusCd = this.getEnemySkillCooldownBonus(playerId);
-                const applied = baseCd + bonusCd;
+                let applied = baseCd + bonusCd;
+
+                // Kaito: Restriction of Emotions => skills have +1 cooldown.
+                try {
+                    for (const [, eff] of this.activeEffects.entries()) {
+                        if (!eff) continue;
+                        if (eff.type !== 'restriction') continue;
+                        if (eff.target !== playerId) continue;
+                        if (eff.key !== 'restriction_emotions') continue;
+                        if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                        applied += 1;
+                        break;
+                    }
+                } catch (e) {}
+
                 if (applied > 0) {
                     // Cooldown N means it is unavailable for the next N of your turns.
                     this.setSkillCooldownFromUse(skill.id, playerId, applied);
@@ -1154,6 +1183,9 @@ class SkillSystem {
             result.effects.push('Evaded');
             return result;
         }
+
+        // Kaito restrictions: allow specific internal calls to bypass gating.
+        // (Actual gating is done in Kaito extension handlers; this flag is used there.)
 
         try {
             if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
@@ -3014,11 +3046,6 @@ class SkillSystem {
         const markBonus = this.getMarkBonus(playerId);
         let finalDamage = Math.max(1, Math.ceil(damage * (1 + markBonus)));
 
-        const bleedAmp = this.getDamageTakenMultiplier(playerId);
-        if (bleedAmp > 0) {
-            finalDamage = Math.max(1, Math.ceil(finalDamage * (1 + bleedAmp)));
-        }
-
         try {
             const ctx = this.getActiveActionContext();
             if (ctx && ctx.kind === 'skill' && ctx.skillId === 'room_incision') {
@@ -3043,8 +3070,7 @@ class SkillSystem {
                     expectedAfterMitigation: expected,
                     damagePassedIntoApplyDamage: damage,
                     markBonus,
-                    bleedAmp,
-                    finalDamageAfterAmp: finalDamage
+                    finalDamage
                 });
             }
         } catch (e) {}
@@ -3198,6 +3224,13 @@ class SkillSystem {
                     ctx._damageTakenByTarget = {};
                 }
                 ctx._damageTakenByTarget[playerId] = (Number(ctx._damageTakenByTarget[playerId]) || 0) + remaining;
+
+                // Track the last single-hit post-shield damage instance for effects
+                // that depend on the most recent hit within this action context.
+                if (!ctx._lastDamageInstanceByTarget || typeof ctx._lastDamageInstanceByTarget !== 'object') {
+                    ctx._lastDamageInstanceByTarget = {};
+                }
+                ctx._lastDamageInstanceByTarget[playerId] = remaining;
             }
 
             // Frieren stance ignore: suppress stance reactions for this attack without removing stance.
@@ -3219,6 +3252,10 @@ class SkillSystem {
                             break;
                         }
                         if (eff.stanceKey === 'infinity_rebound' || eff.key === 'infinity_rebound') {
+                            stance = eff;
+                            break;
+                        }
+                        if (eff.stanceKey === 'kaito_baton_reversal' || eff.key === 'kaito_baton_reversal') {
                             stance = eff;
                             break;
                         }
@@ -3283,6 +3320,37 @@ class SkillSystem {
                                     await this.applyDamage(enemy, reflected, attackerId, playerId);
                                     await this.applyHealing(enemy, Math.floor(reflected / 2), attackerId);
                                 });
+                            }
+                        }
+
+                        if (stance.stanceKey === 'kaito_baton_reversal' || stance.key === 'kaito_baton_reversal') {
+                            const isAttackOrDebuff = ctx && (ctx.skillType === 'attack' || ctx.skillType === 'debuff');
+                            if (isAttackOrDebuff) {
+                                const taken = Math.max(0, Math.floor(Number(remaining) || 0));
+                                const ratioHeal = Number(stance?.kaitoReversal?.ratioHeal);
+                                const healRatio = Number.isFinite(ratioHeal) ? Math.max(0, ratioHeal) : 1;
+                                const healAmount = Math.max(0, Math.floor(taken * healRatio));
+
+                                const atk = Math.max(0, Math.floor(Number(victim?.stats?.attack) || 0));
+                                const pct = Number(stance?.kaitoReversal?.trueDamageAttackPct);
+                                const mult = Number.isFinite(pct) ? Math.max(0, pct) : 0.6;
+                                const intendedRaw = Math.floor(atk * mult);
+                                const intended = (mult > 0 && atk > 0) ? Math.max(1, intendedRaw) : 0;
+
+                                if (healAmount > 0 || intended > 0) {
+                                    await this.withActionContext({
+                                        kind: 'counter',
+                                        attackerId: playerId,
+                                        isCounter: true
+                                    }, async () => {
+                                        if (healAmount > 0) {
+                                            await this.applyHealing(victim, healAmount, playerId);
+                                        }
+                                        if (intended > 0) {
+                                            await this.applyTrueDamageNoDomain(enemy, intended, attackerId, playerId);
+                                        }
+                                    });
+                                }
                             }
                         }
 
@@ -3390,8 +3458,19 @@ class SkillSystem {
                 }
             } catch (e) {}
         }
-        if (playerId && this.isHealBlocked(playerId)) {
-            return 0;
+        if (playerId) {
+            // Kaito Restriction of Life: recover 50% less health.
+            try {
+                const isKaito = Boolean(target && target.id === 'kaito');
+                const hasLifeRestriction = isKaito && Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e._kaitoRestriction && e.target === playerId && e.key === 'restriction_life' && (Number(e.turnsLeft) || 0) > 0);
+                if (hasLifeRestriction) {
+                    healing = Math.floor((Number(healing) || 0) * 0.5);
+                }
+            } catch (e) {}
+
+            if (this.isHealBlocked(playerId)) {
+                return 0;
+            }
         }
         const before = Number(target.stats.health) || 0;
         const maxHealth = Number(target.stats.maxHealth) || 0;
@@ -3642,6 +3721,52 @@ class SkillSystem {
         this.recalculateStats(playerId);
     }
 
+    async applyRestriction(target, restrictionEffect, playerId) {
+        // Conceal blocks restrictions
+        if (this.isConcealed(playerId)) {
+            return;
+        }
+
+        // Immunity blocks restrictions
+        if (this.isImmune(playerId)) {
+            return;
+        }
+
+        const key = (restrictionEffect && typeof restrictionEffect.key === 'string' && restrictionEffect.key)
+            ? restrictionEffect.key
+            : (restrictionEffect && typeof restrictionEffect.id === 'string' && restrictionEffect.id)
+                ? restrictionEffect.id
+                : null;
+
+        const duration = Math.max(1, Math.floor(Number(restrictionEffect?.duration) || 1));
+        const name = (restrictionEffect && typeof restrictionEffect.name === 'string' && restrictionEffect.name)
+            ? restrictionEffect.name
+            : 'Restriction';
+        const description = (restrictionEffect && typeof restrictionEffect.description === 'string' && restrictionEffect.description)
+            ? restrictionEffect.description
+            : `Restricted for ${duration} turns`;
+
+        const restrictionId = `restriction_${playerId}_${key || 'restriction'}_${Date.now()}`;
+        const ctx = this.getActiveActionContext();
+        const ownerId = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+            ? ctx.attackerId
+            : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                ? this.gameState.currentTurn
+                : null);
+
+        this.activeEffects.set(restrictionId, {
+            type: 'restriction',
+            key,
+            target: playerId,
+            ownerId,
+            characterId: target?.id,
+            duration,
+            turnsLeft: duration,
+            name,
+            description
+        });
+    }
+
     emitDamageEvents(attackerId, targetId, amount) {
         if (!this.passiveSystem || typeof this.passiveSystem.handleEvent !== 'function') return;
         if (!amount || amount <= 0) return;
@@ -3791,10 +3916,6 @@ class SkillSystem {
 
         const markBonus = this.getMarkBonus(playerId);
         let finalDamage = Math.max(0, Math.floor(damage * (1 + markBonus)));
-        const bleedAmp = this.getDamageTakenMultiplier(playerId);
-        if (bleedAmp > 0 && finalDamage > 0) {
-            finalDamage = Math.max(1, Math.ceil(finalDamage * (1 + bleedAmp)));
-        }
         if (finalDamage <= 0) return 0;
 
         const oldHealth = target.stats.health;
@@ -3900,20 +4021,34 @@ class SkillSystem {
             return;
         }
 
-        const bleedId = `bleed_${playerId}_${Date.now()}`;
+        const ctx = this.getActiveActionContext();
+        const lastHitDamage = (ctx && ctx._lastDamageInstanceByTarget && typeof ctx._lastDamageInstanceByTarget === 'object')
+            ? (Number(ctx._lastDamageInstanceByTarget[playerId]) || 0)
+            : 0;
 
+        // Bleed only applies if at least 1 damage was dealt through shield.
+        if (lastHitDamage <= 0) {
+            return;
+        }
+
+        const bleedId = `bleed_${playerId}_${Date.now()}`;
         const duration = Math.max(1, Math.floor(Number(bleedEffect?.duration) || 1));
-        const amp = Number(bleedEffect?.damage_amp) || 0.5;
+        const ratio = (bleedEffect && (bleedEffect.ratio !== undefined && bleedEffect.ratio !== null))
+            ? Number(bleedEffect.ratio)
+            : 0.3;
+        const bleedRatio = Number.isFinite(ratio) ? Math.max(0, ratio) : 0.3;
+        const tickDamage = Math.max(1, Math.floor(lastHitDamage * bleedRatio));
 
         this.activeEffects.set(bleedId, {
             type: 'bleed',
             target: playerId,
             characterId: target.id,
-            damageAmp: amp,
+            ownerId: (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2') ? this.gameState.currentTurn : null,
+            damage: tickDamage,
             duration,
             turnsLeft: duration,
             name: 'Bleed',
-            description: `Takes ${Math.round(amp * 100)}% more damage for ${duration} turns`
+            description: `Takes ${tickDamage} true damage per turn for ${duration} turns`
         });
     }
 
@@ -4013,19 +4148,37 @@ class SkillSystem {
         
         for (const [effectId, effect] of this.activeEffects.entries()) {
             if (effect.target === playerId || effect.target === 'global') {
-                const isDot = (effect.type === 'poison' || effect.type === 'curse');
+                const isDot = (effect.type === 'poison' || effect.type === 'curse' || effect.type === 'bleed') || (effect.type === 'debuff' && effect._dotDamage);
                 const isGlobal = effect.target === 'global';
 
                 if (isDot) {
                     const target = this.getPlayerById(playerId);
                     if (target) {
-                        await this.applyDamage(target, effect.damage, playerId, null);
+                        // DoT ticks are intended to bypass defense calculations.
+                        // We route through applyDamageNoDomain which applies shield first and does not
+                        // re-mitigate based on defense (damage is treated as flat incoming).
+                        await this.applyDamageNoDomain(target, effect.damage, playerId, null);
                     }
                     effect.turnsLeft--;
                 } else if (isGlobal) {
                     // Global effects (e.g. Domain) tick each endTurn.
                     const isDomain = effect.type === 'array_domain' || effect.type === 'room_domain' || effect.type === 'frieren_domain' || effect.type === 'construction_site_domain' || effect.type === 'alchemy_domain';
                     const ownerId = effect.ownerId;
+
+                    // Kaito: Recovery Zone array heals at the end of the opponent's turn, then expires on owner's next turn start.
+                    if (effect.type === 'kaito_recovery_zone_array') {
+                        if (ownerId && ownerId !== playerId) {
+                            const healAmount = Math.max(0, Math.floor(Number(effect.healOnOpponentTurnEnd) || 0));
+                            if (healAmount > 0) {
+                                const owner = this.getPlayerById(ownerId);
+                                if (owner) {
+                                    await this.applyHealing(owner, healAmount, ownerId);
+                                }
+                            }
+                            effect.turnsLeft = 0;
+                        }
+                        continue;
+                    }
 
                     // Domains tick down only on the opponent's endTurn.
                     // Duration N means N opponent turns.
@@ -4146,6 +4299,17 @@ class SkillSystem {
         } catch (e) {}
         
         switch (effect.type) {
+            case 'apply_restriction':
+                {
+                    const opponentId = playerId === 'player1' ? 'player2' : 'player1';
+                    const targetId = effect.target === 'self' ? playerId : opponentId;
+                    const restrictionTarget = effect.target === 'self' ? caster : target;
+                    if (restrictionTarget) {
+                        await this.applyRestriction(restrictionTarget, effect.restriction, targetId);
+                    }
+                }
+                break;
+
             case 'true_damage_and_apply_cdr_random_other':
                 {
                     // Sync only the cooldown reduction targeting; damage is pre-calculated.
@@ -4436,6 +4600,44 @@ class SkillSystem {
             return;
         }
 
+        // Kaito Restriction of Tactics:
+        // - Debuffs inflicted to opponents last 1 turn
+        // - Opponent cannot have more than 1 purple removable debuff (replace previous)
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+
+            const ownerChar = ownerIdMaybe ? this.getPlayerById(ownerIdMaybe) : null;
+            const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+            const ownerHasTactics = Boolean(
+                ownerIdMaybe &&
+                isKaitoOwner &&
+                Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e._kaitoRestriction && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+            );
+
+            if (ownerHasTactics) {
+                // Replace existing purple debuffs on target (type 'debuff' only).
+                const toDelete = [];
+                for (const [id, eff] of this.activeEffects.entries()) {
+                    if (!eff) continue;
+                    if (eff.type !== 'debuff') continue;
+                    if (eff.target !== playerId) continue;
+                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                    toDelete.push(id);
+                }
+                for (const id of toDelete) this.activeEffects.delete(id);
+
+                // Force duration 1.
+                if (debuffEffect && typeof debuffEffect === 'object') {
+                    debuffEffect.duration = 1;
+                }
+            }
+        } catch (e) {}
+
         const debuffId = `debuff_${playerId}_${debuffEffect.stat}_${Date.now()}`;
 
         const ctx = this.getActiveActionContext();
@@ -4600,16 +4802,6 @@ class SkillSystem {
             }
         }
         return 0;
-    }
-
-    getDamageTakenMultiplier(playerId) {
-        let amp = 0;
-        for (const [, effect] of this.activeEffects.entries()) {
-            if (effect.target === playerId && effect.type === 'bleed') {
-                amp = Math.max(amp, Number(effect.damageAmp) || 0);
-            }
-        }
-        return amp;
     }
 
     serializeActiveEffects() {

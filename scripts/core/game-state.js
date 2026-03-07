@@ -234,6 +234,42 @@ class GameState {
             return this.players.get(id)?.character;
         };
 
+        // Start ultimates on cooldown (tick down like a regular skill).
+        try {
+            for (const pid of ['player1', 'player2']) {
+                const c = this.players.get(pid)?.character;
+                const ult = c && c.ultimate;
+                const cd = Math.max(0, Math.floor(Number(ult?.cooldown) || 0));
+                const alwaysUltimateReady = Boolean(c && c.passive && c.passive.alwaysUltimateReady);
+
+                if (alwaysUltimateReady) {
+                    // Some characters (e.g. Chen) start with Ultimate available even if the ultimate has a cooldown.
+                    this.players.get(pid).ultimateReady = true;
+                    if (c && c.passiveState) c.passiveState.ultimateReady = true;
+                    if (ult && typeof ult.id === 'string' && this.skillSystem && typeof this.skillSystem.setSkillCooldown === 'function') {
+                        this.skillSystem.setSkillCooldown(ult.id, pid, 0);
+                    }
+                    continue;
+                }
+
+                if (ult && typeof ult.id === 'string' && cd > 0 && this.skillSystem) {
+                    // IMPORTANT: do NOT use setSkillCooldownFromUse here; it sets a skip-next-decrement flag
+                    // which would prevent the cooldown from decreasing after the first turn.
+                    if (typeof this.skillSystem.setSkillCooldown === 'function') {
+                        this.skillSystem.setSkillCooldown(ult.id, pid, cd);
+                    } else if (typeof this.skillSystem.setSkillCooldownFromUse === 'function') {
+                        this.skillSystem.setSkillCooldownFromUse(ult.id, pid, cd);
+                        // If we had to fall back, clear the skip flag so it decrements immediately.
+                        try {
+                            if (typeof this.skillSystem.getSkillCooldownKey === 'function' && this.skillSystem._cooldownsSkipNextDecrement) {
+                                this.skillSystem._cooldownsSkipNextDecrement.delete(this.skillSystem.getSkillCooldownKey(ult.id, pid));
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+        } catch (e) {}
+
         // Determine who starts based on meta points (or accept an authoritative value from server)
         if (initialCurrentTurn === 'player1' || initialCurrentTurn === 'player2') {
             this.currentTurn = initialCurrentTurn;

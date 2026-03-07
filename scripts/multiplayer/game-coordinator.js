@@ -598,10 +598,12 @@ class GameCoordinator {
 
     getSkillCooldown(skillIndex) {
         if (!this.isGameActive || !this.gameState) return 0;
-        
-        const currentPlayer = this.currentPlayerRole === 'player1' ? this.playerOne : this.playerTwo;
-        const skills = currentPlayer && currentPlayer.character && Array.isArray(currentPlayer.character.skills)
-            ? currentPlayer.character.skills
+
+        // IMPORTANT: skill palettes can be swapped at runtime (e.g. Kaito weapons).
+        // Always resolve skills from the authoritative live gameState, not from PlayerOne/PlayerTwo cached character.
+        const liveCharacter = this.gameState.players.get(this.currentPlayerRole)?.character;
+        const skills = liveCharacter && Array.isArray(liveCharacter.skills)
+            ? liveCharacter.skills
             : [];
         const skill = skills[skillIndex];
         if (!skill || !skill.id) return 0;

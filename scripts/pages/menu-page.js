@@ -20,6 +20,12 @@ class MenuPage extends BasePage {
         this.idleAnimationFrameIndex = 0;
         this.spriteBackgroundUrl = null;
         this.precombatBackgroundAssignments = null;
+
+        this.kaitoFormPreviewIndex = 0;
+        this.kaitoFormPreviewWeaponKey = null;
+        this.kaitoFormPreviewWeaponName = null;
+        this.kaitoFormPreviewSkills = null;
+        this.kaitoFormPreviewLoadToken = 0;
     }
 
     getHTML() {
@@ -94,6 +100,12 @@ class MenuPage extends BasePage {
                         </div>
 
                         <div class="precombat-kit">
+                            <div class="kit-card kit-kaito-forms" id="precombat-kaito-forms" style="display:none">
+                                <div class="kit-card-title">Weapons</div>
+                                <div class="kaito-form-row" id="kaito-form-row"></div>
+                                <div class="kaito-form-preview" id="kaito-form-preview" style="display:none"></div>
+                            </div>
+
                             <div class="kit-card kit-passive">
                                 <div class="kit-card-title">Passive</div>
                                 <div class="kit-name" id="precombat-passive-name"></div>
@@ -307,6 +319,30 @@ class MenuPage extends BasePage {
                 'assets/animations/trafalgar_law/trafalgar_law_idle_1.png',
                 'assets/animations/trafalgar_law/trafalgar_law_idle_2.png'
             ];
+        } else if (id === 'kaito') {
+            const weaponKey = typeof this.kaitoFormPreviewWeaponKey === 'string' ? this.kaitoFormPreviewWeaponKey : null;
+            if (weaponKey === 'healing_staff') {
+                return [
+                    'assets/animations/kaito/kaito_idle_healing_staff_1.png',
+                    'assets/animations/kaito/kaito_idle_healing_staff_1.png'
+                ];
+            }
+            if (weaponKey === 'carbine_rifle') {
+                return [
+                    'assets/animations/kaito/kaito_idle_rifle_1.png',
+                    'assets/animations/kaito/kaito_idle_rifle_2.png'
+                ];
+            }
+            if (weaponKey === 'heavy_axe') {
+                return [
+                    'assets/animations/kaito/kaito_idle_axe_1.png',
+                    'assets/animations/kaito/kaito_idle_axe_2.png'
+                ];
+            }
+            return [
+                'assets/animations/kaito/kaito_idle_1.png',
+                'assets/animations/kaito/kaito_idle_2.png'
+            ];
         } else if (id === 'chen') {
             return [
                 'assets/animations/chen/chen_idle_1.png',
@@ -380,7 +416,11 @@ class MenuPage extends BasePage {
 
     hasSelectedStanceSkill(character) {
         if (!character) return false;
-        const skills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+        const isKaitoWeaponPreview = character.id === 'kaito' && this.kaitoFormPreviewWeaponKey;
+        const previewSkills = isKaitoWeaponPreview && Array.isArray(this.kaitoFormPreviewSkills)
+            ? this.kaitoFormPreviewSkills.filter(Boolean)
+            : [];
+        const skills = isKaitoWeaponPreview ? previewSkills : (Array.isArray(character.skills) ? character.skills.filter(Boolean) : []);
         for (const id of this.selectedSkillIds) {
             const s = skills.find(x => x && x.id === id);
             if (s && s.type === 'stance') return true;
@@ -678,6 +718,8 @@ class MenuPage extends BasePage {
     renderPrecombatUI(character) {
         if (!character) return;
 
+        this.renderKaitoFormPreview(character);
+
         const transformBtn = this.querySelector('#precombat-transform-toggle');
         if (transformBtn) {
             const curId = character && character.id;
@@ -709,8 +751,15 @@ class MenuPage extends BasePage {
             if (defEl) defEl.innerHTML = `${character.stats.defense}${defSuffix}`;
         }
 
-        this.updateElement('#precombat-passive-name', character.passive?.name || '');
-        this.updateElement('#precombat-passive-desc', character.passive?.description || '');
+        {
+            const passiveName = character.passive?.name || '';
+            const showWeapon = character.id === 'kaito' && this.kaitoFormPreviewWeaponName;
+            const extra = showWeapon
+                ? ` <span class="kaito-current-weapon-inline">Current weapon : ${this.kaitoFormPreviewWeaponName}</span>`
+                : '';
+            this.updateElement('#precombat-passive-name', `${passiveName}${extra}`);
+            this.updateElement('#precombat-passive-desc', character.passive?.description || '');
+        }
 
         {
             const img = this.querySelector('#precombat-item-image');
@@ -745,15 +794,203 @@ class MenuPage extends BasePage {
                     cdEl.style.display = 'none';
                 }
             }
+
+            const isKaitoWeaponPreview = character.id === 'kaito' && this.kaitoFormPreviewWeaponKey;
+            const previewSkills = isKaitoWeaponPreview && Array.isArray(this.kaitoFormPreviewSkills)
+                ? this.kaitoFormPreviewSkills.filter(Boolean)
+                : [];
+            const skills = isKaitoWeaponPreview ? previewSkills : (Array.isArray(character.skills) ? character.skills.filter(Boolean) : []);
+            const slots = this.querySelector('#skill-slots');
+            if (slots) {
+                slots.innerHTML = '';
+                for (let i = 0; i < 2; i++) {
+                    const id = this.selectedSkillIds[i];
+                    const skill = skills.find(s => s && s.id === id);
+                    const el = document.createElement('div');
+                    el.className = 'skill-slot';
+                    el.textContent = skill ? skill.name : 'Empty';
+                    slots.appendChild(el);
+                }
+            }
+
+            const hint = this.querySelector('#skills-hint');
+            const findMatchBtn = this.querySelector('#find-match-button');
+            const needsTwo = skills.length >= 2;
+            const valid = !needsTwo || this.selectedSkillIds.length === 2;
+            if (hint) {
+                hint.textContent = needsTwo
+                    ? (valid ? 'Select 2 skills for battle.' : 'Select exactly 2 skills to continue.')
+                    : '';
+            }
+            if (findMatchBtn) {
+                findMatchBtn.disabled = !valid;
+            }
+
+            const picker = this.querySelector('#skills-picker');
+            if (picker) {
+                picker.innerHTML = '';
+                skills.forEach(skill => {
+                    const selected = this.selectedSkillIds.includes(skill.id);
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    const locked = Boolean(isKaitoWeaponPreview);
+                    card.className = `skill-pick ${selected || locked ? 'is-selected' : ''}`;
+                    if (locked) {
+                        card.disabled = true;
+                    } else {
+                        card.addEventListener('click', () => this.toggleSkillSelection(skill.id));
+                    }
+
+                    const cd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
+                    const type = typeof skill.type === 'string' ? skill.type : 'utility';
+
+                    card.innerHTML = `
+                        <div class="skill-pick-top">
+                            <div class="skill-pick-name">${skill.name}</div>
+                            <div class="skill-pick-tags">
+                                <span class="skill-tag">${type}</span>
+                                <span class="skill-tag skill-tag-cd">CD ${cd}</span>
+                            </div>
+                        </div>
+                        <div class="skill-pick-desc">${skill.description}</div>
+                    `;
+                    picker.appendChild(card);
+                });
+            }
+        }
+    }
+
+    renderKaitoFormPreview(character) {
+        const root = this.querySelector('#precombat-kaito-forms');
+        if (!root) return;
+
+        if (!character || character.id !== 'kaito') {
+            root.style.display = 'none';
+            this.kaitoFormPreviewWeaponKey = null;
+            this.kaitoFormPreviewWeaponName = null;
+            this.kaitoFormPreviewSkills = null;
+            return;
         }
 
-        const skills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+        root.style.display = '';
+
+        const weaponKeys = [
+            null,
+            'healing_staff',
+            'scythe',
+            'baton',
+            'carbine_rifle',
+            'shield',
+            'light_trident',
+            'rapier',
+            'heavy_axe',
+            'tome_of_paragons'
+        ];
+
+        const weaponLabels = ['none', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        if (!Number.isFinite(Number(this.kaitoFormPreviewIndex))) {
+            this.kaitoFormPreviewIndex = 0;
+        }
+        this.kaitoFormPreviewIndex = Math.max(0, Math.min(weaponKeys.length - 1, Math.floor(this.kaitoFormPreviewIndex)));
+
+        const row = this.querySelector('#kaito-form-row');
+        if (row) {
+            row.innerHTML = '';
+            for (let i = 0; i < weaponKeys.length; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `kaito-form-btn ${i === this.kaitoFormPreviewIndex ? 'is-selected' : ''}`;
+                btn.textContent = weaponLabels[i];
+                btn.addEventListener('click', () => {
+                    this.kaitoFormPreviewIndex = i;
+                    this.renderPrecombatUI(this.selectedCharacter);
+                    this.startIdleSpriteAnimation(this.selectedCharacter);
+                });
+                row.appendChild(btn);
+            }
+        }
+
+        const key = weaponKeys[this.kaitoFormPreviewIndex];
+        const prevKey = this.kaitoFormPreviewWeaponKey;
+        this.kaitoFormPreviewWeaponKey = key;
+
+        const previewWrap = this.querySelector('#kaito-form-preview');
+        if (!previewWrap) return;
+
+        if (!key) {
+            previewWrap.style.display = 'none';
+            this.kaitoFormPreviewWeaponKey = null;
+            this.kaitoFormPreviewWeaponName = null;
+            this.kaitoFormPreviewSkills = null;
+            return;
+        }
+
+        // Weapons card should contain only buttons, so keep the preview area hidden.
+        previewWrap.style.display = 'none';
+
+        let weaponName = key;
+        try {
+            const w = window.KaitoCharacter && typeof window.KaitoCharacter.getWeaponByKey === 'function'
+                ? window.KaitoCharacter.getWeaponByKey(key)
+                : null;
+            if (w && typeof w.name === 'string') weaponName = w.name;
+        } catch (e) {}
+        this.kaitoFormPreviewWeaponName = weaponName;
+
+        const ids = (window.KaitoCharacter && typeof window.KaitoCharacter.getWeaponSkillIds === 'function')
+            ? window.KaitoCharacter.getWeaponSkillIds(key)
+            : null;
+
+        const list = Array.isArray(ids) ? ids.filter(Boolean).slice(0, 2) : [];
+        if (list.length === 0) {
+            this.kaitoFormPreviewSkills = [];
+            return;
+        }
+
+        // If we're re-rendering with the same weapon key and already have the resolved skills,
+        // just repaint the Skills panel and exit.
+        if (prevKey === key && Array.isArray(this.kaitoFormPreviewSkills) && this.kaitoFormPreviewSkills.length > 0) {
+            this.paintKaitoWeaponSkillsPanel(character);
+            return;
+        }
+
+        // Weapon changed (or cache missing): load once.
+        this.kaitoFormPreviewSkills = null;
+        const loadToken = ++this.kaitoFormPreviewLoadToken;
+        const expectedKey = key;
+        Promise.all(list.map(id => this.characterSystem.getSkill(id))).then((skills) => {
+            if (loadToken !== this.kaitoFormPreviewLoadToken) return;
+            if (this.kaitoFormPreviewWeaponKey !== expectedKey) return;
+
+            const ok = Array.isArray(skills) ? skills.filter(Boolean) : [];
+            this.kaitoFormPreviewSkills = ok;
+
+            try {
+                const passiveName = character?.passive?.name || '';
+                const baseDesc = character?.passive?.description || '';
+                const showWeapon = character.id === 'kaito' && this.kaitoFormPreviewWeaponName;
+                const extra = showWeapon
+                    ? ` <span class="kaito-current-weapon-inline">Current weapon : ${this.kaitoFormPreviewWeaponName}</span>`
+                    : '';
+                this.updateElement('#precombat-passive-name', `${passiveName}${extra}`);
+                this.updateElement('#precombat-passive-desc', baseDesc);
+                this.paintKaitoWeaponSkillsPanel(character);
+            } catch (e) {}
+        }).catch(() => {});
+    }
+
+    paintKaitoWeaponSkillsPanel(character) {
+        if (!character || character.id !== 'kaito') return;
+        if (!this.kaitoFormPreviewWeaponKey) return;
+        if (!Array.isArray(this.kaitoFormPreviewSkills)) return;
+
+        const skills = this.kaitoFormPreviewSkills.filter(Boolean);
+
         const slots = this.querySelector('#skill-slots');
         if (slots) {
             slots.innerHTML = '';
             for (let i = 0; i < 2; i++) {
-                const id = this.selectedSkillIds[i];
-                const skill = skills.find(s => s && s.id === id);
+                const skill = skills[i];
                 const el = document.createElement('div');
                 el.className = 'skill-slot';
                 el.textContent = skill ? skill.name : 'Empty';
@@ -762,31 +999,21 @@ class MenuPage extends BasePage {
         }
 
         const hint = this.querySelector('#skills-hint');
-        const findMatchBtn = this.querySelector('#find-match-button');
-        const needsTwo = skills.length >= 2;
-        const valid = !needsTwo || this.selectedSkillIds.length === 2;
         if (hint) {
-            hint.textContent = needsTwo
-                ? (valid ? 'Select 2 skills for battle.' : 'Select exactly 2 skills to continue.')
-                : '';
-        }
-        if (findMatchBtn) {
-            findMatchBtn.disabled = !valid;
+            hint.textContent = 'Select 2 skills for battle.';
         }
 
         const picker = this.querySelector('#skills-picker');
         if (picker) {
             picker.innerHTML = '';
             skills.forEach(skill => {
-                const selected = this.selectedSkillIds.includes(skill.id);
                 const card = document.createElement('button');
                 card.type = 'button';
-                card.className = `skill-pick ${selected ? 'is-selected' : ''}`;
-                card.addEventListener('click', () => this.toggleSkillSelection(skill.id));
+                card.className = 'skill-pick is-selected';
+                card.disabled = true;
 
                 const cd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
                 const type = typeof skill.type === 'string' ? skill.type : 'utility';
-
                 card.innerHTML = `
                     <div class="skill-pick-top">
                         <div class="skill-pick-name">${skill.name}</div>

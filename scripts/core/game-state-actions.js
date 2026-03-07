@@ -168,6 +168,29 @@ GameState.prototype.useUltimate = async function (playerId) {
         throw new Error('Ultimate not ready');
     }
 
+    // Allow extensions to block ultimate usage (e.g., restrictions, seals).
+    try {
+        if (window.BattleHooks && typeof window.BattleHooks.emit === 'function') {
+            const res = window.BattleHooks.emit('skill_system:can_use_ultimate', {
+                gameState: this,
+                skillSystem: this.skillSystem,
+                passiveSystem: this.passiveSystem,
+                playerId,
+                player,
+                character: player.character,
+                ultimate: player.character?.ultimate
+            });
+            for (const r of (res || [])) {
+                if (r === false) {
+                    throw new Error('Ultimate is disabled');
+                }
+            }
+        }
+    } catch (e) {
+        if (e && e.message) throw e;
+        throw new Error('Ultimate is disabled');
+    }
+
     if (!this.canUseUltimateWithLimit(player)) {
         throw new Error('Ultimate limit reached');
     }

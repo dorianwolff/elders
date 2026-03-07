@@ -443,5 +443,35 @@
         "scaling": "attack"
       }
     }
+  },
+  "kaito": {
+    "id": "kaito",
+    "name": "Kaito",
+    "metaPoints": 166,
+    "stats": {
+      "health": 127,
+      "maxHealth": 127,
+      "attack": 31,
+      "defense": 13,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["kaito.webp"],
+    "passiveId": "kaito_nen_restrictions",
+    "recommended_items": ["mace"],
+    "skillIds": ["kaito_crazy_slots", "kaito_price_of_power"],
+    "ultimate": {
+      "id": "kaito_ultimate",
+      "name": "Final Roll",
+      "description": "Deal 140% of attack as damage and use your current Skill 1 as a bonus effect (ignores restrictions).",
+      "cooldown": 5,
+      "type": "attack",
+      "effect": {
+        "type": "kaito_ultimate",
+        "target": "enemy"
+      }
+    }
   }
 }

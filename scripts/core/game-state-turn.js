@@ -3,6 +3,10 @@ GameState.prototype.endTurn = async function () {
 
     if (this.passiveSystem) {
         await this.passiveSystem.handleEvent(this.currentTurn, 'turn_end');
+
+        // Allow character extensions to react to "opponent turn end" specifically.
+        const opponentOfCurrent = this.currentTurn === 'player1' ? 'player2' : 'player1';
+        await this.passiveSystem.handleEvent(opponentOfCurrent, 'opponent_turn_end', { opponentId: this.currentTurn });
     }
 
     const currentPlayer = this.players.get(this.currentTurn);

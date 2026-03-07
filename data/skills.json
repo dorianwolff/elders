@@ -962,7 +962,7 @@
   "equivalent_exchange": {
     "id": "equivalent_exchange",
     "name": "Equivalent Exchange",
-    "description": "Enter a stance for 2 enemy turns. When taking damage from an enemy skill, all players gain 1 Heat, then counter for 65% of damage taken, twice.",
+    "description": "Enter a stance for 2 enemy turns. When taking damage from an enemy skill, all players gain 1 Heat, then counter for 80% of damage taken.",
     "type": "stance",
     "cooldown": 2,
     "effect": {
@@ -971,8 +971,8 @@
       "stance_key": "equivalent_exchange",
       "enemy_turn_duration": 2,
       "heat_on_trigger": 1,
-      "counter_ratio": 0.65,
-      "counter_hits": 2
+      "counter_ratio": 0.8,
+      "counter_hits": 1
     }
   },
   "alchemy": {
@@ -1107,7 +1107,7 @@
       "damage_scaling": "attack",
       "heal_value": 5,
       "heal_scaling": "flat",
-      "heal_block_duration": 2
+      "heal_block_duration": 1
     }
   },
   "frieren_copycat_glyph": {
@@ -1259,6 +1259,301 @@
       "target": "enemy",
       "value": 1,
       "scaling": "attack"
+    }
+  },
+
+  "kaito_crazy_slots": {
+    "id": "kaito_crazy_slots",
+    "name": "Crazy Slots",
+    "description": "Get one of 9 weapons.",
+    "type": "utility",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_crazy_slots",
+      "target": "self"
+    }
+  },
+  "kaito_price_of_power": {
+    "id": "kaito_price_of_power",
+    "name": "Price of Power",
+    "description": "Recover 5% of max health and obtain one new restriction.",
+    "type": "utility",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_price_of_power",
+      "target": "self",
+      "healMaxHpBase": 0.05,
+      "healMaxHpPerRestrictionAfterFirst": 0.02
+    }
+  },
+
+  "kaito_staff_first_aid": {
+    "id": "kaito_staff_first_aid",
+    "name": "First Aid",
+    "description": "Remove 1 debuff and recover 50% of missing health.",
+    "type": "recovery",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_staff_first_aid",
+      "target": "self",
+      "healMissingHpBase": 0.5,
+      "healMissingHpPerRestriction": 0.04
+    }
+  },
+  "kaito_staff_recovery_zone": {
+    "id": "kaito_staff_recovery_zone",
+    "name": "Recovery Zone",
+    "description": "For 1 turn, recover 20% of maximum health at the end of your opponent's turn.",
+    "type": "array",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_staff_recovery_zone",
+      "target": "self",
+      "healMaxHpBase": 0.2,
+      "healMaxHpPerRestriction": 0.06
+    }
+  },
+
+  "kaito_scythe_minor_curse": {
+    "id": "kaito_scythe_minor_curse",
+    "name": "Reaper's Hex",
+    "description": "Inflict Minor Curse for 3 turns and deal 120% of attack as damage.",
+    "type": "debuff",
+    "cooldown": 2,
+    "effect": {
+      "type": "kaito_scythe_minor_curse",
+      "target": "enemy",
+      "attackPctBase": 1.2,
+      "attackPctPerRestriction": 0.2,
+      "curseTurns": 3,
+      "curseMaxHpPct": 0.05
+    }
+  },
+  "kaito_scythe_purge": {
+    "id": "kaito_scythe_purge",
+    "name": "Soul Sever",
+    "description": "Remove shields and stances and deal 130% of attack as damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_scythe_purge",
+      "target": "enemy",
+      "attackPctBase": 1.3,
+      "attackPctPerRestriction": 0.2
+    }
+  },
+
+  "kaito_baton_snap_strike": {
+    "id": "kaito_baton_snap_strike",
+    "name": "Snap Strike",
+    "description": "Deal 50% of attack as true damage.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_baton_snap_strike",
+      "target": "enemy",
+      "trueAttackPctBase": 0.5,
+      "trueAttackPctPerRestriction": 0.05
+    }
+  },
+  "kaito_baton_reversal_stance": {
+    "id": "kaito_baton_reversal_stance",
+    "name": "Reversal",
+    "description": "For 1 turn, recover 100% of damage taken from attack and debuff skills and counter.",
+    "type": "stance",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_baton_reversal_stance",
+      "target": "self",
+      "reversalTurns": 1,
+      "reversalHealRatio": 1,
+      "reversalTrueAttackPctBase": 0.6,
+      "reversalTrueAttackPctPerRestriction": 0.1
+    }
+  },
+
+  "kaito_rifle_headshot": {
+    "id": "kaito_rifle_headshot",
+    "name": "Headshot",
+    "description": "Deal 10% of opponent maximum health as damage. If opponent has 10% or less health this becomes true damage instead.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_rifle_headshot",
+      "target": "enemy",
+      "maxHpPctBase": 0.1,
+      "maxHpPctPerRestriction": 0.01,
+      "executeThresholdMaxHpPct": 0.1,
+      "executeTrueMaxHpPctBase": 0.1,
+      "executeTrueMaxHpPctPerRestriction": 0.01
+    }
+  },
+  "kaito_rifle_multistrike": {
+    "id": "kaito_rifle_multistrike",
+    "name": "Multistrike",
+    "description": "Deal 75% of attack as damage 4 times.",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_rifle_multistrike",
+      "target": "enemy",
+      "hits": 4,
+      "attackPctBase": 0.75,
+      "attackPctPerRestriction": 0.08
+    }
+  },
+
+  "kaito_trident_ult_seal": {
+    "id": "kaito_trident_ult_seal",
+    "name": "Luminous Seal",
+    "description": "Deal 90% of attack as damage and seal enemy ultimate for 2 turns.",
+    "type": "debuff",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_trident_ult_seal",
+      "target": "enemy",
+      "attackPctBase": 0.9,
+      "attackPctPerRestriction": 0.2,
+      "sealTurns": 2
+    }
+  },
+  "kaito_trident_triple_thrust": {
+    "id": "kaito_trident_triple_thrust",
+    "name": "Triple Thrust",
+    "description": "Deal 86% of attack as damage 3 times.",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "kaito_trident_triple_thrust",
+      "target": "enemy",
+      "hits": 3,
+      "attackPctBase": 0.86,
+      "attackPctPerRestriction": 0.07
+    }
+  },
+
+  "kaito_rapier_time_cut": {
+    "id": "kaito_rapier_time_cut",
+    "name": "Time Cut",
+    "description": "Deal 100% of attack as damage and reset all skill cooldowns.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_rapier_time_cut",
+      "target": "enemy",
+      "attackPctBase": 1.0,
+      "attackPctPerRestriction": 0.2
+    }
+  },
+  "kaito_rapier_evasive_lunge": {
+    "id": "kaito_rapier_evasive_lunge",
+    "name": "Evasive Lunge",
+    "description": "Deal 70% of attack as damage and gain evade for 1 turn.",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_rapier_evasive_lunge",
+      "target": "enemy",
+      "attackPctBase": 0.7,
+      "attackPctPerRestriction": 0.2,
+      "evadeTurns": 1
+    }
+  },
+
+  "kaito_shield_bulwark_strike": {
+    "id": "kaito_shield_bulwark_strike",
+    "name": "Bulwark Strike",
+    "description": "Deal 100% of defense as damage and reduce damage taken by 50% for 1 turn.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "kaito_shield_bulwark_strike",
+      "target": "enemy",
+      "defensePctBase": 1.0,
+      "defensePctPerRestriction": 0.3,
+      "drBase": 50,
+      "drPerRestriction": 5,
+      "drMax": 95,
+      "drTurns": 1
+    }
+  },
+  "kaito_shield_fortify": {
+    "id": "kaito_shield_fortify",
+    "name": "Fortify",
+    "description": "Gain a shield equal to defense.",
+    "type": "buff",
+    "cooldown": 2,
+    "effect": {
+      "type": "kaito_shield_fortify",
+      "target": "self",
+      "shieldDefenseMultBase": 1,
+      "shieldDefenseMultPerRestriction": 0.2
+    }
+  },
+
+  "kaito_axe_gash_bleed": {
+    "id": "kaito_axe_gash_bleed",
+    "name": "Gash",
+    "description": "Deal 85% of attack as damage and inflict bleed.",
+    "type": "debuff",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_axe_gash_bleed",
+      "target": "enemy",
+      "attackPctBase": 0.85,
+      "attackPctPerRestriction": 0.09,
+      "bleedTickRatio": 0.3,
+      "bleedTurns": 3
+    }
+  },
+  "kaito_axe_double_cleave": {
+    "id": "kaito_axe_double_cleave",
+    "name": "Double Cleave",
+    "description": "Deal 85% of attack as damage, twice.",
+    "type": "attack",
+    "cooldown": 2,
+    "effect": {
+      "type": "kaito_axe_double_cleave",
+      "target": "enemy",
+      "hits": 2,
+      "attackPctBase": 0.85,
+      "attackPctPerRestriction": 0.25
+    }
+  },
+
+  "kaito_tome_paragon_cast": {
+    "id": "kaito_tome_paragon_cast",
+    "name": "Paragon Invocation",
+    "description": "Cast 2 random weapon skills ignoring restrictions.",
+    "type": "attack",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_tome_paragon_cast",
+      "target": "enemy"
+    }
+  },
+  "kaito_tome_random_spell": {
+    "id": "kaito_tome_random_spell",
+    "name": "Paragon Shuffle",
+    "description": "Becomes a random weapon skill each turn.",
+    "type": "utility",
+    "cooldown": 1,
+    "effect": {
+      "type": "kaito_tome_random_spell",
+      "target": "enemy"
+    }
+  },
+  "kaito_ultimate": {
+    "id": "kaito_ultimate",
+    "name": "Final Roll",
+    "description": "Deal 140% of attack as damage and use your current Skill 1 as a bonus effect (ignores restrictions).",
+    "type": "ultimate",
+    "cooldown": 5,
+    "effect": {
+      "type": "kaito_ultimate",
+      "target": "enemy",
+      "attackPctBase": 1.4,
+      "attackPctPerRestriction": 0.4
     }
   }
 }

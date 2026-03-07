@@ -259,6 +259,93 @@
     gap: 1rem;
 }
 
+.kit-kaito-forms {
+    padding: 0.8rem 0.9rem;
+}
+
+.kaito-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.kaito-form-btn {
+    min-width: 44px;
+    height: 30px;
+    padding: 0 0.6rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.18);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.kaito-form-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(255, 215, 0, 0.55);
+    background: rgba(255, 215, 0, 0.10);
+}
+
+.kaito-form-btn.is-selected {
+    border-color: rgba(255, 215, 0, 0.85);
+    background: rgba(255, 215, 0, 0.16);
+    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.12) inset;
+}
+
+.kaito-form-preview {
+    margin-top: 0.7rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.kaito-form-preview-title {
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+}
+
+.kaito-form-preview-skills {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+}
+
+.kaito-form-skill {
+    padding: 0.55rem 0.65rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.kaito-form-skill-name {
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 900;
+    margin-bottom: 0.2rem;
+}
+
+.kaito-form-skill-desc {
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.25;
+}
+
+.kaito-current-weapon {
+    margin-top: 0.55rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 215, 0, 0.92);
+    font-weight: 900;
+}
+
+.kaito-current-weapon-inline {
+    color: rgba(255, 215, 0, 0.92);
+    font-weight: 900;
+    white-space: nowrap;
+}
+
 .precombat-stage {
     position: relative;
     border-radius: 18px;

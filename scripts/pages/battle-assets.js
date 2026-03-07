@@ -79,6 +79,34 @@ window.BattleAssets = {
             ];
         }
 
+        else if (id === 'kaito') {
+            const weaponKey = typeof character?.passiveState?.kaitoWeaponKey === 'string'
+                ? character.passiveState.kaitoWeaponKey
+                : null;
+            if (weaponKey === 'healing_staff') {
+                return [
+                    'assets/animations/kaito/kaito_idle_healing_staff_1.png',
+                    'assets/animations/kaito/kaito_idle_healing_staff_1.png'
+                ];
+            }
+            if (weaponKey === 'carbine_rifle') {
+                return [
+                    'assets/animations/kaito/kaito_idle_rifle_1.png',
+                    'assets/animations/kaito/kaito_idle_rifle_2.png'
+                ];
+            }
+            if (weaponKey === 'heavy_axe') {
+                return [
+                    'assets/animations/kaito/kaito_idle_axe_1.png',
+                    'assets/animations/kaito/kaito_idle_axe_2.png'
+                ];
+            }
+            return [
+                'assets/animations/kaito/kaito_idle_1.png',
+                'assets/animations/kaito/kaito_idle_2.png'
+            ];
+        }
+
         else if (id === 'chen') {
             return [
                 'assets/animations/chen/chen_idle_1.png',
