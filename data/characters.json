@@ -465,7 +465,7 @@
     "ultimate": {
       "id": "kaito_ultimate",
       "name": "Final Roll",
-      "description": "Deal 140% of attack as damage and use your current Skill 1 as a bonus effect (ignores restrictions).",
+      "description": "Deal 140% of attack as damage (scales with restrictions) and use your current Skill 1 as a bonus effect (ignores restrictions).",
       "cooldown": 5,
       "type": "attack",
       "effect": {

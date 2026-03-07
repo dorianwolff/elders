@@ -48,6 +48,33 @@ class GameState {
         return used < limit;
     }
 
+    ensureUltimateReadyFromCooldown(playerId) {
+        try {
+            if (playerId !== 'player1' && playerId !== 'player2') return;
+            const player = this.players && typeof this.players.get === 'function' ? this.players.get(playerId) : null;
+            if (!player || !player.character) return;
+            const character = player.character;
+            const ultimate = character.ultimate;
+            if (!ultimate || !ultimate.id) return;
+
+            // If the passive defines a readiness condition, do not override it here.
+            const condition = this.getUltimateCondition(character);
+            if (condition && condition.type) return;
+            if (character.passive && character.passive.alwaysUltimateReady) return;
+
+            const remaining = (this.skillSystem && typeof this.skillSystem.getSkillCooldown === 'function')
+                ? Math.max(0, Math.floor(this.skillSystem.getSkillCooldown({ id: ultimate.id }, playerId)))
+                : 0;
+
+            if (remaining <= 0) {
+                player.ultimateReady = true;
+                if (character.passiveState) {
+                    character.passiveState.ultimateReady = true;
+                }
+            }
+        } catch (e) {}
+    }
+
     getUltimateCondition(character) {
         if (!character || !character.passive) return null;
         if (character.passive.mission) {
@@ -242,6 +269,16 @@ class GameState {
                 const cd = Math.max(0, Math.floor(Number(ult?.cooldown) || 0));
                 const alwaysUltimateReady = Boolean(c && c.passive && c.passive.alwaysUltimateReady);
 
+                // Characters without a mission/ultimate_condition should have their ultimate become ready
+                // automatically once the cooldown reaches 0.
+                try {
+                    const cond = this.getUltimateCondition(c);
+                    if (!alwaysUltimateReady && (!cond || !cond.type)) {
+                        this.players.get(pid).ultimateReady = true;
+                        if (c && c.passiveState) c.passiveState.ultimateReady = true;
+                    }
+                } catch (e) {}
+
                 if (alwaysUltimateReady) {
                     // Some characters (e.g. Chen) start with Ultimate available even if the ultimate has a cooldown.
                     this.players.get(pid).ultimateReady = true;
@@ -267,6 +304,9 @@ class GameState {
                         } catch (e) {}
                     }
                 }
+
+                // If cooldown is 0 at game start, ensure readiness is consistent.
+                this.ensureUltimateReadyFromCooldown(pid);
             }
         } catch (e) {}
 

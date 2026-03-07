@@ -57,11 +57,12 @@
             }
 
             if (skill.id === 'kaito_price_of_power') {
-                const base = Number(skill.effect?.healMaxHpBase);
-                const perAfter = Number(skill.effect?.healMaxHpPerRestrictionAfterFirst);
-                let v = (Number.isFinite(base) ? base : 0.05) + ((Number.isFinite(perAfter) ? perAfter : 0.02) * Math.max(0, r - 1));
-                if (restrictionLife) v = v * 0.5;
-                return `Recover ${pct(v)} of max health and obtain a new restriction. Cannot be used if you already have every restriction.`;
+                const healBase = scaled(skill.effect, 'healMaxHpBase', null, r, 0.05, 0);
+                const healPer = scaled(skill.effect, 'healMaxHpPerRestrictionAfterFirst', null, r, 0.02, 0);
+                const base = Math.round(healBase * 100);
+                const per = Math.round(healPer * 100);
+                const shieldAmount = Math.max(0, Math.floor(5 + (2 * r)));
+                return `Recover ${base}% of max health (+${per}% per restriction after the first), gain ${shieldAmount} shield and obtain one new restriction.`;
             }
 
             if (skill.id === 'kaito_scythe_minor_curse') {
@@ -91,12 +92,10 @@
 
             if (skill.id === 'kaito_staff_first_aid') {
                 let v = scaled(skill.effect, 'healMissingHpBase', 'healMissingHpPerRestriction', r, 0.5, 0.04);
-                if (restrictionLife) v = v * 0.5;
                 return `Remove 1 random debuff and recover ${pct(v)} of missing health.`;
             }
             if (skill.id === 'kaito_staff_recovery_zone') {
                 let v = scaled(skill.effect, 'healMaxHpBase', 'healMaxHpPerRestriction', r, 0.2, 0.06);
-                if (restrictionLife) v = v * 0.5;
                 return `For 1 turn, recover ${pct(v)} of maximum health at the end of your opponent's turn.`;
             }
 
@@ -110,7 +109,7 @@
             }
 
             if (skill.id === 'kaito_rapier_time_cut') {
-                return `Deal ${atkScale('attackPctBase', 'attackPctPerRestriction', 1.0, 0.2)} of attack as damage and reset all skill cooldowns.`;
+                return `Deal ${atkScale('attackPctBase', 'attackPctPerRestriction', 1.0, 0.2)} of attack as damage and reduce all skill cooldowns by 1.`;
             }
             if (skill.id === 'kaito_rapier_evasive_lunge') {
                 const turns = Number.isFinite(Number(skill.effect?.evadeTurns)) ? Number(skill.effect.evadeTurns) : 1;
@@ -207,7 +206,7 @@
             const hpPct = maxHp > 0 ? (hp / maxHp) : 0;
 
             const restrictionPower = hasRestriction(skillSystem, playerId, 'restriction_power');
-            if (restrictionPower && hpPct > 0.2) {
+            if (restrictionPower && hpPct < 0.5) {
                 return true;
             }
 
@@ -226,6 +225,25 @@
         } catch (e) {}
     }, { id: 'ui:ultimate:kaito_disabled', order: 0 });
 
+    window.BattleHooks.register('ui:ultimate:description', (ctx) => {
+        try {
+            const characterId = ctx && ctx.characterId;
+            const ultimate = ctx && ctx.ultimate;
+            const gameState = ctx && ctx.gameState;
+            const skillSystem = ctx && ctx.skillSystem;
+            if (characterId !== 'kaito') return;
+            if (!ultimate || ultimate.id !== 'kaito_ultimate') return;
+
+            const playerId = gameState?.playerId;
+            const r = getRestrictionCount(skillSystem, playerId);
+            const pctBase = 1.4;
+            const pctPer = 0.4;
+            const pctTotal = Math.max(0, pctBase + (pctPer * (Number(r) || 0)));
+            const pctText = `${Math.round(pctTotal * 100)}%`;
+            return `Deal ${pctText} of attack as damage and use your current Skill 1 as a bonus effect (ignores restrictions).`;
+        } catch (e) {}
+    }, { id: 'ui:ultimate:kaito_description', order: 0 });
+
     window.BattleHooks.register('skill_system:can_use_ultimate', (ctx) => {
         try {
             const playerId = ctx && ctx.playerId;
@@ -240,7 +258,7 @@
             const hp = Math.max(0, Math.floor(Number(character?.stats?.health) || 0));
             const hpPct = maxHp > 0 ? (hp / maxHp) : 0;
 
-            if (hasRestriction(skillSystem, playerId, 'restriction_power') && hpPct > 0.2) {
+            if (hasRestriction(skillSystem, playerId, 'restriction_power') && hpPct < 0.5) {
                 return false;
             }
 

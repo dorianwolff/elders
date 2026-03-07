@@ -5,22 +5,22 @@
         {
             key: 'restriction_power',
             name: 'Restriction of Power',
-            description: 'Cannot use Ultimate while health is over 20%.'
+            description: 'Cannot use Ultimate while under 50% health.'
         },
         {
             key: 'restriction_tactics',
             name: 'Restriction of Tactics',
-            description: 'Debuffs inflicted to your opponent last 1 turn and your opponent cannot have more than 1 debuff.'
+            description: 'Your opponent cannot be debuffed.'
         },
         {
             key: 'restriction_might',
             name: 'Restriction of Might',
-            description: 'Attack skills lose 50% multiplier.'
+            description: 'Attack skills gain -50% multiplier.'
         },
         {
             key: 'restriction_life',
             name: 'Restriction of Life',
-            description: 'Recover 50% less health.'
+            description: 'Recovery effects are reduced by half.'
         },
         {
             key: 'restriction_emotions',
@@ -40,6 +40,9 @@
         { key: 'heavy_axe', name: 'Heavy Axe' },
         { key: 'tome_of_paragons', name: 'Tome of Paragons', secret: true }
     ];
+
+    window.KaitoCharacter = window.KaitoCharacter || {};
+    window.KaitoCharacter.RESTRICTIONS = RESTRICTIONS;
 
     function isKaitoCharacter(character) {
         return Boolean(character && character.id === 'kaito');
@@ -202,8 +205,14 @@
         if (pool.length === 0) return null;
 
         const gid = gameState && typeof gameState.gameId === 'string' && gameState.gameId ? gameState.gameId : null;
+        let salt = null;
+        try {
+            salt = gameState?.players?.get(playerId)?.sessionId || null;
+        } catch (e) {}
+        if (!salt) salt = playerId;
+
         const seed = gid
-            ? `${gid}:init:${playerId}:kaito:restriction:${pool.join(',')}`
+            ? `${gid}:init:${playerId}:${salt}:kaito:restriction:${pool.join(',')}`
             : null;
 
         const rand = seed && skillSystem && typeof skillSystem.deterministicRandom === 'function'

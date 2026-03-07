@@ -2462,7 +2462,9 @@ class BattlePage extends BasePage {
 
             // Stack identical effects into one indicator.
             // For stat-based buffs/debuffs, include stat in the grouping key so different stats don't merge.
+            // For restrictions, include the restriction key so different restrictions never merge.
             const statKey = effect.stat ? String(effect.stat) : '';
+            const restrictionKey = (effect.type === 'restriction' && effect.key) ? String(effect.key) : '';
             const duration = Number(effect.duration) || Number(effect.turnsLeft) || 1;
             const turnsLeft = (effect.turnsLeft === undefined || effect.turnsLeft === null)
                 ? null
@@ -2470,7 +2472,7 @@ class BattlePage extends BasePage {
 
             // Only stack if remaining duration matches (or both are timeless / no turnsLeft).
             const durationKey = (turnsLeft === null) ? 'perm' : String(turnsLeft);
-            const key = `${effect.type}:${statKey}:${durationKey}`;
+            const key = `${effect.type}:${statKey}:${restrictionKey}:${durationKey}`;
 
             const displayTurnsLeft = (turnsLeft === null) ? duration : turnsLeft;
 

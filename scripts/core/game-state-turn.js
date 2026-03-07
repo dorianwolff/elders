@@ -47,6 +47,13 @@ GameState.prototype.endTurn = async function () {
 
     this.skillSystem.decrementCooldowns(this.currentTurn);
 
+    // If a character's ultimate has no mission/condition, it becomes ready automatically when cooldown ends.
+    try {
+        if (typeof this.ensureUltimateReadyFromCooldown === 'function') {
+            this.ensureUltimateReadyFromCooldown(this.currentTurn);
+        }
+    } catch (e) {}
+
     const opponentOfCurrent = this.currentTurn === 'player1' ? 'player2' : 'player1';
     if (this.skillSystem && typeof this.skillSystem.decrementNonDotDurationsForOwner === 'function') {
         this.skillSystem.decrementNonDotDurationsForOwner(opponentOfCurrent);

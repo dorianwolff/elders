@@ -1276,7 +1276,7 @@
   "kaito_price_of_power": {
     "id": "kaito_price_of_power",
     "name": "Price of Power",
-    "description": "Recover 5% of max health and obtain one new restriction.",
+    "description": "Recover 5% of max health, gain 5 shield and obtain one new restriction.",
     "type": "utility",
     "cooldown": 1,
     "effect": {
@@ -1435,7 +1435,7 @@
   "kaito_rapier_time_cut": {
     "id": "kaito_rapier_time_cut",
     "name": "Time Cut",
-    "description": "Deal 100% of attack as damage and reset all skill cooldowns.",
+    "description": "Deal 100% of attack as damage and reduce all skill cooldowns by 1.",
     "type": "attack",
     "cooldown": 0,
     "effect": {

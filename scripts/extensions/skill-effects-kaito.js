@@ -216,7 +216,9 @@
                     ? window.KaitoCharacter.getActiveKaitoRestrictions(skillSystem, playerId)
                     : new Set();
 
-                const missing = (window.KaitoCharacter?.RESTRICTIONS || [])
+                const missing = (window.KaitoCharacter && Array.isArray(window.KaitoCharacter.RESTRICTIONS)
+                    ? window.KaitoCharacter.RESTRICTIONS
+                    : [])
                     .map(r => r && r.key)
                     .filter(Boolean)
                     .filter(k => !keys.has(k));
@@ -230,7 +232,13 @@
                     return { handled: true };
                 }
 
-                const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:kaito:price_of_power`;
+                let salt = null;
+                try {
+                    salt = gameState?.players?.get(playerId)?.sessionId || null;
+                } catch (e) {}
+                if (!salt) salt = playerId;
+
+                const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:${salt}:kaito:price_of_power`;
                 const rand = skillSystem && typeof skillSystem.deterministicRandom === 'function'
                     ? skillSystem.deterministicRandom(seed)
                     : Math.random();
@@ -245,6 +253,16 @@
                 const healAmount = Math.max(1, baseHeal + extraHeal);
 
                 await skillSystem.applyHealing(caster, healAmount, playerId);
+
+                // Gain a shield: 5 + 2*x where x is the number of active restrictions.
+                try {
+                    const x = Math.max(0, Math.floor(Number(restrictionCount) || 0));
+                    const shieldAmount = Math.max(0, Math.floor(5 + (2 * x)));
+                    if (shieldAmount > 0 && typeof skillSystem.applyShield === 'function') {
+                        await skillSystem.applyShield(caster, shieldAmount, playerId);
+                        ctx.result.effects.push('Shield');
+                    }
+                } catch (e) {}
 
                 if (window.KaitoCharacter && typeof window.KaitoCharacter.applyKaitoRestriction === 'function') {
                     await window.KaitoCharacter.applyKaitoRestriction(skillSystem, playerId, caster, pickedKey);
@@ -417,18 +435,28 @@
                 const dealt = await applyDamagePct(skillSystem, caster, target, enemyId, playerId, pct);
                 ctx.result.damage = (Number(ctx.result.damage) || 0) + dealt;
 
-                // Reset all skill cooldowns (including ultimate cooldown tracking).
+                // Reduce cooldown of all skills by 1 (including ultimate cooldown tracking).
                 try {
                     const skills = Array.isArray(caster.skills) ? caster.skills : [];
                     for (const s of skills) {
-                        if (s && s.id) skillSystem.setSkillCooldown(s.id, playerId, 0);
+                        if (!s || !s.id) continue;
+                        const cur = skillSystem.getSkillCooldown({ id: s.id }, playerId);
+                        const next = Math.max(0, Math.floor(Number(cur) || 0) - 1);
+                        skillSystem.setSkillCooldown(s.id, playerId, next);
                     }
                     if (caster.ultimate && caster.ultimate.id) {
-                        skillSystem.setSkillCooldown(caster.ultimate.id, playerId, 0);
+                        const cur = skillSystem.getSkillCooldown({ id: caster.ultimate.id }, playerId);
+                        const next = Math.max(0, Math.floor(Number(cur) || 0) - 1);
+                        skillSystem.setSkillCooldown(caster.ultimate.id, playerId, next);
+                    }
+
+                    // If ultimate readiness depends on passive counters/mission, re-evaluate now.
+                    if (skillSystem.passiveSystem && typeof skillSystem.passiveSystem.updateUltimateReady === 'function') {
+                        skillSystem.passiveSystem.updateUltimateReady(playerId);
                     }
                 } catch (e) {}
 
-                ctx.result.effects.push('Cooldown Reset');
+                ctx.result.effects.push('Cooldown -1');
                 return { handled: true };
             }
 
@@ -645,7 +673,13 @@
 
                 if (missing.length === 0) return { handled: true };
 
-                const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:kaito:price_of_power`;
+                let salt = null;
+                try {
+                    salt = gameState?.players?.get(playerId)?.sessionId || null;
+                } catch (e) {}
+                if (!salt) salt = playerId;
+
+                const seed = `${gameState?.gameId || 'game'}:${gameState?.turnCount || 0}:${playerId}:${salt}:kaito:price_of_power`;
                 const rand = skillSystem && typeof skillSystem.deterministicRandom === 'function'
                     ? skillSystem.deterministicRandom(seed)
                     : Math.random();

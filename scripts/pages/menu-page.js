@@ -324,19 +324,55 @@ class MenuPage extends BasePage {
             if (weaponKey === 'healing_staff') {
                 return [
                     'assets/animations/kaito/kaito_idle_healing_staff_1.png',
-                    'assets/animations/kaito/kaito_idle_healing_staff_1.png'
+                    'assets/animations/kaito/kaito_idle_healing_staff_2.png'
                 ];
             }
-            if (weaponKey === 'carbine_rifle') {
+            else if (weaponKey === 'carbine_rifle') {
                 return [
                     'assets/animations/kaito/kaito_idle_rifle_1.png',
                     'assets/animations/kaito/kaito_idle_rifle_2.png'
                 ];
             }
-            if (weaponKey === 'heavy_axe') {
+            else if (weaponKey === 'heavy_axe') {
                 return [
                     'assets/animations/kaito/kaito_idle_axe_1.png',
                     'assets/animations/kaito/kaito_idle_axe_2.png'
+                ];
+            }
+            else if (weaponKey === 'scythe') {
+                return [
+                    'assets/animations/kaito/kaito_idle_scythe_1.png',
+                    'assets/animations/kaito/kaito_idle_scythe_2.png'
+                ];
+            }
+            else if (weaponKey === 'baton') {
+                return [
+                    'assets/animations/kaito/kaito_idle_baton_1.png',
+                    'assets/animations/kaito/kaito_idle_baton_2.png'
+                ];
+            }
+            else if (weaponKey === 'shield') {
+                return [
+                    'assets/animations/kaito/kaito_idle_shield_1.png',
+                    'assets/animations/kaito/kaito_idle_shield_2.png'
+                ];
+            }
+            else if (weaponKey === 'light_trident') {
+                return [
+                    'assets/animations/kaito/kaito_idle_trident_1.png',
+                    'assets/animations/kaito/kaito_idle_trident_2.png'
+                ];
+            }
+            else if (weaponKey === 'rapier') {
+                return [
+                    'assets/animations/kaito/kaito_idle_rapier_1.png',
+                    'assets/animations/kaito/kaito_idle_rapier_2.png'
+                ];
+            }
+            else if (weaponKey === 'tome_of_paragons') {
+                return [
+                    'assets/animations/kaito/kaito_idle_book_1.png',
+                    'assets/animations/kaito/kaito_idle_book_2.png'
                 ];
             }
             return [

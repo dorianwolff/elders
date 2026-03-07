@@ -467,6 +467,21 @@ class SkillSystem {
             : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
                 ? this.gameState.currentTurn
                 : null);
+
+        try {
+            if (ownerId && ownerId !== targetPlayerId) {
+                const ownerChar = this.getPlayerById(ownerId);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerId && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) {
+                    return;
+                }
+            }
+        } catch (e) {}
+
         const id = `heal_block_${targetPlayerId}_${Date.now()}`;
         this.activeEffects.set(id, {
             type: 'debuff',
@@ -834,6 +849,25 @@ class SkillSystem {
         if (this.isConcealed(playerId)) {
             return;
         }
+
+        // Kaito Restriction of Tactics: opponent cannot receive negative effects (curse included).
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+            if (ownerIdMaybe && ownerIdMaybe !== playerId) {
+                const ownerChar = this.getPlayerById(ownerIdMaybe);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) return;
+            }
+        } catch (e) {}
 
         // Immunity blocks curse
         if (this.isImmune(playerId)) {
@@ -3462,7 +3496,7 @@ class SkillSystem {
             // Kaito Restriction of Life: recover 50% less health.
             try {
                 const isKaito = Boolean(target && target.id === 'kaito');
-                const hasLifeRestriction = isKaito && Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e._kaitoRestriction && e.target === playerId && e.key === 'restriction_life' && (Number(e.turnsLeft) || 0) > 0);
+                const hasLifeRestriction = isKaito && Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === playerId && e.key === 'restriction_life' && (Number(e.turnsLeft) || 0) > 0);
                 if (hasLifeRestriction) {
                     healing = Math.floor((Number(healing) || 0) * 0.5);
                 }
@@ -4017,6 +4051,25 @@ class SkillSystem {
             return;
         }
 
+        // Kaito Restriction of Tactics: opponent cannot receive negative effects (bleed included).
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+            if (ownerIdMaybe && ownerIdMaybe !== playerId) {
+                const ownerChar = this.getPlayerById(ownerIdMaybe);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) return;
+            }
+        } catch (e) {}
+
         if (this.isImmune(playerId)) {
             return;
         }
@@ -4057,6 +4110,25 @@ class SkillSystem {
         if (this.isConcealed(playerId)) {
             return; // No poison applied if concealed
         }
+
+        // Kaito Restriction of Tactics: opponent cannot receive negative effects (poison included).
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+            if (ownerIdMaybe && ownerIdMaybe !== playerId) {
+                const ownerChar = this.getPlayerById(ownerIdMaybe);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) return;
+            }
+        } catch (e) {}
 
         // Immunity blocks poison
         if (this.isImmune(playerId)) {
@@ -4600,9 +4672,7 @@ class SkillSystem {
             return;
         }
 
-        // Kaito Restriction of Tactics:
-        // - Debuffs inflicted to opponents last 1 turn
-        // - Opponent cannot have more than 1 purple removable debuff (replace previous)
+        // Kaito Restriction of Tactics: opponent cannot receive debuffs.
         try {
             const ctx = this.getActiveActionContext();
             const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
@@ -4616,27 +4686,16 @@ class SkillSystem {
             const ownerHasTactics = Boolean(
                 ownerIdMaybe &&
                 isKaitoOwner &&
-                Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e._kaitoRestriction && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
             );
 
-            if (ownerHasTactics) {
-                // Replace existing purple debuffs on target (type 'debuff' only).
-                const toDelete = [];
-                for (const [id, eff] of this.activeEffects.entries()) {
-                    if (!eff) continue;
-                    if (eff.type !== 'debuff') continue;
-                    if (eff.target !== playerId) continue;
-                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
-                    toDelete.push(id);
-                }
-                for (const id of toDelete) this.activeEffects.delete(id);
-
-                // Force duration 1.
-                if (debuffEffect && typeof debuffEffect === 'object') {
-                    debuffEffect.duration = 1;
-                }
+            if (ownerHasTactics && ownerIdMaybe && ownerIdMaybe !== playerId) {
+                return;
             }
         } catch (e) {}
+
+        // Restriction of Tactics is intended to block only negative effects.
+        // A stat debuff is always negative, so if it wasn't blocked above, proceed.
 
         const debuffId = `debuff_${playerId}_${debuffEffect.stat}_${Date.now()}`;
 
@@ -4681,6 +4740,25 @@ class SkillSystem {
             return;
         }
 
+        // Kaito Restriction of Tactics: opponent cannot receive negative effects (stun included).
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+            if (ownerIdMaybe && ownerIdMaybe !== playerId) {
+                const ownerChar = this.getPlayerById(ownerIdMaybe);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) return;
+            }
+        } catch (e) {}
+
         // Immunity blocks stun
         if (this.isImmune(playerId)) {
             return;
@@ -4713,6 +4791,25 @@ class SkillSystem {
         if (this.isConcealed(playerId)) {
             return;
         }
+
+        // Kaito Restriction of Tactics: opponent cannot receive negative effects (mark included).
+        try {
+            const ctx = this.getActiveActionContext();
+            const ownerIdMaybe = ctx && (ctx.attackerId === 'player1' || ctx.attackerId === 'player2')
+                ? ctx.attackerId
+                : (this.gameState?.currentTurn === 'player1' || this.gameState?.currentTurn === 'player2'
+                    ? this.gameState.currentTurn
+                    : null);
+            if (ownerIdMaybe && ownerIdMaybe !== playerId) {
+                const ownerChar = this.getPlayerById(ownerIdMaybe);
+                const isKaitoOwner = Boolean(ownerChar && ownerChar.id === 'kaito');
+                const ownerHasTactics = Boolean(
+                    isKaitoOwner &&
+                    Array.from(this.activeEffects.values()).some(e => e && e.type === 'restriction' && e.target === ownerIdMaybe && e.key === 'restriction_tactics' && (Number(e.turnsLeft) || 0) > 0)
+                );
+                if (ownerHasTactics) return;
+            }
+        } catch (e) {}
 
         // Immunity blocks mark
         if (this.isImmune(playerId)) {
