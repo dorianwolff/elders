@@ -39,6 +39,40 @@
       "scaling": "attack"
     }
   },
+  "emilia_silver_blizzard": {
+    "id": "emilia_silver_blizzard",
+    "name": "Silver Blizzard",
+    "description": "Deal 65% of attack as damage and inflict enemy with 1 Permafrost.",
+    "type": "attack",
+    "cooldown": 0,
+    "effect": {
+      "type": "emilia_silver_blizzard",
+      "target": "enemy",
+      "attackPct": 0.65
+    }
+  },
+  "emilia_glacial_prison": {
+    "id": "emilia_glacial_prison",
+    "name": "Glacial Prison",
+    "description": "Freeze an opponent.",
+    "type": "debuff",
+    "cooldown": 3,
+    "effect": {
+      "type": "emilia_glacial_prison",
+      "target": "enemy"
+    }
+  },
+  "emilia_frost_petal": {
+    "id": "emilia_frost_petal",
+    "name": "Frost Petal",
+    "description": "Double number of Permafrost stacks on opponent.",
+    "type": "utility",
+    "cooldown": 1,
+    "effect": {
+      "type": "emilia_frost_petal",
+      "target": "enemy"
+    }
+  },
   "heal": {
     "id": "heal",
     "name": "Heal",

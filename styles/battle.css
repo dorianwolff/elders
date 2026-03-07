@@ -739,9 +739,14 @@ position: relative;
     border: 1px solid #7e241b;
 }
 
+.effect-indicator.red_debuff {
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    border: 1px solid #7e241b;
+}
+
 .effect-indicator.stun {
-    background: linear-gradient(135deg, #8e44ad, #732d91);
-    border: 1px solid #5d1a7b;
+    background: linear-gradient(135deg, #c0392b, #962d22);
+    border: 1px solid #7e241b;
 }
 
  .effect-indicator.restriction {

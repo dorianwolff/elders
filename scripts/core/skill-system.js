@@ -3242,6 +3242,25 @@ class SkillSystem {
                 });
             }
 
+            // Emilia passive needs to treat enemy counters as "skill damage" too.
+            try {
+                const isEnemyActionDamage =
+                    remaining > 0 &&
+                    attackerId &&
+                    (attackerId === 'player1' || attackerId === 'player2') &&
+                    attackerId !== playerId &&
+                    ctx &&
+                    (ctx.kind === 'skill' || ctx.kind === 'ultimate' || ctx.kind === 'counter') &&
+                    ctx.attackerId === attackerId;
+                if (isEnemyActionDamage && this.passiveSystem && typeof this.passiveSystem.handleEvent === 'function') {
+                    this.passiveSystem.handleEvent(playerId, 'damage_taken_enemy_action', {
+                        amount: remaining,
+                        attackerId,
+                        kind: ctx.kind
+                    });
+                }
+            } catch (e) {}
+
             const isEnemyCounterOrSkillDamage =
                 remaining > 0 &&
                 attackerId &&
@@ -3266,6 +3285,32 @@ class SkillSystem {
                 }
                 ctx._lastDamageInstanceByTarget[playerId] = remaining;
             }
+
+            // Emilia: Freeze breaks when taking damage from a skill/ultimate/counter,
+            // even if the hit was fully absorbed by shields.
+            try {
+                const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+                const isPlayerAttacker = attackerId === 'player1' || attackerId === 'player2';
+                const isActionDamage = Boolean(ctx && (ctx.kind === 'skill' || ctx.kind === 'ultimate' || ctx.kind === 'counter'));
+                const shouldBreakFreeze =
+                    finalDamage > 0 &&
+                    isPlayerAttacker &&
+                    attackerId !== playerId &&
+                    isActionDamage;
+                if (shouldBreakFreeze) {
+                    const toRemove = [];
+                    for (const [eid, eff] of this.activeEffects.entries()) {
+                        if (!eff) continue;
+                        if (eff.target !== playerId) continue;
+                        if (eff.type !== 'red_debuff') continue;
+                        if (eff.key !== 'freeze') continue;
+                        toRemove.push(eid);
+                    }
+                    if (toRemove.length) {
+                        for (const eid of toRemove) this.activeEffects.delete(eid);
+                    }
+                }
+            } catch (e) {}
 
             // Frieren stance ignore: suppress stance reactions for this attack without removing stance.
             if (isEnemySkillDamage && ctx && ctx.ignoreTargetStance) {
@@ -4223,6 +4268,20 @@ class SkillSystem {
                 const isDot = (effect.type === 'poison' || effect.type === 'curse' || effect.type === 'bleed') || (effect.type === 'debuff' && effect._dotDamage);
                 const isGlobal = effect.target === 'global';
 
+                // Emilia: Permafrost ticks at the end of the affected player's own turn.
+                try {
+                    if (effect.target === playerId && effect.type === 'red_debuff' && effect.key === 'permafrost') {
+                        const stacks = Math.max(0, Math.floor(Number(effect._stackCount ?? effect.stacks ?? 0) || 0));
+                        if (stacks > 0) {
+                            const target = this.getPlayerById(playerId);
+                            if (target) {
+                                await this.applyTrueDamageNoDomain(target, stacks, playerId, null);
+                            }
+                        }
+                        continue;
+                    }
+                } catch (e) {}
+
                 if (isDot) {
                     const target = this.getPlayerById(playerId);
                     if (target) {
@@ -4283,8 +4342,10 @@ class SkillSystem {
                         effect.turnsLeft--;
                     }
                 }
-                
-                if (effect.turnsLeft <= 0) {
+
+                // Only remove when the effect is timed and has reached 0.
+                // Permanent effects (turnsLeft null/undefined) should not be expired here.
+                if (typeof effect.turnsLeft === 'number' && effect.turnsLeft <= 0) {
                     effectsToRemove.push(effectId);
                 }
             }
@@ -4847,6 +4908,7 @@ class SkillSystem {
             // Grey effects are considered unremovable.
             if (
                 effect.type === 'debuff' ||
+                effect.type === 'red_debuff' ||
                 effect.type === 'poison' ||
                 effect.type === 'curse' ||
                 effect.type === 'stun' ||
@@ -4886,6 +4948,9 @@ class SkillSystem {
     isStunned(playerId) {
         for (const [effectId, effect] of this.activeEffects) {
             if (effect.target === playerId && effect.type === 'stun') {
+                return true;
+            }
+            if (effect.target === playerId && effect.type === 'red_debuff' && effect.key === 'freeze' && (Number(effect.turnsLeft) || 0) > 0) {
                 return true;
             }
         }

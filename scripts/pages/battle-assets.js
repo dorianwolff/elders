@@ -157,6 +157,13 @@ window.BattleAssets = {
             ];
         }
 
+        else if (id === 'emilia') {
+            return [
+                'assets/animations/emilia/emilia_idle_1.png',
+                'assets/animations/emilia/emilia_idle_2.png'
+            ];
+        }
+
         else if (id === 'frieren') {
             return [
                 'assets/animations/frieren/frieren_idle_1.png',

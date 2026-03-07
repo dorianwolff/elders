@@ -186,6 +186,8 @@ class CharacterTooltip {
         const classes = {
             buff: 'effect-buff',
             debuff: 'effect-debuff',
+            red_debuff: 'effect-debuff',
+            restriction: 'effect-buff',
             poison: 'effect-poison',
             conceal: 'effect-conceal',
             stun: 'effect-stun',
@@ -199,6 +201,8 @@ class CharacterTooltip {
         const icons = {
             buff: '🔵',
             debuff: '🟣',
+            red_debuff: '🔴',
+            restriction: '⚪',
             poison: '☠️',
             conceal: '🛡️',
             stun: '😵',

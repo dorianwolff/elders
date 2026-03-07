@@ -473,5 +473,36 @@
         "target": "enemy"
       }
     }
+  },
+  "emilia": {
+    "id": "emilia",
+    "name": "Emilia",
+    "metaPoints": 165,
+    "stats": {
+      "health": 118,
+      "maxHealth": 118,
+      "attack": 25,
+      "defense": 14,
+      "lifesteal": 0,
+      "damageReduction": 0,
+      "shield": 0,
+      "maxShield": 0
+    },
+    "images": ["emilia.png"],
+    "passiveId": "frost_resonance",
+    "recommended_items": ["mace"],
+    "skillIds": ["emilia_glacial_prison", "emilia_silver_blizzard", "emilia_frost_petal"],
+    "ultimate": {
+      "id": "emilia_absolute_zero",
+      "name": "Absolute Zero",
+      "description": "Deal 90% of attack as damage and inflict 7 Permafrost on opponent.",
+      "cooldown": 6,
+      "type": "attack",
+      "effect": {
+        "type": "emilia_absolute_zero",
+        "target": "enemy",
+        "attackPct": 0.9
+      }
+    }
   }
 }

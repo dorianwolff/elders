@@ -65,7 +65,13 @@ GameState.prototype.useSkill = async function (playerId, skillIndex) {
         return { ...result, gameEnded: true, winner: opponent.id };
     }
 
-    await this.endTurn();
+    // Emilia rewind: if a death-triggered rewind happened during this action,
+    // cancel the normal endTurn so the rewound player (Emilia) can immediately act.
+    if (this._emiliaRewindSkipNextEndTurn) {
+        this._emiliaRewindSkipNextEndTurn = false;
+    } else {
+        await this.endTurn();
+    }
 
     if (this.gamePhase === 'finished') {
         const r = { ...result, gameEnded: true, winner: this.winner };
@@ -118,7 +124,13 @@ GameState.prototype.skipTurn = async function (playerId) {
 
     try {
 
-    await this.endTurn();
+    // Emilia rewind: if a death-triggered rewind happened during this action,
+    // cancel the normal endTurn so the rewound player (Emilia) can immediately act.
+    if (this._emiliaRewindSkipNextEndTurn) {
+        this._emiliaRewindSkipNextEndTurn = false;
+    } else {
+        await this.endTurn();
+    }
 
     if (this.gamePhase === 'finished') {
         const r = { damage: 0, healing: 0, effects: ['Turn skipped'], animations, gameEnded: true, winner: this.winner };
@@ -279,7 +291,13 @@ GameState.prototype.useUltimate = async function (playerId) {
         return { ...result, gameEnded: true, winner: opponent.id };
     }
 
-    await this.endTurn();
+    // Emilia rewind: if a death-triggered rewind happened during this action,
+    // cancel the normal endTurn so the rewound player (Emilia) can immediately act.
+    if (this._emiliaRewindSkipNextEndTurn) {
+        this._emiliaRewindSkipNextEndTurn = false;
+    } else {
+        await this.endTurn();
+    }
 
     if (this.gamePhase === 'finished') {
         const r = { ...result, gameEnded: true, winner: this.winner };

@@ -12,6 +12,9 @@
         if (!Number.isFinite(state.counters.immortalityStacks)) {
             state.counters.immortalityStacks = 9;
         }
+        if (!Number.isFinite(state.counters.yatoUltCharge)) {
+            state.counters.yatoUltCharge = 0;
+        }
         if (!Number.isFinite(state.yatoImmortalityLost)) {
             state.yatoImmortalityLost = 0;
         }
@@ -68,14 +71,6 @@
         }
     }
 
-    function grantUltimate(passiveSystem, playerId, character) {
-        try {
-            const player = passiveSystem?.gameState?.players?.get(playerId);
-            if (player) player.ultimateReady = true;
-            if (character?.passiveState) character.passiveState.ultimateReady = true;
-        } catch (e) {}
-    }
-
     function loseImmortalityStack(passiveSystem, playerId, character, amount) {
         const state = ensureYatoState(passiveSystem, character);
         const lose = Math.max(1, Math.floor(Number(amount) || 1));
@@ -86,10 +81,16 @@
 
         state.yatoImmortalityLost = Math.max(0, Math.floor(Number(state.yatoImmortalityLost) || 0)) + (before - next);
 
-        // Every third stack lost => ultimate ready.
-        if (state.yatoImmortalityLost > 0 && state.yatoImmortalityLost % 3 === 0) {
-            grantUltimate(passiveSystem, playerId, character);
-        }
+        // Charge ultimate mission progress: 0/3 immortality stacks lost.
+        // PassiveSystem.updateUltimateReady handles setting ultimateReady and resetting this counter
+        // when the mission is satisfied (resetOnReady: true).
+        try {
+            const gained = Math.max(0, before - next);
+            state.counters.yatoUltCharge = (Number(state.counters.yatoUltCharge) || 0) + gained;
+            if (passiveSystem && typeof passiveSystem.updateUltimateReady === 'function') {
+                passiveSystem.updateUltimateReady(playerId);
+            }
+        } catch (e) {}
 
         return { before, next };
     }

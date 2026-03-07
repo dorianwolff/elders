@@ -23,4 +23,17 @@
             return String(stacks);
         } catch (e) {}
     }, { id: 'ui:chen_sword:no_one', order: 0 });
+
+    window.BattleHooks.register('ui:effect_indicators:display_text', (ctx) => {
+        try {
+            const group = ctx && ctx.group;
+            const effect = group && group.effect;
+            if (!effect) return;
+            if (effect.type !== 'restriction') return;
+            if (effect.key !== 'frozen_queen') return;
+            const n = Math.max(0, Math.floor(Number(group?.count) || 0));
+            if (n <= 0) return '';
+            return String(n);
+        } catch (e) {}
+    }, { id: 'ui:emilia:frozen_queen:always_show', order: 0 });
 })();

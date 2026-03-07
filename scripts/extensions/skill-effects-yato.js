@@ -28,6 +28,9 @@
             caster.passiveState = { counters: {}, totalHealingDone: 0, ultimateReady: false };
         }
         if (!caster.passiveState.counters) caster.passiveState.counters = {};
+        if (!Number.isFinite(caster.passiveState.counters.yatoUltCharge)) {
+            caster.passiveState.counters.yatoUltCharge = 0;
+        }
         return caster.passiveState;
     }
 
@@ -42,11 +45,12 @@
         const next = Math.max(0, before - 1);
         state.counters.immortalityStacks = next;
         state.yatoImmortalityLost = Math.max(0, Math.floor(Number(state.yatoImmortalityLost) || 0)) + 1;
-        if (state.yatoImmortalityLost % 3 === 0) {
-            const player = skillSystem?.gameState?.players?.get(playerId);
-            if (player) player.ultimateReady = true;
-            state.ultimateReady = true;
-        }
+        state.counters.yatoUltCharge = (Number(state.counters.yatoUltCharge) || 0) + 1;
+        try {
+            if (ps && typeof ps.updateUltimateReady === 'function') {
+                ps.updateUltimateReady(playerId);
+            }
+        } catch (e) {}
         return { before, next };
     }
 

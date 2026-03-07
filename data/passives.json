@@ -220,14 +220,30 @@
       }
     ]
   },
+  "frost_resonance": {
+    "id": "frost_resonance",
+    "name": "Frost Resonance",
+    "description": "Each time the opponent deals skill damage, they gain 1 Permafrost. At the start of your turn, if the opponent has at least 10 Permafrost, remove 10 and freeze them for 2 turns. Each time an opponent is frozen, gain 1 Frozen Queen stack. Once per game, when Emilia dies, rewind time to her last turn alive and redo it.",
+    "effects": []
+  },
   "limited_immortality": {
     "id": "limited_immortality",
     "name": "Limited Immortality",
     "description": "Yato starts with 9 stacks of Immortality. Each time he would take fatal damage, remove one stack instead. Once the last stack is removed, Yato recovers 8% of max health. Every third stack of Immortality Yato loses, Yato will gain his Ultimate.",
+    "mission": {
+      "type": "stack_threshold",
+      "counter": "yatoUltCharge",
+      "value": 3,
+      "resetOnReady": true
+    },
     "stackBadges": [
       {
         "counter": "immortalityStacks",
         "title": "Immortality"
+      },
+      {
+        "counter": "yatoUltCharge",
+        "title": "Ultimate"
       }
     ],
     "effects": []

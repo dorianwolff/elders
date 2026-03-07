@@ -96,6 +96,17 @@ GameState.prototype.buildStateSnapshot = function () {
 GameState.prototype.applyStateSnapshot = async function (snapshot) {
     if (!snapshot) return;
 
+    // Preserve client-only effects that may not exist in authoritative snapshots (extensions that run only on client).
+    // Example: Emilia's Permafrost/Freeze/Frozen Empress.
+    let prevEffects = null;
+    try {
+        prevEffects = (this.skillSystem && this.skillSystem.activeEffects && typeof this.skillSystem.activeEffects.entries === 'function')
+            ? new Map(this.skillSystem.activeEffects)
+            : null;
+    } catch (e) {
+        prevEffects = null;
+    }
+
     this.gameId = snapshot.gameId || this.gameId;
     this.gamePhase = snapshot.gamePhase || this.gamePhase;
     this.currentTurn = snapshot.currentTurn || this.currentTurn;
@@ -221,6 +232,45 @@ GameState.prototype.applyStateSnapshot = async function (snapshot) {
             this.skillSystem.recalculateStats('player1');
             this.skillSystem.recalculateStats('player2');
         }
+
+        // Merge back client-only effects if the snapshot omitted them.
+        try {
+            if (prevEffects && this.skillSystem.activeEffects && typeof this.skillSystem.activeEffects.entries === 'function') {
+                const hasGroup = (type, key, target) => {
+                    for (const [, eff] of this.skillSystem.activeEffects.entries()) {
+                        if (!eff) continue;
+                        if (eff.type !== type) continue;
+                        if (key && eff.key !== key) continue;
+                        if (target && eff.target !== target) continue;
+                        return true;
+                    }
+                    return false;
+                };
+
+                const addClientOnlyIfMissing = (type, key) => {
+                    for (const pid of ['player1', 'player2']) {
+                        const snapshotHas = hasGroup(type, key, pid);
+                        if (snapshotHas) continue;
+
+                        for (const [, eff] of prevEffects.entries()) {
+                            if (!eff) continue;
+                            if (!eff._clientOnly) continue;
+                            if (eff.type !== type) continue;
+                            if (key && eff.key !== key) continue;
+                            if (eff.target !== pid) continue;
+                            const nid = `clientonly_${type}_${key || 'na'}_${pid}_${Date.now()}_${Math.floor(Math.random() * 1e9)}`;
+                            this.skillSystem.activeEffects.set(nid, eff);
+                        }
+                    }
+                };
+
+                // IMPORTANT: Only merge back permanent, client-only indicators.
+                // Do NOT resurrect gameplay-impacting debuffs like Freeze/Permafrost from stale local state,
+                // otherwise a debuff that was removed (e.g. Freeze broken by damage) can come back and cause
+                // incorrect skipped turns.
+                addClientOnlyIfMissing('restriction', 'frozen_queen');
+            }
+        } catch (e) {}
     }
 };
 

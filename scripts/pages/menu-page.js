@@ -443,6 +443,11 @@ class MenuPage extends BasePage {
                 'assets/animations/edward_elric/edward_elric_idle_3.png',
                 'assets/animations/edward_elric/edward_elric_idle_4.png'
             ];
+        } else if (id === 'emilia') {
+            return [
+                'assets/animations/emilia/emilia_idle_1.png',
+                'assets/animations/emilia/emilia_idle_2.png'
+            ];
         }
         return [
             'assets/animations/zero_two/zero_two_idle_1.png',

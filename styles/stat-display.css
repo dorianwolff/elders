@@ -92,8 +92,13 @@
 }
 
 .effect-stun {
-    background: rgba(96, 125, 139, 0.2);
-    border-left: 3px solid #607D8B;
+    background: rgba(244, 67, 54, 0.2);
+    border-left: 3px solid #F44336;
+}
+
+.effect-stun::before {
+    content: "🔴";
+    margin-right: 4px;
 }
 
 .effect-mark {
