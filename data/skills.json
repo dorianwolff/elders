@@ -43,6 +43,11 @@
     "id": "emilia_silver_blizzard",
     "name": "Silver Blizzard",
     "description": "Deal 65% of attack as damage and inflict enemy with 1 Permafrost.",
+    "tagWeights": {
+      "control": 1,
+      "burst": 1,
+      "aggro": 1
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -55,6 +60,9 @@
     "id": "emilia_glacial_prison",
     "name": "Glacial Prison",
     "description": "Freeze an opponent.",
+    "tagWeights": {
+      "control": 7
+    },
     "type": "debuff",
     "cooldown": 3,
     "effect": {
@@ -66,6 +74,10 @@
     "id": "emilia_frost_petal",
     "name": "Frost Petal",
     "description": "Double number of Permafrost stacks on opponent.",
+    "tagWeights": {
+      "burst": 4,
+      "control": 4
+    },
     "type": "utility",
     "cooldown": 1,
     "effect": {
@@ -518,6 +530,10 @@
     "id": "value_over_self",
     "name": "Value Over Self",
     "description": "Take 1 true damage and deal 110% of attack as damage",
+    "tagWeights": {
+      "masochist": 3,
+      "aggro": 3
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -532,6 +548,10 @@
     "id": "plannification",
     "name": "Plannification",
     "description": "Take 1 true damage, recover 10% max health, and gain +5 attack for 4 turns",
+    "tagWeights": {
+      "masochist": 3,
+      "buffer": 4
+    },
     "type": "buff",
     "cooldown": 1,
     "effect": {
@@ -552,6 +572,10 @@
     "id": "construction_site",
     "name": "Construction Site",
     "description": "Deploy a domain for 2 turns. While active, shields cannot be gained and all shields are removed. At the end of each player's turn, they take 5 true damage.",
+    "tagWeights": {
+      "masochist": 6,
+      "control": 3
+    },
     "type": "domain",
     "cooldown": 4,
     "effect": {
@@ -564,6 +588,10 @@
     "id": "predation",
     "name": "Predation",
     "description": "Deal 80% attack, 70% defense, and 10% current health as damage",
+    "tagWeights": {
+      "burst": 2,
+      "aggro": 1
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -582,6 +610,11 @@
     "id": "devour",
     "name": "Devour",
     "description": "Every turn, becomes a random skill your opponent has. Upon use cast it twice.",
+    "tagWeights": {
+      "control": 4,
+      "burst": 3,
+      "gambler": 2
+    },
     "type": "utility",
     "cooldown": 2,
     "effect": {
@@ -593,6 +626,11 @@
     "id": "rimuru_stance",
     "name": "Predator Stance",
     "description": "Enter a defensive stance for 2 enemy turns. While active, gain +4 defense and recover 6 health at the start of your turn.",
+    "tagWeights": {
+      "control": 2,
+      "sustain": 4,
+      "tank": 3
+    },
     "type": "stance",
     "cooldown": 3,
     "effect": {
@@ -607,6 +645,10 @@
     "id": "room_incision",
     "name": "Room: Incision",
     "description": "Deal 110% attack damage and recover 15% of max health",
+    "tagWeights": {
+      "aggro": 3,
+      "sustain": 4
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -622,6 +664,9 @@
     "id": "takt_breaker",
     "name": "Takt Breaker",
     "description": "Deal 80% of attack as damage, then deal 30% of the enemy's current health as damage.",
+    "tagWeights": {
+      "aggro": 4
+    },
     "type": "attack",
     "cooldown": 1,
     "effect": {
@@ -635,6 +680,9 @@
     "id": "room_domain",
     "name": "Room",
     "description": "Deploy ROOM for 2 turns. While active, enemy skills gain +1 cooldown. Only one domain can exist at a time.",
+    "tagWeights": {
+      "control": 7
+    },
     "type": "domain",
     "cooldown": 4,
     "effect": {
@@ -647,6 +695,10 @@
     "id": "shambles_precision",
     "name": "Shambles Precision",
     "description": "Remove the enemy's stance and deal 75% of attack as damage. If a stance was removed, this damage is true damage.",
+    "tagWeights": {
+      "aggro": 2,
+      "control": 3
+    },
     "type": "attack",
     "cooldown": 1,
     "effect": {
@@ -660,6 +712,9 @@
     "id": "slap",
     "name": "Slap",
     "description": "Deal 30% of attack as damage and recover 8% of max health",
+    "tagWeights": {
+      "sustain": 3
+    },
     "type": "recovery",
     "cooldown": 0,
     "effect": {
@@ -675,6 +730,10 @@
     "id": "endure",
     "name": "Endure",
     "description": "Gain +5 defense for 3 turns",
+    "tagWeights": {
+      "tank": 3,
+      "buffer": 2
+    },
     "type": "buff",
     "cooldown": 2,
     "effect": {
@@ -690,6 +749,10 @@
     "id": "grit",
     "name": "Grit",
     "description": "Enter a stance that stores all damage you take. Use again to end the stance and deal 50% of stored damage as true damage.",
+    "tagWeights": {
+      "burst": 1,
+      "punisher": 5
+    },
     "type": "stance",
     "cooldown": 1,
     "effect": {
@@ -771,6 +834,10 @@
     "id": "chen_dragon_strike",
     "name": "Dragon Strike",
     "description": "Deal 110% of attack as damage. Cooldown reduction applied to this skill grants it +15% of attack. If it was applied 3 or more times also gain +3 defense permanently.",
+    "tagWeights": {
+      "burst": 3,
+      "aggro": 2
+    },
     "type": "attack",
     "cooldown": 3,
     "cooldownReductionBuff": {
@@ -792,6 +859,9 @@
     "id": "chen_piercing_assault",
     "name": "Piercing Assault",
     "description": "Deal 90% of attack as damage. If another one of your skills has at least 3 cooldown reduction stacks, remove enemy shield before dealing damage.",
+    "tagWeights": {
+      "aggro": 4
+    },
     "type": "attack",
     "cooldown": 1,
     "effect": {
@@ -806,6 +876,10 @@
     "id": "chen_tactical_reduction",
     "name": "Tactical Reduction",
     "description": "Apply 1 cooldown reduction to a random other skill and deal 20% of attack as true damage.",
+    "tagWeights": {
+      "aggro": 2,
+      "burst": 1
+    },
     "type": "utility",
     "cooldown": 2,
     "effect": {
@@ -852,6 +926,10 @@
     "id": "gojo_strike",
     "name": "Strike",
     "description": "Deal 100% of attack as damage. If Limitless Dominion is active, opponent recovers 25% max health instead",
+    "tagWeights": {
+      "aggro": 4,
+      "control": 1
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -871,6 +949,10 @@
     "id": "infinity_rebound",
     "name": "Infinity Rebound",
     "description": "Enter a stance for 3 enemy turns. While stance is active, when you take damage from opposing skills, deal that much damage to opponent then recovers opponent for half the amount. Take is replaced by recover and vice versa if Limitless Dominion is active.",
+    "tagWeights": {
+      "sustain": 2,
+      "counter": 4
+    },
     "type": "stance",
     "cooldown": 2,
     "effect": {
@@ -884,6 +966,11 @@
     "id": "reversed_curse_technique",
     "name": "Reversed Curse Technique",
     "description": "Take 10 true damage, evade for 1 turn, and gain +3 ATK for 2 turns",
+    "tagWeights": {
+      "buffer": 2,
+      "masochist": 1,
+      "control": 2
+    },
     "type": "buff",
     "cooldown": 2,
     "effect": {
@@ -900,6 +987,10 @@
     "id": "darling_bite",
     "name": "Darling Bite",
     "description": "Deal 95% of attack as damage and apply Kiss Mark for 4 turns. While Kiss Mark is active, healing received by the target is stored.",
+    "tagWeights": {
+      "parasite": 5,
+      "aggro": 2
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -914,6 +1005,10 @@
     "id": "heartbreak_harvest",
     "name": "Heartbreak Harvest",
     "description": "Recover health equal to your current Heartbreak.",
+    "tagWeights": {
+      "sustain": 4,
+      "scaler": 2
+    },
     "type": "recovery",
     "cooldown": 3,
     "effect": {
@@ -926,6 +1021,10 @@
     "id": "dont_hurt_me_baby",
     "name": "Don't Hurt Me Baby",
     "description": "Enter a stance for 3 turns. When taking damage from an enemy skill, gain twice the Heartbreak and counterattack for (1% per Heartbreak) of attack.",
+    "tagWeights": {
+      "scaler": 5,
+      "counter": 5
+    },
     "type": "stance",
     "cooldown": 2,
     "effect": {
@@ -941,6 +1040,11 @@
     "id": "unrivaled_love",
     "name": "Unrivaled Love",
     "description": "Evade for 1 turn and opponent recovers 12 health",
+    "tagWeights": {
+      "broker": 2,
+      "control": 2,
+      "buffer": 2
+    },
     "type": "buff",
     "cooldown": 2,
     "effect": {
@@ -968,6 +1072,10 @@
     "id": "ed_rocket_punch",
     "name": "Rocket Punch",
     "description": "Deal 95% of attack as damage and generate 20 Heat.",
+    "tagWeights": {
+      "aggro": 5,
+      "berserker": 5
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -983,6 +1091,10 @@
     "id": "ed_coolant_vent",
     "name": "Coolant Vent",
     "description": "Generate 25 Heat then restore health as much Heat as possible by venting Heat (1 health per Heat vented).",
+    "tagWeights": {
+      "sustain": 4,
+      "control": 3
+    },
     "type": "recovery",
     "cooldown": 2,
     "effect": {
@@ -997,6 +1109,10 @@
     "id": "equivalent_exchange",
     "name": "Equivalent Exchange",
     "description": "Enter a stance for 2 enemy turns. When taking damage from an enemy skill, all players gain 1 Heat, then counter for 80% of damage taken.",
+    "tagWeights": {
+      "counter": 7,
+      "berserker": 1
+    },
     "type": "stance",
     "cooldown": 2,
     "effect": {
@@ -1013,6 +1129,10 @@
     "id": "alchemy",
     "name": "Alchemy",
     "description": "Deploy a domain for 4 turns. While active, whenever a player uses a skill, both players gain 5 Heat.",
+    "tagWeights": {
+      "control": 3,
+      "berserker": 2
+    },
     "type": "domain",
     "cooldown": 4,
     "effect": {
@@ -1040,6 +1160,9 @@
     "id": "naruto_yang_strike",
     "name": "Yang Strike",
     "description": "Deal (90% + 6% per Balance) of attack as damage. (Balance ranges from -3 to +3)",
+    "tagWeights": {
+      "aggro": 3
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -1055,6 +1178,10 @@
     "id": "naruto_yang_meteor_rain",
     "name": "Yang Meteor Rain",
     "description": "Deal 80% of attack as damage. Repeat this effect for each Balance.",
+    "tagWeights": {
+      "aggro": 5,
+      "burst": 4
+    },
     "type": "attack",
     "cooldown": 2,
     "effect": {
@@ -1071,6 +1198,11 @@
     "id": "naruto_yin_guard",
     "name": "Yin Guard",
     "description": "Recover 16% of max health and deal (80% - 6% per Balance) of attack as damage.",
+    "tagWeights": {
+      "control": 3,
+      "sustain": 2,
+      "aggro": 2
+    },
     "type": "recovery",
     "cooldown": 0,
     "effect": {
@@ -1088,6 +1220,10 @@
     "id": "naruto_yin_serenity",
     "name": "Yin Serenity",
     "description": "Enter a stance for 2 turns. While active, when taking damage, create a shield equal to 50% of the damage taken.",
+    "tagWeights": {
+      "tank": 2,
+      "control": 3
+    },
     "type": "stance",
     "cooldown": 1,
     "effect": {
@@ -1128,6 +1264,10 @@
     "id": "frieren_minor_utility",
     "name": "Minor Utility Spell",
     "description": "Deal 75% of attack as damage. Gains a bonus effect based on your opponent's last skill type used.",
+    "tagWeights": {
+      "aggro": 2,
+      "control": 5
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -1148,6 +1288,10 @@
     "id": "frieren_copycat_glyph",
     "name": "Copycat Glyph",
     "description": "Your next Minor Utility Spell triggers twice. After each use, increase this effect by 1 (up to the number of pages) and cooldown by 1.",
+    "tagWeights": {
+      "burst": 5,
+      "aggro": 1
+    },
     "type": "utility",
     "cooldown": 1,
     "effect": {
@@ -1160,6 +1304,10 @@
     "id": "frieren_rotating_page",
     "name": "Spell Draft",
     "description": "Adds 1 random Page and triggers its effect. Changes each turn.",
+    "tagWeights": {
+      "control": 6,
+      "gambler": 3
+    },
     "type": "utility",
     "cooldown": 1,
     "effect": {
@@ -1184,6 +1332,9 @@
     "id": "naofumi_shield_bash",
     "name": "Shield Bash",
     "description": "Deal 125% of defense as damage.",
+    "tagWeights": {
+      "aggro": 2
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -1197,6 +1348,10 @@
     "id": "naofumi_defensive_stance",
     "name": "Defensive Stance",
     "description": "Enter a stance for 2 turns and reduce damage taken by 30%.",
+    "tagWeights": {
+      "tank": 3,
+      "control": 1
+    },
     "type": "stance",
     "cooldown": 2,
     "effect": {
@@ -1250,6 +1405,11 @@
     "id": "yato_teleportation",
     "name": "Teleportation",
     "description": "Reduce the next attack skill damage to 0. Gain a buff which prevents true damage for 3 turns.",
+    "tagWeights": {
+      "control": 2,
+      "buffer": 2,
+      "tank": 3
+    },
     "type": "utility",
     "cooldown": 2,
     "effect": {
@@ -1262,6 +1422,10 @@
     "id": "yato_divine_possession",
     "name": "Divine Possession",
     "description": "Remove 1 stack of Immortality. Once your last stack of Immortality is removed, this skill becomes Last Strike.",
+    "tagWeights": {
+      "aggro": 2,
+      "burst": 2
+    },
     "type": "utility",
     "cooldown": 0,
     "effect": {
@@ -1286,6 +1450,9 @@
     "id": "yato_normal_strike",
     "name": "Normal Strike",
     "description": "Deal 100% of attack as damage.",
+    "tagWeights": {
+      "aggro": 3
+    },
     "type": "attack",
     "cooldown": 0,
     "effect": {
@@ -1300,6 +1467,10 @@
     "id": "kaito_crazy_slots",
     "name": "Crazy Slots",
     "description": "Get one of 9 weapons.",
+    "tagWeights": {
+      "control": 3,
+      "gambler": 6
+    },
     "type": "utility",
     "cooldown": 0,
     "effect": {
@@ -1311,6 +1482,12 @@
     "id": "kaito_price_of_power",
     "name": "Price of Power",
     "description": "Recover 5% of max health, gain 5 shield and obtain one new restriction.",
+    "tagWeights": {
+      "sustain": 3,
+      "masochist": 3,
+      "buffer": 1,
+      "tank": 2
+    },
     "type": "utility",
     "cooldown": 1,
     "effect": {

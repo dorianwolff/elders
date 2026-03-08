@@ -197,6 +197,53 @@
     gap: 1rem;
 }
 
+.precombat-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.precombat-tags {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.22);
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+}
+
+.tag-pill-aggro { border-color: rgba(255, 107, 107, 0.55); background: rgba(255, 107, 107, 0.12); }
+.tag-pill-control { border-color: rgba(120, 180, 255, 0.55); background: rgba(120, 180, 255, 0.12); }
+.tag-pill-scaler { border-color: rgba(160, 120, 255, 0.55); background: rgba(160, 120, 255, 0.12); }
+
+.tag-pill-bruiser { border-color: rgba(255, 200, 120, 0.55); background: rgba(255, 200, 120, 0.12); }
+.tag-pill-tank { border-color: rgba(120, 255, 210, 0.55); background: rgba(120, 255, 210, 0.10); }
+.tag-pill-buffer { border-color: rgba(120, 255, 140, 0.55); background: rgba(120, 255, 140, 0.10); }
+.tag-pill-counter { border-color: rgba(255, 160, 230, 0.55); background: rgba(255, 160, 230, 0.10); }
+.tag-pill-sustain { border-color: rgba(120, 255, 240, 0.55); background: rgba(120, 255, 240, 0.10); }
+.tag-pill-punisher { border-color: rgba(255, 140, 120, 0.55); background: rgba(255, 140, 120, 0.10); }
+.tag-pill-broker { border-color: rgba(255, 235, 120, 0.55); background: rgba(255, 235, 120, 0.10); }
+.tag-pill-parasite { border-color: rgba(160, 255, 120, 0.55); background: rgba(160, 255, 120, 0.10); }
+.tag-pill-berserker { border-color: rgba(255, 120, 120, 0.65); background: rgba(255, 120, 120, 0.14); }
+.tag-pill-burst { border-color: rgba(255, 120, 220, 0.55); background: rgba(255, 120, 220, 0.10); }
+.tag-pill-masochist { border-color: rgba(200, 200, 200, 0.55); background: rgba(200, 200, 200, 0.10); }
+.tag-pill-gambler { border-color: rgba(255, 215, 0, 0.60); background: rgba(255, 215, 0, 0.10); }
+
 .precombat-name {
     font-size: 1.6rem;
     font-weight: 900;

@@ -65,7 +65,10 @@ class MenuPage extends BasePage {
                             </div>
                             <div class="precombat-profile-stats">
                                 <div class="precombat-name-row">
-                                    <div class="precombat-name" id="precombat-name"></div>
+                                    <div class="precombat-name-wrap">
+                                        <div class="precombat-name" id="precombat-name"></div>
+                                        <div class="precombat-tags" id="precombat-tags"></div>
+                                    </div>
                                     <div class="precombat-meta">Meta: <span id="precombat-meta"></span></div>
                                 </div>
                                 <div class="precombat-stats-grid">
@@ -284,6 +287,52 @@ class MenuPage extends BasePage {
                     selectedCard.classList.add('selected');
                 }
             }
+        }
+    }
+
+    renderPrecombatTags(character) {
+        const root = this.querySelector('#precombat-tags');
+        if (!root) return;
+        root.innerHTML = '';
+
+        if (!character || !window.PrecombatTags || typeof window.PrecombatTags.computePrecombatTags !== 'function') {
+            return;
+        }
+
+        const isKaitoWeaponPreview = character.id === 'kaito' && this.kaitoFormPreviewWeaponKey;
+        const kaitoPreviewSkills = isKaitoWeaponPreview && Array.isArray(this.kaitoFormPreviewSkills)
+            ? this.kaitoFormPreviewSkills.filter(Boolean)
+            : [];
+
+        const isNaofumiSoulPreview = character.id === 'naofumi_iwatani'
+            && this.naofumiShieldPreviewKey === 'soul_eater'
+            && Array.isArray(this.naofumiShieldPreviewSkills);
+        const naofumiPreviewSkills = isNaofumiSoulPreview
+            ? this.naofumiShieldPreviewSkills.filter(Boolean)
+            : [];
+
+        const baseSkills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+        const skillPool = isKaitoWeaponPreview
+            ? kaitoPreviewSkills
+            : (isNaofumiSoulPreview ? naofumiPreviewSkills : baseSkills);
+
+        const selected = Array.isArray(this.selectedSkillIds) ? this.selectedSkillIds : [];
+        const selectedSkills = skillPool.filter(s => s && selected.includes(s.id));
+
+        const tags = window.PrecombatTags.computePrecombatTags({
+            passive: character.passive,
+            selectedSkills
+        });
+
+        if (!Array.isArray(tags) || tags.length === 0) return;
+
+        for (const tag of tags.slice(0, 2)) {
+            const key = String(tag || '').toLowerCase();
+            if (!key) continue;
+            const pill = document.createElement('span');
+            pill.className = `tag-pill tag-pill-${key}`;
+            pill.textContent = key.replace(/_/g, ' ');
+            root.appendChild(pill);
         }
     }
 
@@ -829,6 +878,8 @@ class MenuPage extends BasePage {
 
         this.updateElement('#precombat-name', character.name);
         this.updateElement('#precombat-meta', character.metaPoints);
+
+        this.renderPrecombatTags(character);
         {
             const hpDelta = this.getItemStatDelta('health');
             const atkDelta = this.getItemStatDelta('attack');

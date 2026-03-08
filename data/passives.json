@@ -3,6 +3,11 @@
     "id": "development",
     "name": "Development",
     "description": "Each time Lloyd takes damage, gain 1 Build stack. Each stack grants +1 attack and +1 defense. At 10 stacks, lose all stacks and gain Ultimate.",
+    "tagWeights": {
+      "scaler": 10,
+      "punisher": 8,
+      "masochist": 1
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "buildStacks",
@@ -28,6 +33,9 @@
     "id": "gluttony",
     "name": "Gluttony",
     "description": "Each time Rimuru deals damage, gain 1 Experience stack. Experience stacks permanently grant +1 attack, +1 defense, and +1 max health. When reaching 10 Experience stacks, convert 10 Experience into 1 Raphael stack and gain Ultimate. Raphael stacks grant the same bonuses as 10 Experience stacks and cannot be removed.",
+    "tagWeights": {
+      "scaler": 10
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "experienceStacks",
@@ -80,6 +88,10 @@
     "id": "room_surgeon",
     "name": "Room Surgeon",
     "description": "When Law deals damage, recover 5% of max health. Ultimate becomes available after recovering 80 total health. Using Ultimate resets recovery count to 0.",
+    "tagWeights": {
+      "sustain": 10,
+      "punisher": 5
+    },
     "mission": {
       "type": "total_healing_done",
       "value": 80,
@@ -98,6 +110,11 @@
     "id": "push_the_limits",
     "name": "Push The Limits",
     "description": "Each time Saitama takes damage, gain 1 Annoyed stack. Each stack grants +1 attack. At 7 stacks, Ultimate becomes available. Annoyed stacks are lost when transforming.",
+    "tagWeights": {
+      "scaler": 8,
+      "sustain": 1,
+      "burst": 3
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "annoyedStacks",
@@ -160,6 +177,11 @@
     "id": "automail_overclock",
     "name": "Overclocked Automail",
     "description": "Generate Heat with Automail attacks and vent it with coolant. Heat makes you stronger but unstable: every 5 Heat grants +1 true damage on your attacks, and every 10 Heat makes you take +1 true damage when you take damage. At 50 Heat, Ultimate becomes available. Upon taking lethal damage, revive once at 50% health in a weakened form.",
+    "tagWeights": {
+      "berserker": 5,
+      "aggro": 5,
+      "burst": 2
+    },
     "type": "dual_passive",
     "ultimate_condition": {
       "type": "stack_threshold",
@@ -189,6 +211,11 @@
     "id": "blossoming_emotion",
     "name": "Blossoming Emotion",
     "description": "At the start of each of your turns, your opponent recovers 10 health. Ultimate becomes available after your opponent recovers 50 health.",
+    "tagWeights": {
+      "broker": 5,
+      "punisher": 5,
+      "control": 3
+    },
     "mission": {
       "type": "total_healing_done",
       "value": 50,
@@ -206,6 +233,11 @@
     "id": "chen_melee_cooldown_master",
     "name": "Cooldown Mastery",
     "description": "Gain Ultimate at the start of battle. Each time you use a skill, reduce the cooldown of one of your other skills by 1 (or empower a skill that benefits from cooldown reduction).",
+    "tagWeights": {
+      "burst": 8,
+      "bruiser": 4,
+      "aggro": 2
+    },
     "alwaysUltimateReady": true,
     "effects": [
       {
@@ -224,12 +256,22 @@
     "id": "frost_resonance",
     "name": "Frost Resonance",
     "description": "Each time the opponent deals skill damage, they gain 1 Permafrost. At the start of your turn, if the opponent has at least 10 Permafrost, remove 10 and freeze them for 2 turns. Each time an opponent is frozen, gain 1 Frozen Queen stack. Once per game, when Emilia dies, rewind time to her last turn alive and redo it.",
+    "tagWeights": {
+      "control": 10,
+      "burst": 8,
+      "sustain": 1
+    },
     "effects": []
   },
   "limited_immortality": {
     "id": "limited_immortality",
     "name": "Limited Immortality",
     "description": "Yato starts with 9 stacks of Immortality. Each time he would take fatal damage, remove one stack instead. Once the last stack is removed, Yato recovers 8% of max health. Every third stack of Immortality Yato loses, Yato will gain his Ultimate.",
+    "tagWeights": {
+      "burst": 7,
+      "scaler": 2,
+      "aggro": 1
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "yatoUltCharge",
@@ -252,6 +294,11 @@
     "id": "kiss_of_death_passive",
     "name": "Partner Killer",
     "description": "Gain Heartbreak based on your opponent's actions. Heartbreak is capped at 100. At 66 Heartbreak, Ultimate becomes available.",
+    "tagWeights": {
+      "parasite": 4,
+      "scaler": 2,
+      "burst": 3
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "heartbreak",
@@ -290,6 +337,11 @@
     "id": "naruto_natural_energy",
     "name": "Natural Energy Balance",
     "description": "Balance ranges from -3 to +3. Yang skills shifts Balance by +1, Yin skills shifts Balance by -1. Ultimate unlocks when you reach either extremity.",
+    "tagWeights": {
+      "control": 7,
+      "buffer": 4,
+      "burst": 2
+    },
     "mission": {
       "type": "counter_extremity",
       "counter": "balance",
@@ -378,6 +430,10 @@
     "id": "spell_archive",
     "name": "Spell Archive",
     "description": "Whenever your opponent uses a skill, record its type as a Page (max 5). Pages empower your spells. At maximum Pages, Ultimate becomes available.",
+    "tagWeights": {
+      "control": 10,
+      "burst": 6
+    },
     "mission": {
       "type": "stack_threshold",
       "counter": "archivePages",
@@ -402,12 +458,25 @@
     "id": "naofumi_shield_rotation",
     "name": "Shield Rotation",
     "description": "At the start of each of your turns, switch to a new shield (each shield appears once). Your passive is replaced by the current shield. At the 7th shield, rotation stops.",
+    "tagWeights": {
+      "scaler": 3,
+      "control": 4,
+      "burst": 2,
+      "tank": 3
+    },
     "effects": []
   },
   "kaito_nen_restrictions": {
     "id": "kaito_nen_restrictions",
     "name": "Nen Restrictions",
     "description": "Kaito's damaging skills are enhanced per restriction. He starts with one restriction. Kaito loses his weapon after using 2 skills.",
+    "tagWeights": {
+      "control": 8,
+      "sustain": 2,
+      "tank": 1,
+      "aggro": 3,
+      "burst": 4
+    },
     "effects": []
   }
 }
