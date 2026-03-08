@@ -75,6 +75,43 @@
         return window.supabaseClient;
     }
 
+    function clearOAuthParamsFromUrl() {
+        try {
+            if (!window.location || !window.history || typeof window.history.replaceState !== 'function') return;
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+
+            const hasOauthParams = params.has('code')
+                || params.has('error')
+                || params.has('error_code')
+                || params.has('error_description');
+            if (!hasOauthParams) return;
+
+            params.delete('code');
+            params.delete('error');
+            params.delete('error_code');
+            params.delete('error_description');
+            url.search = params.toString() ? `?${params.toString()}` : '';
+
+            // Keep any hash route (e.g. #menu) intact.
+            window.history.replaceState({}, '', url.toString());
+        } catch (e) {}
+    }
+
+    function getOAuthErrorFromUrl() {
+        try {
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+            const error = params.get('error');
+            const errorCode = params.get('error_code');
+            const errorDescription = params.get('error_description');
+            if (!error && !errorCode && !errorDescription) return null;
+            return { error, errorCode, errorDescription };
+        } catch (e) {
+            return null;
+        }
+    }
+
     function getOrAssignDefaultAvatar(userId) {
         if (!userId) return null;
         const key = AVATAR_KEY_PREFIX + String(userId);
@@ -140,7 +177,7 @@
         const client = ensureSupabaseClient();
         if (!client) return;
 
-        const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}#menu`;
+        const redirectTo = `${window.location.origin}${window.location.pathname}#menu`;
         await window.supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo }
@@ -174,11 +211,22 @@
         getUserDisplay,
         signInWithGoogle,
         signOut,
-        onAuthStateChange
+        onAuthStateChange,
+        clearOAuthParamsFromUrl,
+        getOAuthErrorFromUrl
     };
 
     // Create eagerly so OAuth redirects are handled ASAP on page load.
     try {
         ensureSupabaseClient();
+    } catch (e) {}
+
+    // If Supabase redirected back with an OAuth error, clear query params so refreshing doesn't keep the app
+    // stuck on an error URL. (User can retry sign-in cleanly.)
+    try {
+        const err = getOAuthErrorFromUrl();
+        if (err) {
+            clearOAuthParamsFromUrl();
+        }
     } catch (e) {}
 })();
