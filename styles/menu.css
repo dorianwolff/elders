@@ -34,6 +34,9 @@
 .character-selection {
     flex: 1;
     margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .menu-view {
@@ -56,7 +59,10 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
-    overflow: auto;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.75rem;
 }
 

@@ -26,6 +26,14 @@ class MenuPage extends BasePage {
         this.kaitoFormPreviewWeaponName = null;
         this.kaitoFormPreviewSkills = null;
         this.kaitoFormPreviewLoadToken = 0;
+
+        this.naofumiShieldPreviewIndex = 0;
+        this.naofumiShieldPreviewKey = null;
+        this.naofumiShieldPreviewName = null;
+        this.naofumiShieldPreviewSkills = null;
+        this.naofumiShieldPreviewLoadToken = 0;
+        this.naofumiShieldPreviewSequence = null;
+        this.naofumiShieldPreviewPrevSelectedSkillIds = null;
     }
 
     getHTML() {
@@ -104,6 +112,12 @@ class MenuPage extends BasePage {
                                 <div class="kit-card-title">Weapons</div>
                                 <div class="kaito-form-row" id="kaito-form-row"></div>
                                 <div class="kaito-form-preview" id="kaito-form-preview" style="display:none"></div>
+                            </div>
+
+                            <div class="kit-card kit-naofumi-shields" id="precombat-naofumi-shields" style="display:none">
+                                <div class="kit-card-title">Shields</div>
+                                <div class="kaito-form-row" id="naofumi-shield-row"></div>
+                                <div class="kaito-form-preview" id="naofumi-shield-preview" style="display:none"></div>
                             </div>
 
                             <div class="kit-card kit-passive">
@@ -395,6 +409,44 @@ class MenuPage extends BasePage {
                 'assets/animations/frieren/frieren_idle_2.png'
             ];
         } else if (id === 'naofumi_iwatani') {
+            const key = typeof this.naofumiShieldPreviewKey === 'string' ? this.naofumiShieldPreviewKey : null;
+
+            if (key === 'leaf') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_leaf_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_leaf_2.png'
+                ];
+            }
+            if (key === 'chimera') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_chimera_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_chimera_2.png'
+                ];
+            }
+            if (key === 'transformation') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_transformation_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_transformation_2.png'
+                ];
+            }
+            if (key === 'slime') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_slime_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_slime_2.png'
+                ];
+            }
+            if (key === 'prison') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_prison_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_prison_2.png'
+                ];
+            }
+            if (key === 'void' || key === 'soul_eater') {
+                return [
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_void_1.png',
+                    'assets/animations/naofumi_isawani/naofumi_iwatani_idle_void_2.png'
+                ];
+            }
             return [
                 'assets/animations/naofumi_isawani/naofumi_iwatani_idle_1.png',
                 'assets/animations/naofumi_isawani/naofumi_iwatani_idle_2.png'
@@ -759,6 +811,7 @@ class MenuPage extends BasePage {
     renderPrecombatUI(character) {
         if (!character) return;
 
+        this.renderNaofumiShieldPreview(character);
         this.renderKaitoFormPreview(character);
 
         const transformBtn = this.querySelector('#precombat-transform-toggle');
@@ -793,13 +846,42 @@ class MenuPage extends BasePage {
         }
 
         {
-            const passiveName = character.passive?.name || '';
+            let passiveName = character.passive?.name || '';
+            let passiveDesc = character.passive?.description || '';
+
             const showWeapon = character.id === 'kaito' && this.kaitoFormPreviewWeaponName;
-            const extra = showWeapon
+            const weaponExtra = showWeapon
                 ? ` <span class="kaito-current-weapon-inline">Current weapon : ${this.kaitoFormPreviewWeaponName}</span>`
                 : '';
-            this.updateElement('#precombat-passive-name', `${passiveName}${extra}`);
-            this.updateElement('#precombat-passive-desc', character.passive?.description || '');
+
+            if (character && character.id === 'naofumi_iwatani') {
+                const key = typeof this.naofumiShieldPreviewKey === 'string' ? this.naofumiShieldPreviewKey : null;
+                if (key === 'legendary') {
+                    passiveName = 'Legendary Shield';
+                    passiveDesc = 'At the start of battle, gain +7 defense permanently.';
+                } else if (key === 'leaf') {
+                    passiveName = 'Leaf Shield';
+                    passiveDesc = 'At the start of your turn, heal 10 health and cleanse yourself.';
+                } else if (key === 'chimera') {
+                    passiveName = 'Chimera Shield';
+                    passiveDesc = "When taking damage from an enemy skill, deal damage to opponent's attack as true damage.";
+                } else if (key === 'prison') {
+                    passiveName = 'Shield Prison';
+                    passiveDesc = 'At the start of your turn, stun the opponent for 1 turn and deal 10 damage which bypasses defense.';
+                } else if (key === 'slime') {
+                    passiveName = 'Slime Shield';
+                    passiveDesc = 'This turn, your attack skills are triggered twice.';
+                } else if (key === 'soul_eater') {
+                    passiveName = 'Soul Eater Shield';
+                    passiveDesc = 'Your skills become Undead Control and Soul Eat for this turn. When using a skill recover 3% of max health.';
+                } else if (key === 'transformation') {
+                    passiveName = 'Transformation Shield';
+                    passiveDesc = 'Gain access to your ultimate and your skills ignore defense. At the end of your turn, take escalating true damage.';
+                }
+            }
+
+            this.updateElement('#precombat-passive-name', `${passiveName}${weaponExtra}`);
+            this.updateElement('#precombat-passive-desc', passiveDesc);
         }
 
         {
@@ -837,10 +919,17 @@ class MenuPage extends BasePage {
             }
 
             const isKaitoWeaponPreview = character.id === 'kaito' && this.kaitoFormPreviewWeaponKey;
-            const previewSkills = isKaitoWeaponPreview && Array.isArray(this.kaitoFormPreviewSkills)
+            const kaitoPreviewSkills = isKaitoWeaponPreview && Array.isArray(this.kaitoFormPreviewSkills)
                 ? this.kaitoFormPreviewSkills.filter(Boolean)
                 : [];
-            const skills = isKaitoWeaponPreview ? previewSkills : (Array.isArray(character.skills) ? character.skills.filter(Boolean) : []);
+
+            const isNaofumiSoulPreview = character.id === 'naofumi_iwatani' && this.naofumiShieldPreviewKey === 'soul_eater' && Array.isArray(this.naofumiShieldPreviewSkills);
+            const naofumiPreviewSkills = isNaofumiSoulPreview
+                ? this.naofumiShieldPreviewSkills.filter(Boolean)
+                : [];
+
+            const baseSkills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+            const skills = isKaitoWeaponPreview ? kaitoPreviewSkills : (isNaofumiSoulPreview ? naofumiPreviewSkills : baseSkills);
             const slots = this.querySelector('#skill-slots');
             if (slots) {
                 slots.innerHTML = '';
@@ -874,7 +963,7 @@ class MenuPage extends BasePage {
                     const selected = this.selectedSkillIds.includes(skill.id);
                     const card = document.createElement('button');
                     card.type = 'button';
-                    const locked = Boolean(isKaitoWeaponPreview);
+                    const locked = Boolean(isKaitoWeaponPreview || isNaofumiSoulPreview);
                     card.className = `skill-pick ${selected || locked ? 'is-selected' : ''}`;
                     if (locked) {
                         card.disabled = true;
@@ -899,6 +988,133 @@ class MenuPage extends BasePage {
                 });
             }
         }
+    }
+
+    buildNaofumiShieldPreviewSequence() {
+        // Deterministic preview order (matches intended in-battle rotation):
+        // 1 Legendary -> 2 Leaf -> 3 Chimera -> 4 Prison -> 5 Slime -> 6 Soul Eater -> 7 Transformation
+        return ['legendary', 'leaf', 'chimera', 'prison', 'slime', 'soul_eater', 'transformation'];
+    }
+
+    renderNaofumiShieldPreview(character) {
+        const root = this.querySelector('#precombat-naofumi-shields');
+        if (!root) return;
+
+        if (!character || character.id !== 'naofumi_iwatani') {
+            root.style.display = 'none';
+            this.naofumiShieldPreviewKey = null;
+            this.naofumiShieldPreviewName = null;
+            this.naofumiShieldPreviewSkills = null;
+            this.naofumiShieldPreviewSequence = null;
+            return;
+        }
+
+        root.style.display = '';
+
+        if (!Array.isArray(this.naofumiShieldPreviewSequence) || this.naofumiShieldPreviewSequence.length !== 7) {
+            this.naofumiShieldPreviewSequence = this.buildNaofumiShieldPreviewSequence();
+        }
+
+        if (!Number.isFinite(Number(this.naofumiShieldPreviewIndex))) {
+            this.naofumiShieldPreviewIndex = 0;
+        }
+        this.naofumiShieldPreviewIndex = Math.max(
+            0,
+            Math.min(this.naofumiShieldPreviewSequence.length - 1, Math.floor(this.naofumiShieldPreviewIndex))
+        );
+
+        const labelMap = {
+            legendary: '1',
+            leaf: '2',
+            chimera: '3',
+            prison: '4',
+            slime: '5',
+            soul_eater: '6',
+            transformation: '7'
+        };
+        const nameMap = {
+            legendary: 'Legendary Shield',
+            leaf: 'Leaf Shield',
+            chimera: 'Chimera Shield',
+            prison: 'Prison Shield',
+            slime: 'Slime Shield',
+            soul_eater: 'Soul Eater Shield',
+            transformation: 'Transformation Shield'
+        };
+
+        const row = this.querySelector('#naofumi-shield-row');
+        if (row) {
+            row.innerHTML = '';
+            for (let i = 0; i < this.naofumiShieldPreviewSequence.length; i++) {
+                const key = this.naofumiShieldPreviewSequence[i];
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `kaito-form-btn ${i === this.naofumiShieldPreviewIndex ? 'is-selected' : ''}`;
+                btn.textContent = labelMap[key] || String(i + 1);
+                btn.title = nameMap[key] || key;
+                btn.addEventListener('click', () => {
+                    this.naofumiShieldPreviewIndex = i;
+                    this.renderPrecombatUI(this.selectedCharacter);
+                    this.startIdleSpriteAnimation(this.selectedCharacter);
+                });
+                row.appendChild(btn);
+            }
+        }
+
+        const key = this.naofumiShieldPreviewSequence[this.naofumiShieldPreviewIndex];
+        const prevKey = this.naofumiShieldPreviewKey;
+        this.naofumiShieldPreviewKey = key;
+        this.naofumiShieldPreviewName = nameMap[key] || 'Shield';
+
+        const previewWrap = this.querySelector('#naofumi-shield-preview');
+        if (previewWrap) {
+            previewWrap.style.display = 'none';
+        }
+
+        // If we are leaving Soul Eater preview, restore the player's previous base skill selections.
+        if (prevKey === 'soul_eater' && key !== 'soul_eater') {
+            if (Array.isArray(this.naofumiShieldPreviewPrevSelectedSkillIds) && this.naofumiShieldPreviewPrevSelectedSkillIds.length > 0) {
+                this.selectedSkillIds = this.naofumiShieldPreviewPrevSelectedSkillIds.slice(0, 2);
+            }
+            this.naofumiShieldPreviewPrevSelectedSkillIds = null;
+        }
+
+        if (key !== 'soul_eater') {
+            this.naofumiShieldPreviewSkills = null;
+            return;
+        }
+
+        // Load the special Soul Eater kit skills for preview.
+        if (prevKey === key && Array.isArray(this.naofumiShieldPreviewSkills) && this.naofumiShieldPreviewSkills.length > 0) {
+            return;
+        }
+
+        this.naofumiShieldPreviewSkills = null;
+
+        // Entering Soul Eater preview: remember the player's current base selections so we can restore
+        // them when they click a different shield.
+        if (prevKey !== 'soul_eater') {
+            this.naofumiShieldPreviewPrevSelectedSkillIds = Array.isArray(this.selectedSkillIds)
+                ? this.selectedSkillIds.slice(0, 2)
+                : [];
+        }
+        const loadToken = ++this.naofumiShieldPreviewLoadToken;
+        Promise.all([
+            this.characterSystem.getSkill('naofumi_soul_eat'),
+            this.characterSystem.getSkill('naofumi_undead_control')
+        ]).then((skills) => {
+            if (loadToken !== this.naofumiShieldPreviewLoadToken) return;
+            if (this.naofumiShieldPreviewKey !== 'soul_eater') return;
+            const ok = Array.isArray(skills) ? skills.filter(Boolean) : [];
+            this.naofumiShieldPreviewSkills = ok;
+
+            // Force-show the Soul shield kit (locked) in the precombat skill slots.
+            if (ok.length > 0) {
+                this.selectedSkillIds = ok.map(s => s && s.id).filter(Boolean).slice(0, 2);
+            }
+
+            this.renderPrecombatUI(this.selectedCharacter);
+        }).catch(() => {});
     }
 
     renderKaitoFormPreview(character) {
