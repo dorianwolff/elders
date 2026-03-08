@@ -10,6 +10,8 @@ class GameCoordinator {
         this.battleStartTime = null;
         this.lastActionResult = null;
 
+        this.matchStats = null;
+
         this._pendingGameEndWinner = null;
         this._gameEndNavigationStarted = false;
 
@@ -19,6 +21,33 @@ class GameCoordinator {
 
         this.battlePageReady = false;
         this.pendingUiUpdates = [];
+    }
+
+    resetMatchStats() {
+        this.matchStats = {
+            skillsUsed: 0,
+            damageDealt: 0,
+            healingDone: 0,
+            ultimateUsed: false
+        };
+    }
+
+    applyMatchStatsForAction({ isLocalActor, actionType, result }) {
+        if (!isLocalActor) return;
+        if (!this.matchStats) this.resetMatchStats();
+
+        const dmg = result && typeof result.damage === 'number' ? result.damage : 0;
+        const heal = result && typeof result.healing === 'number' ? result.healing : 0;
+
+        if (actionType === 'skill') {
+            this.matchStats.skillsUsed += 1;
+        }
+        if (actionType === 'ultimate') {
+            this.matchStats.ultimateUsed = true;
+        }
+
+        this.matchStats.damageDealt += Math.max(0, Math.floor(dmg));
+        this.matchStats.healingDone += Math.max(0, Math.floor(heal));
     }
 
     flushPendingUiUpdates() {
@@ -119,6 +148,12 @@ class GameCoordinator {
             const iAmActor = playerId === this.currentPlayerRole;
             const result = actionData && actionData.result ? actionData.result : null;
 
+            this.applyMatchStatsForAction({
+                isLocalActor: iAmActor,
+                actionType,
+                result
+            });
+
             if (result && result.stateSnapshot && typeof this.gameState.applyStateSnapshot === 'function') {
                 await this.gameState.applyStateSnapshot(result.stateSnapshot);
             } else if (!iAmActor) {
@@ -209,6 +244,8 @@ class GameCoordinator {
             this._lastSyncActionId = null;
             this.battlePageReady = false;
             if (Array.isArray(this.pendingUiUpdates)) this.pendingUiUpdates.length = 0;
+
+            this.resetMatchStats();
             
             this.gameState = new GameState();
             this.gameState.characterSystem = this.characterSystem;
@@ -293,6 +330,12 @@ class GameCoordinator {
                     _actionSource: 'local'
                 };
 
+                this.applyMatchStatsForAction({
+                    isLocalActor: true,
+                    actionType,
+                    result: actionData.result
+                });
+
                 const fallbackResultWithActionInfo = {
                     ...actionData.result,
                     actionType,
@@ -325,6 +368,12 @@ class GameCoordinator {
                     ultimateName: actionData.ultimateName,
                     _actionSource: 'local'
                 };
+
+                this.applyMatchStatsForAction({
+                    isLocalActor: true,
+                    actionType,
+                    result: actionData.result
+                });
                 this.updateGameUI(resultWithActionInfo);
                 this.lastActionResult = resultWithActionInfo;
 
@@ -525,7 +574,8 @@ class GameCoordinator {
                         playerCharacter: playerCharacter,
                         opponentCharacter: opponentCharacter,
                         turnCount: gameStateForPlayer.turnCount,
-                        battleDuration: durationString
+                        battleDuration: durationString,
+                        matchStats: this.matchStats ? { ...this.matchStats } : null
                     });
                 }
             }, 100);

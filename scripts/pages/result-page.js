@@ -9,76 +9,68 @@ class ResultPage extends BasePage {
     getHTML() {
         return `
             <div class="result-page">
-                <div class="result-header">
-                    <h1 class="result-title" id="result-title">Battle Complete</h1>
-                    <p class="result-subtitle" id="result-subtitle"></p>
-                </div>
-
                 <div class="result-content">
-                    <div class="battle-summary">
-                        <div class="summary-card">
-                            <h3>Battle Statistics</h3>
-                            <div class="stats-grid">
-                                <div class="stat-item">
-                                    <span class="stat-label">Battle Duration:</span>
-                                    <span class="stat-value" id="battle-duration">--</span>
+                    <div class="result-versus">
+                        <div class="result-avatar-block result-avatar-block--enemy">
+                            <div class="result-avatar-row">
+                                <div class="result-avatar result-avatar--enemy">
+                                    <img id="result-enemy-avatar" alt="Opponent character" />
                                 </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Total Turns:</span>
-                                    <span class="stat-value" id="total-turns">--</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Your Character:</span>
-                                    <span class="stat-value" id="your-character">--</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Opponent Character:</span>
-                                    <span class="stat-value" id="opponent-character">--</span>
+                                <div class="result-avatar-meta">
+                                    <div class="result-avatar-name" id="opponent-character">--</div>
+                                    <div class="result-outcome-tag result-outcome-tag--enemy" id="result-enemy-outcome-tag"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="summary-card">
-                            <h3>Your Performance</h3>
-                            <div class="performance-stats">
-                                <div class="performance-item">
-                                    <span class="performance-label">Skills Used:</span>
-                                    <span class="performance-value" id="skills-used">--</span>
+                        <div class="result-versus-center">
+                            <div class="result-versus-label">VS</div>
+                        </div>
+
+                        <div class="result-avatar-block result-avatar-block--you">
+                            <div class="result-avatar-row">
+                                <div class="result-avatar-meta">
+                                    <div class="result-avatar-name" id="your-character">--</div>
+                                    <div class="result-outcome-tag result-outcome-tag--you" id="result-your-outcome-tag"></div>
                                 </div>
-                                <div class="performance-item">
-                                    <span class="performance-label">Damage Dealt:</span>
-                                    <span class="performance-value" id="damage-dealt">--</span>
-                                </div>
-                                <div class="performance-item">
-                                    <span class="performance-label">Healing Done:</span>
-                                    <span class="performance-value" id="healing-done">--</span>
-                                </div>
-                                <div class="performance-item">
-                                    <span class="performance-label">Ultimate Used:</span>
-                                    <span class="performance-value" id="ultimate-used">--</span>
+                                <div class="result-avatar result-avatar--you">
+                                    <img id="result-your-avatar" alt="Your character" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="player-records">
-                        <h3>Your Records</h3>
-                        <div class="records-grid">
-                            <div class="record-item">
-                                <div class="record-number" id="games-played">0</div>
-                                <div class="record-label">Games Played</div>
+                    <div class="result-outcome">
+                        <div class="result-title" id="result-title">Battle Complete</div>
+                        <div class="result-subtitle" id="result-subtitle"></div>
+                    </div>
+
+                    <div class="result-cards">
+                        <div class="result-card">
+                            <div class="result-card-title">Battle Summary</div>
+                            <div class="result-stat-list">
+                                <div class="result-stat">
+                                    <div class="result-stat-label">Duration</div>
+                                    <div class="result-stat-value" id="battle-duration">--</div>
+                                </div>
+                                <div class="result-stat">
+                                    <div class="result-stat-label">Turns</div>
+                                    <div class="result-stat-value" id="total-turns">--</div>
+                                </div>
                             </div>
-                            <div class="record-item">
-                                <div class="record-number" id="games-won">0</div>
-                                <div class="record-label">Games Won</div>
-                            </div>
-                            <div class="record-item">
-                                <div class="record-number" id="games-lost">0</div>
-                                <div class="record-label">Games Lost</div>
-                            </div>
-                            <div class="record-item">
-                                <div class="record-number" id="win-rate">0%</div>
-                                <div class="record-label">Win Rate</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-card-title">Performance</div>
+                            <div class="result-stat-list">
+                                <div class="result-stat">
+                                    <div class="result-stat-label">Skills Used</div>
+                                    <div class="result-stat-value" id="skills-used">--</div>
+                                </div>
+                                <div class="result-stat">
+                                    <div class="result-stat-label">Damage Dealt</div>
+                                    <div class="result-stat-value" id="damage-dealt">--</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,7 +100,6 @@ class ResultPage extends BasePage {
         }
         
         this.dataManager = window.app.dataManager;
-        await this.loadPlayerStats();
     }
 
     async setResult(isWinner, winnerRole, gameData = null) {
@@ -117,15 +108,35 @@ class ResultPage extends BasePage {
         this.gameData = gameData;
         
         this.updateResultDisplay();
-        await this.updatePlayerStats();
-        await this.loadPlayerStats();
+
+        try {
+            if (window.EldersAnalytics && typeof window.EldersAnalytics.track === 'function') {
+                window.EldersAnalytics.track('match_end', {
+                    winnerRole,
+                    isWinner,
+                    battleDuration: gameData?.battleDuration || null,
+                    turnCount: gameData?.turnCount || null,
+                    playerCharacterId: gameData?.playerCharacter?.id || null,
+                    opponentCharacterId: gameData?.opponentCharacter?.id || null,
+                    matchStats: gameData?.matchStats || null
+                });
+            }
+        } catch (e) {}
     }
 
     updateResultDisplay() {
         const resultTitle = this.querySelector('#result-title');
         const resultSubtitle = this.querySelector('#result-subtitle');
-        
-        if (this.isWinner) {
+        const yourTag = this.querySelector('#result-your-outcome-tag');
+        const enemyTag = this.querySelector('#result-enemy-outcome-tag');
+
+        const isDraw = this.winnerRole === 'draw';
+
+        if (isDraw) {
+            resultTitle.textContent = 'Draw';
+            resultTitle.className = 'result-title draw';
+            resultSubtitle.textContent = "It's a draw.";
+        } else if (this.isWinner) {
             resultTitle.textContent = 'Victory!';
             resultTitle.className = 'result-title victory';
             resultSubtitle.textContent = 'Congratulations! You won the battle!';
@@ -134,6 +145,33 @@ class ResultPage extends BasePage {
             resultTitle.className = 'result-title defeat';
             resultSubtitle.textContent = 'Better luck next time!';
         }
+
+        try {
+            if (yourTag) {
+                if (isDraw) {
+                    yourTag.textContent = 'Draw';
+                    yourTag.className = 'result-outcome-tag result-outcome-tag--you is-draw';
+                } else if (this.isWinner) {
+                    yourTag.textContent = 'Victory';
+                    yourTag.className = 'result-outcome-tag result-outcome-tag--you is-win';
+                } else {
+                    yourTag.textContent = 'Defeat';
+                    yourTag.className = 'result-outcome-tag result-outcome-tag--you is-lose';
+                }
+            }
+            if (enemyTag) {
+                if (isDraw) {
+                    enemyTag.textContent = 'Draw';
+                    enemyTag.className = 'result-outcome-tag result-outcome-tag--enemy is-draw';
+                } else if (this.isWinner) {
+                    enemyTag.textContent = 'Defeat';
+                    enemyTag.className = 'result-outcome-tag result-outcome-tag--enemy is-lose';
+                } else {
+                    enemyTag.textContent = 'Victory';
+                    enemyTag.className = 'result-outcome-tag result-outcome-tag--enemy is-win';
+                }
+            }
+        } catch (e) {}
         
         // Update battle statistics with actual game data
         if (this.gameData) {
@@ -148,36 +186,40 @@ class ResultPage extends BasePage {
             this.updateElement('#your-character', 'Unknown');
             this.updateElement('#opponent-character', 'Unknown');
         }
-        
-        // Update performance statistics (placeholder values for now)
-        this.updateElement('#skills-used', '8');
-        this.updateElement('#damage-dealt', '245');
-        this.updateElement('#healing-done', '67');
-        this.updateElement('#ultimate-used', this.isWinner ? 'Yes' : 'No');
-    }
 
-    async updatePlayerStats() {
-        const currentStats = await this.dataManager.loadPlayerStats();
-        
-        const newStats = {
-            gamesPlayed: currentStats.gamesPlayed + 1,
-            gamesWon: currentStats.gamesWon + (this.isWinner ? 1 : 0),
-            gamesLost: currentStats.gamesLost + (this.isWinner ? 0 : 1)
-        };
-        
-        await this.dataManager.savePlayerStats(newStats);
-    }
+        try {
+            const yourAvatar = this.querySelector('#result-your-avatar');
+            const enemyAvatar = this.querySelector('#result-enemy-avatar');
 
-    async loadPlayerStats() {
-        const stats = await this.dataManager.loadPlayerStats();
+            const yourImg = this.gameData?.playerCharacter?.images?.[0]
+                ? `assets/final/${this.gameData.playerCharacter.images[0]}`
+                : null;
+            const enemyImg = this.gameData?.opponentCharacter?.images?.[0]
+                ? `assets/final/${this.gameData.opponentCharacter.images[0]}`
+                : null;
+
+            if (yourAvatar) {
+                yourAvatar.src = yourImg || 'assets/images/characters/placeholder.png';
+                yourAvatar.onerror = () => {
+                    yourAvatar.onerror = null;
+                    yourAvatar.src = 'assets/images/characters/placeholder.png';
+                };
+            }
+            if (enemyAvatar) {
+                enemyAvatar.src = enemyImg || 'assets/images/characters/placeholder.png';
+                enemyAvatar.onerror = () => {
+                    enemyAvatar.onerror = null;
+                    enemyAvatar.src = 'assets/images/characters/placeholder.png';
+                };
+            }
+        } catch (e) {}
         
-        this.updateElement('#games-played', stats.gamesPlayed);
-        this.updateElement('#games-won', stats.gamesWon);
-        this.updateElement('#games-lost', stats.gamesLost);
-        
-        const winRate = stats.gamesPlayed > 0 ? 
-            Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0;
-        this.updateElement('#win-rate', `${winRate}%`);
+        const stats = this.gameData && this.gameData.matchStats ? this.gameData.matchStats : null;
+        const skillsUsed = stats ? (Number(stats.skillsUsed) || 0) : 0;
+        const damageDealt = stats ? (Number(stats.damageDealt) || 0) : 0;
+
+        this.updateElement('#skills-used', String(skillsUsed));
+        this.updateElement('#damage-dealt', String(damageDealt));
     }
 
     async handlePlayAgain() {

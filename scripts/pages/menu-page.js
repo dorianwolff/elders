@@ -34,6 +34,129 @@ class MenuPage extends BasePage {
         this.naofumiShieldPreviewLoadToken = 0;
         this.naofumiShieldPreviewSequence = null;
         this.naofumiShieldPreviewPrevSelectedSkillIds = null;
+
+        this._authUnsubscribe = null;
+
+        this._loadoutFetchToken = 0;
+        this._loadoutSaveTimer = null;
+        this._loadoutTableMissing = false;
+    }
+
+    async getSignedInUserId() {
+        try {
+            if (!window.EldersAuth || typeof window.EldersAuth.getUserDisplay !== 'function') return null;
+            const state = await window.EldersAuth.getUserDisplay();
+            if (!state || !state.signedIn || !state.user || !state.user.id) return null;
+            return state.user.id;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    getSupabaseClientForAccount() {
+        try {
+            if (!window.EldersAuth || typeof window.EldersAuth.ensureSupabaseClient !== 'function') return null;
+            return window.EldersAuth.ensureSupabaseClient();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async fetchSavedSkillLoadout(characterId) {
+        try {
+            if (this._loadoutTableMissing) return null;
+            const userId = await this.getSignedInUserId();
+            if (!userId) return null;
+            if (!characterId) return null;
+            const client = this.getSupabaseClientForAccount();
+            if (!client) return null;
+
+            const res = await client
+                .from('character_skill_loadouts')
+                .select('skill_ids')
+                .eq('user_id', userId)
+                .eq('character_id', characterId)
+                .maybeSingle();
+
+            if (res && res.error && (res.error.code === 'PGRST116' || res.status === 404)) {
+                this._loadoutTableMissing = true;
+                return null;
+            }
+
+            const data = res && res.data ? res.data : null;
+            const ids = data && Array.isArray(data.skill_ids) ? data.skill_ids.filter(Boolean) : null;
+            if (!ids || ids.length === 0) return null;
+            return ids.slice(0, 2);
+        } catch (e) {
+            try {
+                if (e && (e.status === 404 || e.code === 'PGRST116')) {
+                    this._loadoutTableMissing = true;
+                }
+            } catch (err) {}
+            return null;
+        }
+    }
+
+    async saveSkillLoadout(characterId, skillIds) {
+        try {
+            if (this._loadoutTableMissing) return;
+            const userId = await this.getSignedInUserId();
+            if (!userId) return;
+            if (!characterId) return;
+            const client = this.getSupabaseClientForAccount();
+            if (!client) return;
+
+            const ids = Array.isArray(skillIds) ? skillIds.filter(Boolean).slice(0, 2) : [];
+            const res = await client
+                .from('character_skill_loadouts')
+                .upsert({
+                    user_id: userId,
+                    character_id: characterId,
+                    skill_ids: ids,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id,character_id' });
+
+            if (res && res.error && (res.error.code === 'PGRST116' || res.status === 404)) {
+                this._loadoutTableMissing = true;
+            }
+        } catch (e) {}
+    }
+
+    scheduleSaveSkillLoadout() {
+        try {
+            if (this._loadoutSaveTimer) clearTimeout(this._loadoutSaveTimer);
+        } catch (e) {}
+
+        this._loadoutSaveTimer = setTimeout(() => {
+            try {
+                if (!this.selectedCharacter || !this.selectedCharacter.id) return;
+                this.saveSkillLoadout(this.selectedCharacter.id, this.selectedSkillIds).catch(() => {});
+            } catch (e) {}
+        }, 550);
+    }
+
+    async applySavedSkillLoadoutIfAny(character) {
+        if (!character || !character.id) return;
+
+        const token = ++this._loadoutFetchToken;
+        const saved = await this.fetchSavedSkillLoadout(character.id);
+        if (token !== this._loadoutFetchToken) return;
+        if (!saved || saved.length === 0) return;
+
+        const skills = Array.isArray(character.skills) ? character.skills.filter(Boolean) : [];
+        const allIds = skills.map(s => s && s.id).filter(Boolean);
+        const filtered = saved.filter(id => allIds.includes(id));
+        if (filtered.length === 0) return;
+
+        const next = filtered.slice(0, 2);
+        const same = Array.isArray(this.selectedSkillIds)
+            && this.selectedSkillIds.length === next.length
+            && this.selectedSkillIds.every((id, i) => id === next[i]);
+        if (same) return;
+
+        this.selectedSkillIds = next;
+        this.renderPrecombatUI(character);
+        this.startIdleSpriteAnimation(character);
     }
 
     getHTML() {
@@ -41,6 +164,15 @@ class MenuPage extends BasePage {
             <div class="menu-page">
                 <div class="menu-view" id="menu-view">
                     <div class="menu-header">
+                        <div class="menu-account" id="menu-account">
+                            <button class="menu-signin-btn" id="menu-signin-btn" type="button">Sign in</button>
+                            <button class="menu-profile" id="menu-profile" type="button" style="display:none">
+                                <span class="menu-profile-avatar">
+                                    <img id="menu-profile-avatar-img" alt="Avatar" />
+                                </span>
+                                <span class="menu-profile-name" id="menu-profile-name"></span>
+                            </button>
+                        </div>
                         <h1 class="game-title">ELDERS</h1>
                         <p class="game-subtitle">Battle Arena</p>
                     </div>
@@ -151,11 +283,14 @@ class MenuPage extends BasePage {
 
                             <div class="kit-actions">
                                 <div class="precombat-action-row">
-                                    <button class="btn btn-primary btn-large" id="find-match-button" disabled>
-                                        Find Match
-                                    </button>
                                     <button class="precombat-item-slot" id="precombat-item-slot" type="button" aria-label="Select item" title="Select item">
                                         <img id="precombat-item-image" alt="Item" />
+                                    </button>
+                                    <button class="btn btn-primary btn-large" id="casual-match-button" disabled>
+                                        Casual Match
+                                    </button>
+                                    <button class="btn btn-secondary btn-large" id="ranked-match-button" style="display:none" disabled>
+                                        Ranked Match
                                     </button>
                                 </div>
                             </div>
@@ -170,9 +305,46 @@ class MenuPage extends BasePage {
         this.addEventListener('#precombat-back', 'click', this.handleBackToMenu.bind(this));
         this.addEventListener('#stage-arrow-left', 'click', () => this.cycleCharacter(-1));
         this.addEventListener('#stage-arrow-right', 'click', () => this.cycleCharacter(1));
-        this.addEventListener('#find-match-button', 'click', this.handleFindMatch.bind(this));
+        this.addEventListener('#casual-match-button', 'click', () => this.handleFindMatch('casual'));
+        this.addEventListener('#ranked-match-button', 'click', () => this.handleFindMatch('ranked'));
         this.addEventListener('#precombat-transform-toggle', 'click', this.toggleTransformPreview.bind(this));
         this.addEventListener('#precombat-item-slot', 'click', this.openItemPicker.bind(this));
+
+        this.addEventListener('#menu-signin-btn', 'click', async () => {
+            try {
+                if (!window.EldersAnalytics || typeof window.EldersAnalytics.track !== 'function') {
+                    // no-op
+                } else {
+                    window.EldersAnalytics.track('click_sign_in', { source: 'menu' });
+                }
+            } catch (e) {}
+
+            try {
+                if (window.EldersAuth && typeof window.EldersAuth.signInWithGoogle === 'function') {
+                    await window.EldersAuth.signInWithGoogle();
+                }
+            } catch (e) {
+                console.error('Sign in failed:', e);
+            }
+        });
+
+        this.addEventListener('#menu-profile', 'click', async () => {
+            // Account page later. For now, allow sign-out via confirm.
+            try {
+                const ok = confirm('Sign out?');
+                if (!ok) return;
+
+                if (window.EldersAnalytics && typeof window.EldersAnalytics.track === 'function') {
+                    window.EldersAnalytics.track('click_sign_out', { source: 'menu' });
+                }
+
+                if (window.EldersAuth && typeof window.EldersAuth.signOut === 'function') {
+                    await window.EldersAuth.signOut();
+                }
+            } catch (e) {
+                console.error('Sign out failed:', e);
+            }
+        });
     }
 
     async onPageLoad() {
@@ -182,8 +354,93 @@ class MenuPage extends BasePage {
         }
         
         this.dataManager = window.app.dataManager;
+
+        await this.renderAccountUI();
+        setTimeout(() => {
+            this.renderAccountUI().catch(() => {});
+        }, 350);
+        if (this._authUnsubscribe) {
+            try { this._authUnsubscribe(); } catch (e) {}
+            this._authUnsubscribe = null;
+        }
+        if (window.EldersAuth && typeof window.EldersAuth.onAuthStateChange === 'function') {
+            this._authUnsubscribe = window.EldersAuth.onAuthStateChange(async () => {
+                await this.renderAccountUI();
+            });
+        }
+
+        try {
+            if (window.EldersAnalytics && typeof window.EldersAnalytics.track === 'function') {
+                window.EldersAnalytics.track('page_view', { page: 'menu' });
+            }
+        } catch (e) {}
+
         await this.loadCharacters();
         await this.loadSelectedCharacter();
+    }
+
+    async updateRankedMatchVisibility() {
+        const rankedBtn = this.querySelector('#ranked-match-button');
+        if (!rankedBtn) return;
+
+        try {
+            if (!window.EldersAuth || typeof window.EldersAuth.getUserDisplay !== 'function') {
+                rankedBtn.style.display = 'none';
+                return;
+            }
+            const state = await window.EldersAuth.getUserDisplay();
+            rankedBtn.style.display = state && state.signedIn ? '' : 'none';
+        } catch (e) {
+            rankedBtn.style.display = 'none';
+        }
+    }
+
+    async renderAccountUI() {
+        const btn = this.querySelector('#menu-signin-btn');
+        const profileBtn = this.querySelector('#menu-profile');
+        const nameEl = this.querySelector('#menu-profile-name');
+        const avatarImg = this.querySelector('#menu-profile-avatar-img');
+
+        if (!btn || !profileBtn || !nameEl || !avatarImg) return;
+
+        try {
+            if (!window.EldersAuth || typeof window.EldersAuth.getUserDisplay !== 'function') {
+                btn.style.display = '';
+                profileBtn.style.display = 'none';
+                return;
+            }
+
+            const state = await window.EldersAuth.getUserDisplay();
+            if (!state || !state.signedIn) {
+                btn.style.display = '';
+                profileBtn.style.display = 'none';
+                return;
+            }
+
+            btn.style.display = 'none';
+            profileBtn.style.display = '';
+
+            nameEl.textContent = (state.profile && state.profile.name) ? state.profile.name : 'Player';
+            const avatarUrl = state.profile && state.profile.avatarUrl ? state.profile.avatarUrl : '';
+            avatarImg.src = avatarUrl;
+            avatarImg.onerror = () => {
+                try {
+                    avatarImg.onerror = null;
+                    avatarImg.src = 'assets/final/lloyd_frontera.jpg';
+                } catch (e) {}
+            };
+        } catch (e) {
+            btn.style.display = '';
+            profileBtn.style.display = 'none';
+        }
+    }
+
+    async cleanup() {
+        if (this._authUnsubscribe) {
+            try { this._authUnsubscribe(); } catch (e) {}
+            this._authUnsubscribe = null;
+        }
+        await super.cleanup();
     }
 
     async loadCharacters() {
@@ -635,6 +892,19 @@ class MenuPage extends BasePage {
         const skillIds = Array.isArray(full.skills) ? full.skills.map(s => s && s.id).filter(Boolean) : [];
         this.selectedSkillIds = skillIds.slice(0, 2);
 
+        // If signed in, apply saved skill loadout BEFORE first render to avoid UI flashing.
+        try {
+            const token = ++this._loadoutFetchToken;
+            const saved = await this.fetchSavedSkillLoadout(full.id);
+            if (token === this._loadoutFetchToken && Array.isArray(saved) && saved.length > 0) {
+                const allIds = skillIds;
+                const filtered = saved.filter(id => allIds.includes(id)).slice(0, 2);
+                if (filtered.length > 0) {
+                    this.selectedSkillIds = filtered;
+                }
+            }
+        } catch (e) {}
+
         this.spriteBackgroundUrl = (this.precombatBackgroundAssignments && this.precombatBackgroundAssignments[full.id])
             ? this.precombatBackgroundAssignments[full.id]
             : this.getSpriteBackgroundUrlForKey(full.id);
@@ -860,6 +1130,8 @@ class MenuPage extends BasePage {
     renderPrecombatUI(character) {
         if (!character) return;
 
+        this.updateRankedMatchVisibility().catch(() => {});
+
         this.renderNaofumiShieldPreview(character);
         this.renderKaitoFormPreview(character);
 
@@ -955,7 +1227,7 @@ class MenuPage extends BasePage {
 
         this.updateElement('#precombat-ultimate-name', character.ultimate?.name || '');
         this.updateElement('#precombat-ultimate-desc', character.ultimate?.description || '');
-        {
+        try {
             const ult = character.ultimate || {};
             const cd = Math.max(0, Math.floor(Number(ult.cooldown) || 0));
             const cdEl = this.querySelector('#precombat-ultimate-cd');
@@ -995,18 +1267,20 @@ class MenuPage extends BasePage {
             }
 
             const hint = this.querySelector('#skills-hint');
-            const findMatchBtn = this.querySelector('#find-match-button');
+            const casualBtn = this.querySelector('#casual-match-button');
+            const rankedBtn = this.querySelector('#ranked-match-button');
             const needsTwo = skills.length >= 2;
             const valid = !needsTwo || this.selectedSkillIds.length === 2;
             if (hint) {
-                hint.textContent = needsTwo
-                    ? (valid ? 'Select 2 skills for battle.' : 'Select exactly 2 skills to continue.')
-                    : '';
-            }
-            if (findMatchBtn) {
-                findMatchBtn.disabled = !valid;
+                hint.textContent = valid ? '' : 'Pick exactly 2 skills to start a match.';
             }
 
+            if (casualBtn) {
+                casualBtn.disabled = !valid;
+            }
+            if (rankedBtn && rankedBtn.style.display !== 'none') {
+                rankedBtn.disabled = !valid;
+            }
             const picker = this.querySelector('#skills-picker');
             if (picker) {
                 picker.innerHTML = '';
@@ -1038,6 +1312,7 @@ class MenuPage extends BasePage {
                     picker.appendChild(card);
                 });
             }
+        } catch (e) {
         }
     }
 
@@ -1367,6 +1642,8 @@ class MenuPage extends BasePage {
         if (!playedPreview) {
             this.startIdleSpriteAnimation(this.selectedCharacter);
         }
+
+        this.scheduleSaveSkillLoadout();
     }
 
     async playSkillPreviewAnimationOnce(skill) {
@@ -1433,7 +1710,7 @@ class MenuPage extends BasePage {
         }
     }
 
-    async handleFindMatch() {
+    async handleFindMatch(mode = 'casual') {
         if (!this.selectedCharacter) return;
 
         const skills = Array.isArray(this.selectedCharacter.skills) ? this.selectedCharacter.skills.filter(Boolean) : [];
@@ -1454,21 +1731,38 @@ class MenuPage extends BasePage {
 
         characterForMatch.itemId = this.selectedItemId;
 
+        // Store selected matchmaking mode for the pairing page / future ranked logic.
         try {
-            const btn = this.querySelector('#find-match-button');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Connecting...';
+            if (this.dataManager && typeof this.dataManager.saveData === 'function') {
+                await this.dataManager.saveData('match_mode', { mode: String(mode || 'casual') });
+            }
+        } catch (e) {}
+
+        try {
+            const casualBtn = this.querySelector('#casual-match-button');
+            const rankedBtn = this.querySelector('#ranked-match-button');
+            if (casualBtn) {
+                casualBtn.disabled = true;
+                casualBtn.textContent = 'Connecting...';
+            }
+            if (rankedBtn) {
+                rankedBtn.disabled = true;
+                rankedBtn.textContent = 'Connecting...';
             }
 
             await this.dataManager.saveSelectedCharacter(characterForMatch);
             window.app.router.navigateTo('pairing');
         } catch (error) {
             console.error('Failed to start matchmaking:', error);
-            const btn = this.querySelector('#find-match-button');
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = 'Find Match';
+            const casualBtn = this.querySelector('#casual-match-button');
+            const rankedBtn = this.querySelector('#ranked-match-button');
+            if (casualBtn) {
+                casualBtn.disabled = false;
+                casualBtn.textContent = 'Casual Match';
+            }
+            if (rankedBtn) {
+                rankedBtn.disabled = false;
+                rankedBtn.textContent = 'Ranked Match';
             }
         }
     }
