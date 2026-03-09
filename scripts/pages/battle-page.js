@@ -738,10 +738,7 @@ class BattlePage extends BasePage {
                                         <div class="opponent-stats" id="opponent-stats"></div>
                                     </div>
                                 </div>
-                                <div class="relic-display" id="opponent-relic" style="display: none;">
-                                    <img class="relic-icon" id="opponent-relic-image" src="" alt="Relic" />
-                                    <div class="relic-passive" id="opponent-relic-desc"></div>
-                                </div>
+                                <img class="relic-icon" id="opponent-relic" src="" alt="Relic" style="display: none;" />
                             </div>
                         </div>
 
@@ -777,10 +774,7 @@ class BattlePage extends BasePage {
                                         <div class="player-stats" id="player-stats"></div>
                                     </div>
                                 </div>
-                                <div class="relic-display" id="player-relic" style="display: none;">
-                                    <img class="relic-icon" id="player-relic-image" src="" alt="Relic" />
-                                    <div class="relic-passive" id="player-relic-desc"></div>
-                                </div>
+                                <img class="relic-icon" id="player-relic" src="" alt="Relic" style="display: none;" />
                             </div>
                         </div>
 
@@ -1023,6 +1017,15 @@ class BattlePage extends BasePage {
         this.autoSkipIfNoActions();
     }
 
+    isMobileViewport() {
+        try {
+            if (!window || !window.matchMedia) return false;
+            return window.matchMedia('(max-width: 768px)').matches;
+        } catch (e) {
+            return false;
+        }
+    }
+
     updateCharacterInfo() {
         if (!this.gameState) return;
 
@@ -1048,30 +1051,26 @@ class BattlePage extends BasePage {
                 ? this.gameState.player?.character
                 : this.gameState.opponent?.character;
 
-            const wrap = this.querySelector(side === 'player' ? '#player-relic' : '#opponent-relic');
-            const img = this.querySelector(side === 'player' ? '#player-relic-image' : '#opponent-relic-image');
-            const desc = this.querySelector(side === 'player' ? '#player-relic-desc' : '#opponent-relic-desc');
-            if (!wrap || !img || !desc) return;
+            const img = this.querySelector(side === 'player' ? '#player-relic' : '#opponent-relic');
+            if (!img) return;
 
             const itemId = character && typeof character.itemId === 'string' ? character.itemId : null;
             if (!itemId) {
-                wrap.style.display = 'none';
                 img.src = '';
-                desc.textContent = '';
+                img.style.display = 'none';
                 return;
             }
 
             const item = await this.characterSystem.getItem(itemId);
             if (!item) {
-                wrap.style.display = 'none';
                 img.src = '';
-                desc.textContent = '';
+                img.style.display = 'none';
                 return;
             }
 
             const passive = item.passiveId ? await this.characterSystem.getItemPassive(item.passiveId) : null;
-            wrap.style.display = '';
             img.src = item.image || '';
+            img.style.display = '';
             img.onerror = () => {
                 img.onerror = null;
                 img.src = '';
@@ -1100,7 +1099,6 @@ class BattlePage extends BasePage {
                 }
                 descText = `When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. ${stacks}/10`;
             }
-            desc.textContent = descText;
         };
 
         try {
@@ -1904,7 +1902,9 @@ class BattlePage extends BasePage {
                 : (passive && passive.ultimate_condition ? passive.ultimate_condition : passive));
         
         let passiveName = passive.name;
-        let passiveDesc = passive.description;
+        let passiveDesc = (this.isMobileViewport() && passive && typeof passive.mobileDescription === 'string' && passive.mobileDescription.trim())
+            ? passive.mobileDescription
+            : passive.description;
         if (character && character.id === 'naofumi_iwatani') {
                 const key = typeof passiveState.naofumiCurrentShieldKey === 'string' ? passiveState.naofumiCurrentShieldKey : null;
                 if (key === 'legendary') {

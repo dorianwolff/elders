@@ -3,6 +3,7 @@
     "id": "development",
     "name": "Development",
     "description": "Each time Lloyd takes damage, gain 1 Build stack. Each stack grants +1 attack and +1 defense. At 10 stacks, lose all stacks and gain Ultimate.",
+    "mobileDescription": "Taking damage gives stacks that increase attack/defense. At 10 stacks, you gain your ultimate.",
     "tagWeights": {
       "scaler": 10,
       "punisher": 8,
@@ -33,6 +34,7 @@
     "id": "gluttony",
     "name": "Gluttony",
     "description": "Each time Rimuru deals damage, gain 1 Experience stack. Experience stacks permanently grant +1 attack, +1 defense, and +1 max health. When reaching 10 Experience stacks, convert 10 Experience into 1 Raphael stack and gain Ultimate. Raphael stacks grant the same bonuses as 10 Experience stacks and cannot be removed.",
+    "mobileDescription": "Dealing damage grants stacks that increase stats and taking damage removes them. Ten stacks become permanent and grant his ultimate.",
     "tagWeights": {
       "scaler": 10
     },
@@ -88,6 +90,7 @@
     "id": "room_surgeon",
     "name": "Room Surgeon",
     "description": "When Law deals damage, recover 5% of max health. Ultimate becomes available after recovering 80 total health. Using Ultimate resets recovery count to 0.",
+    "mobileDescription": "Dealing damage heals you. Heal enough total to unlock your ultimate.",
     "tagWeights": {
       "sustain": 10,
       "punisher": 5
@@ -110,6 +113,7 @@
     "id": "push_the_limits",
     "name": "Push The Limits",
     "description": "Each time Saitama takes damage, gain 1 Annoyed stack. Each stack grants +1 attack. At 7 stacks, Ultimate becomes available. Annoyed stacks are lost when transforming.",
+    "mobileDescription": "Taking damage builds stacks that increase attack. At 7 stacks, you gain your ultimate.",
     "tagWeights": {
       "scaler": 8,
       "sustain": 1,
@@ -145,6 +149,7 @@
     "id": "serious_growth",
     "name": "Serious Growth",
     "description": "At the start of each of your turns, permanently gain +15 attack. Ultimate becomes available after attacking 2 times.",
+    "mobileDescription": "Gain permanent attack every turn. After 2 attacks, your ultimate becomes available.",
     "mission": {
       "type": "stack_threshold",
       "counter": "seriousAttacks",
@@ -177,6 +182,7 @@
     "id": "automail_overclock",
     "name": "Overclocked Automail",
     "description": "Generate Heat with Automail attacks and vent it with coolant. Heat makes you stronger but unstable: every 5 Heat grants +1 true damage on your attacks, and every 10 Heat makes you take +1 true damage when you take damage. At 50 Heat, Ultimate becomes available. Upon taking lethal damage, revive once at 50% health in a weakened form.",
+    "mobileDescription": "Build Heat to deal more damage, but Heat also makes you take more damage. At 50 Heat, you unlock your ultimate. You can revive once.",
     "tagWeights": {
       "berserker": 5,
       "aggro": 5,
@@ -211,6 +217,7 @@
     "id": "blossoming_emotion",
     "name": "Blossoming Emotion",
     "description": "At the start of each of your turns, your opponent recovers 10 health. Ultimate becomes available after your opponent recovers 50 health.",
+    "mobileDescription": "Each turn you heal your opponent. After healing them enough, you unlock your ultimate.",
     "tagWeights": {
       "broker": 5,
       "punisher": 5,
@@ -233,6 +240,7 @@
     "id": "chen_melee_cooldown_master",
     "name": "Cooldown Mastery",
     "description": "Gain Ultimate at the start of battle. Each time you use a skill, reduce the cooldown of one of your other skills by 1 (or empower a skill that benefits from cooldown reduction).",
+    "mobileDescription": "Start the battle with your ultimate. Using a skill reduces the cooldown of another skill.",
     "tagWeights": {
       "burst": 8,
       "bruiser": 4,
@@ -256,6 +264,7 @@
     "id": "frost_resonance",
     "name": "Frost Resonance",
     "description": "Each time the opponent deals skill damage, they gain 1 Permafrost. At the start of your turn, if the opponent has at least 10 Permafrost, remove 10 and freeze them for 2 turns. Each time an opponent is frozen, gain 1 Frozen Queen stack. Once per game, when Emilia dies, rewind time to her last turn alive and redo it.",
+    "mobileDescription": "Enemy skill damage builds Permafrost on them. At 10 stacks you freeze them. Once per game, you revive by rewinding your last turn.",
     "tagWeights": {
       "control": 10,
       "burst": 8,
@@ -267,6 +276,7 @@
     "id": "limited_immortality",
     "name": "Limited Immortality",
     "description": "Yato starts with 9 stacks of Immortality. Each time he would take fatal damage, remove one stack instead. Once the last stack is removed, Yato recovers 8% of max health. Every third stack of Immortality Yato loses, Yato will gain his Ultimate.",
+    "mobileDescription": "You have multiple extra lives (stacks). Losing stacks can grant your ultimate. When the last stack is gone, you heal.",
     "tagWeights": {
       "burst": 7,
       "scaler": 2,
@@ -294,6 +304,7 @@
     "id": "kiss_of_death_passive",
     "name": "Partner Killer",
     "description": "Gain Heartbreak based on your opponent's actions. Heartbreak is capped at 100. At 66 Heartbreak, Ultimate becomes available.",
+    "mobileDescription": "Gain Heartbreak from your opponent's actions. At 66 Heartbreak, you unlock your ultimate.",
     "tagWeights": {
       "parasite": 4,
       "scaler": 2,
@@ -337,6 +348,7 @@
     "id": "naruto_natural_energy",
     "name": "Natural Energy Balance",
     "description": "Balance ranges from -3 to +3. Yang skills shifts Balance by +1, Yin skills shifts Balance by -1. Ultimate unlocks when you reach either extremity.",
+    "mobileDescription": "Using skills shifts your Balance between -3 and +3. Reaching either end unlocks your ultimate.",
     "tagWeights": {
       "control": 7,
       "buffer": 4,
@@ -376,6 +388,7 @@
     "id": "naruto_sage_mode",
     "name": "Six Paths Sage Mode",
     "description": "Stay in Sage Mode until the end of the game. Each time you use a different skill than the last one you used, gain 1 Sage Orb (max 5). At the start of each of your turns, recover 2 health per Sage Orb. Sage Orbs also grant +1 permanent attack per orb gained.",
+    "mobileDescription": "Alternate skills to gain Orbs (max 5). Orbs permanently increase attack and heal you each turn.",
     "mission": {
       "type": "stack_threshold",
       "counter": "sageOrbs",
@@ -430,6 +443,7 @@
     "id": "spell_archive",
     "name": "Spell Archive",
     "description": "Whenever your opponent uses a skill, record its type as a Page (max 5). Pages empower your spells. At maximum Pages, Ultimate becomes available.",
+    "mobileDescription": "Enemy skills create Pages (max 5). Pages empower you, and at max Pages you unlock your ultimate.",
     "tagWeights": {
       "control": 10,
       "burst": 6
@@ -458,6 +472,7 @@
     "id": "naofumi_shield_rotation",
     "name": "Shield Rotation",
     "description": "At the start of each of your turns, switch to a new shield (each shield appears once). Your passive is replaced by the current shield. At the 7th shield, rotation stops.",
+    "mobileDescription": "Each turn you switch to a new shield, which replaces your passive for that turn.",
     "tagWeights": {
       "scaler": 3,
       "control": 4,
@@ -470,6 +485,7 @@
     "id": "kaito_nen_restrictions",
     "name": "Nen Restrictions",
     "description": "Kaito's damaging skills are enhanced per restriction. He starts with one restriction. Kaito loses his weapon after using 2 skills.",
+    "mobileDescription": "Restrictions boost Kaito's damage. After using 2 skills, he loses his weapon.",
     "tagWeights": {
       "control": 8,
       "sustain": 2,
