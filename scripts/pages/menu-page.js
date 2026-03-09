@@ -1534,7 +1534,9 @@ class MenuPage extends BasePage {
             'tome_of_paragons'
         ];
 
-        const weaponLabels = ['none', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        const weaponLabels = this.isMobileViewport()
+            ? ['', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+            : ['none', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         if (!Number.isFinite(Number(this.kaitoFormPreviewIndex))) {
             this.kaitoFormPreviewIndex = 0;
         }

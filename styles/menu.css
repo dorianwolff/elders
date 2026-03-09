@@ -575,6 +575,7 @@
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-top: 0.6rem;
+    overflow: visible;
 }
 
 .kaito-form-btn {
@@ -844,7 +845,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.6rem;
-    padding-right: 0.25rem;
+    padding: 0.35rem;
 }
 
 .skill-pick {
@@ -1282,32 +1283,38 @@
 
     .kaito-form-row {
         flex-wrap: nowrap;
-        overflow: hidden;
-        gap: 0.35rem;
+        overflow: visible;
+        gap: 0.2rem;
         margin-top: 0.45rem;
     }
 
     .kaito-form-btn {
-        flex: 0 0 auto;
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0;
+        font-size: 0.78rem;
+        height: 26px;
+        border-radius: 9px;
+        letter-spacing: 0;
     }
 
     .kit-kaito-forms .kaito-form-row {
-        flex-wrap: wrap;
-        overflow: hidden;
-        gap: 0.3rem;
+        flex-wrap: nowrap;
+        overflow: visible;
+        gap: 0.2rem;
     }
 
     .kit-kaito-forms .kaito-form-btn {
-        min-width: 34px;
-        height: 28px;
-        padding: 0 0.45rem;
-        border-radius: 10px;
-        font-size: 0.82rem;
+        min-width: 0;
+        height: 26px;
+        padding: 0;
+        border-radius: 9px;
+        font-size: 0.78rem;
     }
 
     .kit-naofumi-shields .kaito-form-row {
         flex-wrap: nowrap;
-        overflow: hidden;
+        overflow: visible;
     }
 
     .kit-passive { grid-area: passive; }
