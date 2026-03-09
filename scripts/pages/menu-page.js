@@ -40,6 +40,8 @@ class MenuPage extends BasePage {
         this._loadoutFetchToken = 0;
         this._loadoutSaveTimer = null;
         this._loadoutTableMissing = false;
+
+        this._infoModalOverlay = null;
     }
 
     async getSignedInUserId() {
@@ -201,7 +203,7 @@ class MenuPage extends BasePage {
                                         <div class="precombat-name" id="precombat-name"></div>
                                         <div class="precombat-tags" id="precombat-tags"></div>
                                     </div>
-                                    <div class="precombat-meta">Meta: <span id="precombat-meta"></span></div>
+                                    <div class="precombat-meta"><span class="precombat-meta-label">Meta:</span> <span id="precombat-meta"></span></div>
                                 </div>
                                 <div class="precombat-stats-grid">
                                     <div class="precombat-stat">
@@ -329,20 +331,12 @@ class MenuPage extends BasePage {
         });
 
         this.addEventListener('#menu-profile', 'click', async () => {
-            // Account page later. For now, allow sign-out via confirm.
             try {
-                const ok = confirm('Sign out?');
-                if (!ok) return;
-
-                if (window.EldersAnalytics && typeof window.EldersAnalytics.track === 'function') {
-                    window.EldersAnalytics.track('click_sign_out', { source: 'menu' });
-                }
-
-                if (window.EldersAuth && typeof window.EldersAuth.signOut === 'function') {
-                    await window.EldersAuth.signOut();
+                if (window.app && window.app.router) {
+                    window.app.router.navigateTo('profile');
                 }
             } catch (e) {
-                console.error('Sign out failed:', e);
+                console.error('Failed to open profile:', e);
             }
         });
     }
@@ -390,6 +384,17 @@ class MenuPage extends BasePage {
             }
             const state = await window.EldersAuth.getUserDisplay();
             rankedBtn.style.display = state && state.signedIn ? '' : 'none';
+
+            try {
+                if (rankedBtn.style.display !== 'none') {
+                    const skills = Array.isArray(this.selectedCharacter?.skills)
+                        ? this.selectedCharacter.skills.filter(Boolean)
+                        : [];
+                    const needsTwo = skills.length >= 2;
+                    const valid = !needsTwo || this.selectedSkillIds.length === 2;
+                    rankedBtn.disabled = !valid;
+                }
+            } catch (e) {}
         } catch (e) {
             rankedBtn.style.display = 'none';
         }
@@ -900,7 +905,6 @@ class MenuPage extends BasePage {
                 const allIds = skillIds;
                 const filtered = saved.filter(id => allIds.includes(id)).slice(0, 2);
                 if (filtered.length > 0) {
-                    this.selectedSkillIds = filtered;
                 }
             }
         } catch (e) {}
@@ -1205,6 +1209,24 @@ class MenuPage extends BasePage {
 
             this.updateElement('#precombat-passive-name', `${passiveName}${weaponExtra}`);
             this.updateElement('#precombat-passive-desc', passiveDesc);
+
+            const passiveCard = this.querySelector('.kit-passive');
+            if (passiveCard) {
+                if (this.isMobileViewport()) {
+                    passiveCard.style.cursor = 'pointer';
+                    passiveCard.onclick = () => {
+                        this.openInfoModal({
+                            title: 'PASSIVE',
+                            subtitle: passiveName,
+                            description: passiveDesc,
+                            primaryLabel: null
+                        });
+                    };
+                } else {
+                    passiveCard.style.cursor = '';
+                    passiveCard.onclick = null;
+                }
+            }
         }
 
         {
@@ -1227,6 +1249,27 @@ class MenuPage extends BasePage {
 
         this.updateElement('#precombat-ultimate-name', character.ultimate?.name || '');
         this.updateElement('#precombat-ultimate-desc', character.ultimate?.description || '');
+        {
+            const ultimateName = character.ultimate?.name || '';
+            const ultimateDesc = character.ultimate?.description || '';
+            const ultimateCard = this.querySelector('.kit-ultimate');
+            if (ultimateCard) {
+                if (this.isMobileViewport()) {
+                    ultimateCard.style.cursor = 'pointer';
+                    ultimateCard.onclick = () => {
+                        this.openInfoModal({
+                            title: 'ULTIMATE',
+                            subtitle: ultimateName,
+                            description: ultimateDesc,
+                            primaryLabel: null
+                        });
+                    };
+                } else {
+                    ultimateCard.style.cursor = '';
+                    ultimateCard.onclick = null;
+                }
+            }
+        }
         try {
             const ult = character.ultimate || {};
             const cd = Math.max(0, Math.floor(Number(ult.cooldown) || 0));
@@ -1290,15 +1333,36 @@ class MenuPage extends BasePage {
                     card.type = 'button';
                     const locked = Boolean(isKaitoWeaponPreview || isNaofumiSoulPreview);
                     card.className = `skill-pick ${selected || locked ? 'is-selected' : ''}`;
-                    if (locked) {
-                        card.disabled = true;
+                    if (this.isMobileViewport()) {
+                        card.addEventListener('click', () => {
+                            const isSel = this.selectedSkillIds.includes(skill.id);
+                            const needsTwoMobile = skills.length >= 2;
+                            const atMax = needsTwoMobile && this.selectedSkillIds.length >= 2;
+                            const canSelect = !locked && (!atMax || isSel);
+                            const label = locked ? null : (isSel ? 'Deselect' : 'Select');
+                            this.openInfoModal({
+                                title: 'SKILL',
+                                subtitle: skill.name,
+                                description: skill.description,
+                                primaryLabel: label,
+                                primaryDisabled: !canSelect,
+                                onPrimary: () => {
+                                    this.toggleSkillSelection(skill.id);
+                                }
+                            });
+                        });
                     } else {
-                        card.addEventListener('click', () => this.toggleSkillSelection(skill.id));
+                        if (locked) {
+                            card.disabled = true;
+                        } else {
+                            card.addEventListener('click', () => this.toggleSkillSelection(skill.id));
+                        }
                     }
 
                     const cd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
                     const type = typeof skill.type === 'string' ? skill.type : 'utility';
 
+                    const descHtml = this.isMobileViewport() ? '' : `<div class="skill-pick-desc">${skill.description}</div>`;
                     card.innerHTML = `
                         <div class="skill-pick-top">
                             <div class="skill-pick-name">${skill.name}</div>
@@ -1307,7 +1371,7 @@ class MenuPage extends BasePage {
                                 <span class="skill-tag skill-tag-cd">CD ${cd}</span>
                             </div>
                         </div>
-                        <div class="skill-pick-desc">${skill.description}</div>
+                        ${descHtml}
                     `;
                     picker.appendChild(card);
                 });
@@ -1593,10 +1657,22 @@ class MenuPage extends BasePage {
                 const card = document.createElement('button');
                 card.type = 'button';
                 card.className = 'skill-pick is-selected';
-                card.disabled = true;
+                card.disabled = !this.isMobileViewport();
 
                 const cd = Math.max(0, Math.floor(Number(skill.cooldown) || 0));
                 const type = typeof skill.type === 'string' ? skill.type : 'utility';
+                if (this.isMobileViewport()) {
+                    card.addEventListener('click', () => {
+                        this.openInfoModal({
+                            title: 'SKILL',
+                            subtitle: skill.name,
+                            description: skill.description,
+                            primaryLabel: null
+                        });
+                    });
+                }
+
+                const descHtml = this.isMobileViewport() ? '' : `<div class="skill-pick-desc">${skill.description}</div>`;
                 card.innerHTML = `
                     <div class="skill-pick-top">
                         <div class="skill-pick-name">${skill.name}</div>
@@ -1605,7 +1681,7 @@ class MenuPage extends BasePage {
                             <span class="skill-tag skill-tag-cd">CD ${cd}</span>
                         </div>
                     </div>
-                    <div class="skill-pick-desc">${skill.description}</div>
+                    ${descHtml}
                 `;
                 picker.appendChild(card);
             });
@@ -1704,10 +1780,105 @@ class MenuPage extends BasePage {
     handleBackToMenu() {
         this.setViewMode('menu');
         this.precombatBackgroundAssignments = null;
+        this.closeInfoModal();
         if (this.idleAnimationIntervalId) {
             clearInterval(this.idleAnimationIntervalId);
             this.idleAnimationIntervalId = null;
         }
+    }
+
+    isMobileViewport() {
+        try {
+            return window.matchMedia
+                && window.matchMedia('(max-width: 768px)').matches;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    closeInfoModal() {
+        if (this._infoModalOverlay) {
+            try {
+                this._infoModalOverlay.remove();
+            } catch (e) {}
+            this._infoModalOverlay = null;
+        }
+    }
+
+    openInfoModal({ title, subtitle, description, primaryLabel, primaryDisabled, onPrimary } = {}) {
+        this.closeInfoModal();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'item-picker-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'item-picker-modal';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'item-picker-title';
+        titleEl.textContent = title || '';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'item-picker-close';
+        closeBtn.textContent = '×';
+        closeBtn.addEventListener('click', () => this.closeInfoModal());
+
+        const header = document.createElement('div');
+        header.className = 'item-picker-header';
+
+        const headerLeft = document.createElement('div');
+        headerLeft.style.minWidth = '0';
+
+        headerLeft.appendChild(titleEl);
+        if (subtitle) {
+            const subtitleEl = document.createElement('div');
+            subtitleEl.className = 'info-modal-subtitle';
+            subtitleEl.textContent = subtitle;
+            headerLeft.appendChild(subtitleEl);
+        }
+
+        header.appendChild(headerLeft);
+        header.appendChild(closeBtn);
+
+        const body = document.createElement('div');
+        body.className = 'info-modal-body';
+        body.textContent = description || '';
+
+        const actions = document.createElement('div');
+        actions.className = 'info-modal-actions';
+
+        if (primaryLabel) {
+            const primary = document.createElement('button');
+            primary.type = 'button';
+            primary.className = 'info-modal-action-btn';
+            primary.textContent = primaryLabel;
+            primary.disabled = Boolean(primaryDisabled);
+            primary.addEventListener('click', () => {
+                try {
+                    if (typeof onPrimary === 'function') {
+                        onPrimary();
+                    }
+                } finally {
+                    this.closeInfoModal();
+                }
+            });
+            actions.appendChild(primary);
+        }
+
+        modal.appendChild(header);
+        modal.appendChild(body);
+        if (actions.childNodes.length > 0) {
+            modal.appendChild(actions);
+        }
+
+        overlay.appendChild(modal);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) this.closeInfoModal();
+        });
+
+        document.body.appendChild(overlay);
+        this._infoModalOverlay = overlay;
     }
 
     async handleFindMatch(mode = 'casual') {
@@ -1735,6 +1906,12 @@ class MenuPage extends BasePage {
         try {
             if (this.dataManager && typeof this.dataManager.saveData === 'function') {
                 await this.dataManager.saveData('match_mode', { mode: String(mode || 'casual') });
+            }
+        } catch (e) {}
+
+        try {
+            if (window.sessionStorage) {
+                window.sessionStorage.setItem('elders_match_mode', String(mode || 'casual'));
             }
         } catch (e) {}
 

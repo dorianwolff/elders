@@ -147,6 +147,22 @@ class ResultPage extends BasePage {
         }
 
         try {
+            const mode = this.gameData && this.gameData.matchMode ? String(this.gameData.matchMode) : 'casual';
+            const eloRes = this.gameData && this.gameData.rankedEloResult ? this.gameData.rankedEloResult : null;
+            const role = this.gameData && this.gameData.playerRole ? String(this.gameData.playerRole) : null;
+            if (mode === 'ranked' && eloRes && role && resultSubtitle) {
+                const row = role === 'player2' ? eloRes.player2 : eloRes.player1;
+                const before = row && typeof row.before !== 'undefined' ? Math.max(0, Math.floor(Number(row.before) || 0)) : null;
+                const after = row && typeof row.after !== 'undefined' ? Math.max(0, Math.floor(Number(row.after) || 0)) : null;
+                if (before !== null && after !== null) {
+                    const delta = after - before;
+                    const sign = delta >= 0 ? '+' : '';
+                    resultSubtitle.textContent = `${resultSubtitle.textContent}  ELO ${sign}${delta} (${before} → ${after})`;
+                }
+            }
+        } catch (e) {}
+
+        try {
             if (yourTag) {
                 if (isDraw) {
                     yourTag.textContent = 'Draw';

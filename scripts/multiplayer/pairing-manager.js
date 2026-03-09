@@ -3,6 +3,9 @@ class PairingManager {
         this.wsManager = webSocketManager;
         this.isSearching = false;
         this.selectedCharacter = null;
+        this.matchMode = 'casual';
+        this.accessToken = null;
+        this.elo = null;
         this.onPairingFound = null;
         this.onPairingFailed = null;
         this.onPairingCancelled = null;
@@ -23,7 +26,11 @@ class PairingManager {
         if (!this.selectedCharacter) return;
         if (!this.wsManager.isSocketConnected()) return;
 
+        const normalizedMode = String(this.matchMode || 'casual').trim().toLowerCase();
         await this.wsManager.send('search_match', {
+            mode: normalizedMode,
+            accessToken: this.accessToken || null,
+            elo: normalizedMode === 'ranked' ? this.elo : undefined,
             character: {
                 id: this.selectedCharacter.id,
                 name: this.selectedCharacter.name,
@@ -38,7 +45,7 @@ class PairingManager {
         });
     }
 
-    async startSearching(character) {
+    async startSearching(character, options = null) {
         if (this.isSearching) {
             throw new Error('Already searching for a match');
         }
@@ -49,14 +56,21 @@ class PairingManager {
 
         this.selectedCharacter = character;
         this.isSearching = true;
+        this.matchMode = (options && options.mode) ? String(options.mode) : 'casual';
+        this.accessToken = (options && options.accessToken) ? String(options.accessToken) : null;
+        this.elo = (options && typeof options.elo !== 'undefined') ? Number(options.elo) : null;
 
         // Set up message handlers
         this.wsManager.onMessage('pairing_found', this.handlePairingFound.bind(this));
         this.wsManager.onMessage('pairing_failed', this.handlePairingFailed.bind(this));
         this.wsManager.onMessage('pairing_cancelled', this.handlePairingCancelled.bind(this));
 
+        const normalizedMode = String(this.matchMode || 'casual').trim().toLowerCase();
         // Send search request
         await this.wsManager.send('search_match', {
+            mode: normalizedMode,
+            accessToken: this.accessToken || null,
+            elo: normalizedMode === 'ranked' ? this.elo : undefined,
             character: {
                 id: character.id,
                 name: character.name,
@@ -80,6 +94,9 @@ class PairingManager {
 
         this.isSearching = false;
         this.selectedCharacter = null;
+        this.matchMode = 'casual';
+        this.accessToken = null;
+        this.elo = null;
 
         if (this.wsManager.isSocketConnected()) {
             await this.wsManager.send('cancel_search');

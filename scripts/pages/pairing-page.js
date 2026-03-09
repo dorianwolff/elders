@@ -3,6 +3,9 @@ class PairingPage extends BasePage {
         super();
         this.gameCoordinator = null;
         this.selectedCharacter = null;
+        this.matchMode = 'casual';
+        this.accessToken = null;
+        this.ownElo = 1000;
         this.isSearching = false;
         this.searchStartTime = null;
         this.searchTimer = null;
@@ -73,8 +76,61 @@ class PairingPage extends BasePage {
         }
         
         this.gameCoordinator = window.app.gameCoordinator;
+
+        await this.loadMatchMode();
         await this.loadSelectedCharacter();
         await this.startMatchmaking();
+    }
+
+    async loadMatchMode() {
+        try {
+            try {
+                if (window.sessionStorage) {
+                    const raw = window.sessionStorage.getItem('elders_match_mode');
+                    if (raw) {
+                        const m = String(raw);
+                        this.matchMode = (m === 'ranked') ? 'ranked' : 'casual';
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            const dataManager = window.app.dataManager;
+            const saved = dataManager && typeof dataManager.loadData === 'function'
+                ? await dataManager.loadData('match_mode')
+                : null;
+            const mode = saved && saved.mode ? String(saved.mode) : 'casual';
+            this.matchMode = (mode === 'ranked') ? 'ranked' : 'casual';
+        } catch (e) {
+            this.matchMode = 'casual';
+        }
+    }
+
+    async loadRankedAuthContext() {
+        if (this.matchMode !== 'ranked') return;
+
+        try {
+            const client = window.EldersAuth && typeof window.EldersAuth.ensureSupabaseClient === 'function'
+                ? window.EldersAuth.ensureSupabaseClient()
+                : null;
+            if (!client || !client.auth || typeof client.auth.getSession !== 'function') return;
+
+            const sessionRes = await client.auth.getSession();
+            const session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+            this.accessToken = session && session.access_token ? String(session.access_token) : null;
+
+            if (!this.accessToken) return;
+
+            const res = await client
+                .from('user_profiles')
+                .select('elo')
+                .maybeSingle();
+
+            if (res && res.data && typeof res.data.elo !== 'undefined') {
+                const n = Math.floor(Number(res.data.elo) || 0);
+                this.ownElo = Math.max(0, n);
+            }
+        } catch (e) {}
     }
 
     async loadSelectedCharacter() {
@@ -108,20 +164,42 @@ class PairingPage extends BasePage {
         try {
             this.isSearching = true;
             this.searchStartTime = Date.now();
+
+            await this.loadRankedAuthContext();
+
             this.startSearchTimer();
             
             this.updateConnectionStatus('connecting', 'Connecting to server...');
             
             // Start the matchmaking process
-            await this.gameCoordinator.startMatchmaking(this.selectedCharacter);
+            await this.gameCoordinator.startMatchmaking(this.selectedCharacter, {
+                mode: this.matchMode,
+                accessToken: this.accessToken,
+                elo: this.ownElo
+            });
             
             this.updateConnectionStatus('searching', 'Connected - Searching for match...');
-            this.updateElement('#search-message', 'Searching for opponent...');
+            this.updateSearchMessage();
             
         } catch (error) {
             console.error('Matchmaking failed:', error);
             this.handleMatchmakingError(error.message);
         }
+    }
+
+    updateSearchMessage() {
+        if (!this.isSearching) return;
+
+        if (this.matchMode !== 'ranked') {
+            this.updateElement('#search-message', 'Searching for opponent...');
+            return;
+        }
+
+        const elapsed = this.searchStartTime ? (Date.now() - this.searchStartTime) : 0;
+        const delta = elapsed >= 30000 ? 300 : (elapsed >= 10000 ? 200 : 100);
+        const low = Math.max(0, Math.floor((Number(this.ownElo) || 0) - delta));
+        const high = Math.max(0, Math.floor((Number(this.ownElo) || 0) + delta));
+        this.updateElement('#search-message', `Searching for an opponent between ${low} and ${high} ELO...`);
     }
 
     startSearchTimer() {
@@ -137,6 +215,8 @@ class PairingPage extends BasePage {
             const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             
             this.updateElement('#search-timer', timeString);
+
+            this.updateSearchMessage();
         }, 1000);
     }
 

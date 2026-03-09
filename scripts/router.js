@@ -9,6 +9,7 @@ class Router {
         this.container = document.getElementById('page-container');
         
         this.routes.set('menu', MenuPage);
+        this.routes.set('profile', ProfilePage);
         this.routes.set('pairing', PairingPage);
         this.routes.set('battle', BattlePage);
         this.routes.set('result', ResultPage);

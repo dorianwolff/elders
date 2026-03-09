@@ -12,6 +12,9 @@ class GameCoordinator {
 
         this.matchStats = null;
 
+        this.currentMatchMode = 'casual';
+        this.rankedEloResult = null;
+
         this._pendingGameEndWinner = null;
         this._gameEndNavigationStarted = false;
 
@@ -194,7 +197,7 @@ class GameCoordinator {
         }
     }
 
-    async startMatchmaking(character) {
+    async startMatchmaking(character, options = null) {
         if (this.isGameActive) {
             throw new Error('Game already active');
         }
@@ -203,6 +206,7 @@ class GameCoordinator {
             throw new Error('Multiplayer not available - WebSocket server not connected');
         }
 
+        this.currentMatchMode = (options && options.mode) ? String(options.mode) : 'casual';
         return new Promise((resolve, reject) => {
             this.pairingManager.setCallbacks({
                 onPairingFound: (pairingData) => {
@@ -217,7 +221,11 @@ class GameCoordinator {
                 }
             });
 
-            this.pairingManager.startSearching(character).catch(reject);
+            this.pairingManager.startSearching(character, {
+                mode: this.currentMatchMode,
+                accessToken: options && options.accessToken ? String(options.accessToken) : null,
+                elo: options && typeof options.elo !== 'undefined' ? Number(options.elo) : undefined
+            }).catch(reject);
         });
     }
 
@@ -246,6 +254,7 @@ class GameCoordinator {
             if (Array.isArray(this.pendingUiUpdates)) this.pendingUiUpdates.length = 0;
 
             this.resetMatchStats();
+            this.rankedEloResult = null;
             
             this.gameState = new GameState();
             this.gameState.characterSystem = this.characterSystem;
@@ -575,7 +584,10 @@ class GameCoordinator {
                         opponentCharacter: opponentCharacter,
                         turnCount: gameStateForPlayer.turnCount,
                         battleDuration: durationString,
-                        matchStats: this.matchStats ? { ...this.matchStats } : null
+                        matchStats: this.matchStats ? { ...this.matchStats } : null,
+                        matchMode: this.currentMatchMode || 'casual',
+                        rankedEloResult: this.rankedEloResult || null,
+                        playerRole: this.currentPlayerRole || null
                     });
                 }
             }, 100);
@@ -585,6 +597,12 @@ class GameCoordinator {
     async handleGameEnded(message) {
         const winner = message && message.winner ? message.winner : null;
         if (!winner) return;
+
+        try {
+            if (message && message.rankedEloResult) {
+                this.rankedEloResult = message.rankedEloResult;
+            }
+        } catch (e) {}
 
         if (this.lastActionResult && this.lastActionResult.gameEnded) {
             let hasPresentationScheduled = false;
