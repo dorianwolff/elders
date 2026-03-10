@@ -2064,6 +2064,7 @@ class SkillSystem {
 
                     const consumeCfg = effect.consume_heartbreak;
                     if (state && state.counters) {
+                        const beforeHb = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
                         if (typeof consumeCfg === 'number' && Number.isFinite(consumeCfg)) {
                             const cur = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
                             const consumeN = Math.max(0, Math.floor(consumeCfg));
@@ -2073,6 +2074,11 @@ class SkillSystem {
                             if (consumeAll) {
                                 state.counters.heartbreak = 0;
                             }
+                        }
+                        const afterHb = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
+                        const consumed = Math.max(0, beforeHb - afterHb);
+                        if (consumed > 0 && caster && caster.id === 'zero_two' && this.passiveSystem && typeof this.passiveSystem.applyPermanentStatDelta === 'function') {
+                            this.passiveSystem.applyPermanentStatDelta(playerId, { maxHealth: -consumed });
                         }
                     }
                 }
@@ -2344,6 +2350,7 @@ class SkillSystem {
 
                     const consumeCfg = effect.consume_heartbreak;
                     if (state && state.counters) {
+                        const beforeHb = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
                         if (typeof consumeCfg === 'number' && Number.isFinite(consumeCfg)) {
                             const cur = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
                             const consumeN = Math.max(0, Math.floor(consumeCfg));
@@ -2353,6 +2360,11 @@ class SkillSystem {
                             if (consumeAll) {
                                 state.counters.heartbreak = 0;
                             }
+                        }
+                        const afterHb = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
+                        const consumed = Math.max(0, beforeHb - afterHb);
+                        if (consumed > 0 && caster && caster.id === 'zero_two' && this.passiveSystem && typeof this.passiveSystem.applyPermanentStatDelta === 'function') {
+                            this.passiveSystem.applyPermanentStatDelta(playerId, { maxHealth: -consumed });
                         }
                     }
 
@@ -2385,7 +2397,11 @@ class SkillSystem {
                     }
 
                     if (state && state.counters) {
+                        const beforeHb = Math.max(0, Math.floor(Number(state.counters.heartbreak) || 0));
                         state.counters.heartbreak = 0;
+                        if (beforeHb > 0 && caster && caster.id === 'zero_two' && this.passiveSystem && typeof this.passiveSystem.applyPermanentStatDelta === 'function') {
+                            this.passiveSystem.applyPermanentStatDelta(playerId, { maxHealth: -beforeHb });
+                        }
                     }
 
                     result.effects.push('KISS OF DEATH');

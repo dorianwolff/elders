@@ -303,7 +303,7 @@
   "kiss_of_death_passive": {
     "id": "kiss_of_death_passive",
     "name": "Partner Killer",
-    "description": "Gain Heartbreak based on your opponent's actions. Heartbreak is capped at 100. At 66 Heartbreak, Ultimate becomes available.",
+    "description": "Gain Heartbreak based on your opponent's actions. Heartbreak is capped at 100. Each Heartbreak grants +1 max health and +1 current health. At 66 Heartbreak, Ultimate becomes available.",
     "mobileDescription": "Gain Heartbreak from your opponent's actions. At 66 Heartbreak, you unlock your ultimate.",
     "tagWeights": {
       "parasite": 4,
@@ -387,8 +387,8 @@
   "naruto_sage_mode": {
     "id": "naruto_sage_mode",
     "name": "Six Paths Sage Mode",
-    "description": "Stay in Sage Mode until the end of the game. Each time you use a different skill than the last one you used, gain 1 Sage Orb (max 5). At the start of each of your turns, recover 2 health per Sage Orb. Sage Orbs also grant +1 permanent attack per orb gained.",
-    "mobileDescription": "Alternate skills to gain Orbs (max 5). Orbs permanently increase attack and heal you each turn.",
+    "description": "Alternate skills to gain Orbs and reaching the maximum of 5 grants ultimate. At the start of each of your turns, recover 2 health per Sage Orb. Sage Orbs also grant +1 permanent attack per orb gained.",
+    "mobileDescription": "Alternate skills to gain Orbs and reaching the maximum of 5 grants ultimate. Orbs permanently increase attack and heal you each turn.",
     "mission": {
       "type": "stack_threshold",
       "counter": "sageOrbs",

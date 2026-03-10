@@ -195,7 +195,7 @@
       "health": 133,
       "maxHealth": 133,
       "attack": 34,
-      "defense": 9,
+      "defense": 13,
       "lifesteal": 0,
       "damageReduction": 0,
       "shield": 0,
@@ -252,7 +252,7 @@
   "naruto": {
     "id": "naruto",
     "name": "Naruto Uzumaki",
-    "metaPoints": 185,
+    "metaPoints": 172,
     "stats": {
       "health": 125,
       "maxHealth": 125,

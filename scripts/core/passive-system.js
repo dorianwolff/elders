@@ -420,8 +420,16 @@ class PassiveSystem {
                 }
 
                 if (delta > 0) {
+                    if (character && character.id === 'zero_two' && (Number(character.stats?.health) || 0) <= 0) {
+                        continue;
+                    }
+                    const before = Math.max(0, Math.floor(Number(state.counters[key]) || 0));
                     const max = typeof eff.max === 'number' ? eff.max : null;
-                    this.addCounter(character, key, delta, 0, max);
+                    const after = this.addCounter(character, key, delta, 0, max);
+                    const gained = Math.max(0, Math.floor(Number(after) || 0) - before);
+                    if (gained > 0 && character && character.id === 'zero_two') {
+                        this.applyPermanentStatDelta(playerId, { maxHealth: gained, currentHealth: gained });
+                    }
                     this.updateUltimateReady(playerId);
                 }
             }
