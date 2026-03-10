@@ -54,15 +54,15 @@
     "ultimate": {
       "id": "beelzebub",
       "name": "Beelzebub",
-      "description": "Deal 80% attack + 80% defense + 20% max health as damage",
+      "description": "Deal 100% attack + 100% defense + 20% max health as damage",
       "effect": {
         "type": "multi_scaling_damage",
         "target": "enemy",
         "multiHit": true,
         "hitCount": 3,
         "components": [
-          { "scaling": "attack", "value": 0.8 },
-          { "scaling": "defense", "value": 0.8 },
+          { "scaling": "attack", "value": 1.0 },
+          { "scaling": "defense", "value": 1.0 },
           { "scaling": "max_health", "value": 0.2 }
         ]
       }
