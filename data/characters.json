@@ -15,7 +15,7 @@
     },
     "images": ["lloyd_frontera.jpg"],
     "passiveId": "development",
-    "recommended_items": ["mace"],
+    "recommended_items": ["construction_shovel"],
     "skillIds": ["value_over_self", "plannification", "construction_site"],
     "ultimate": {
       "id": "greatest_real_estate",
@@ -49,7 +49,7 @@
     },
     "images": ["rimuru_tempest.webp"],
     "passiveId": "gluttony",
-    "recommended_items": ["mace"],
+    "recommended_items": ["rimuru_sword"],
     "skillIds": ["predation", "rimuru_stance", "devour"],
     "ultimate": {
       "id": "beelzebub",
@@ -203,7 +203,7 @@
     },
     "images": ["zero_two.png"],
     "passiveId": "kiss_of_death_passive",
-    "recommended_items": ["mace"],
+    "recommended_items": ["zero_two_suit"],
     "skillIds": ["darling_bite", "heartbreak_harvest", "dont_hurt_me_baby", "unrivaled_love"],
     "ultimate": {
       "id": "kiss_of_death",
@@ -265,7 +265,7 @@
     },
     "images": ["naruto_uzumaki.jpg"],
     "passiveId": "naruto_natural_energy",
-    "recommended_items": ["mace"],
+    "recommended_items": ["naruto_uzumaki_cape"],
     "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
     "ultimate": {
       "id": "naruto_enter_sage_mode",
@@ -297,7 +297,7 @@
     },
     "images": ["naruto_uzumaki_sage.jpg"],
     "passiveId": "naruto_sage_mode",
-    "recommended_items": ["mace"],
+    "recommended_items": ["naruto_uzumaki_cape"],
     "skillIds": ["naruto_yang_strike", "naruto_yang_meteor_rain", "naruto_yin_guard", "naruto_yin_serenity"],
     "ultimate": {
       "id": "naruto_sage_judgement",
@@ -428,18 +428,18 @@
     },
     "images": ["yato.jpg"],
     "passiveId": "limited_immortality",
-    "recommended_items": ["mace"],
+    "recommended_items": ["sekki"],
     "skillIds": ["yato_normal_strike", "yato_teleportation", "yato_divine_possession"],
     "ultimate": {
       "id": "yato_twin_strike",
       "name": "Twin Strike",
-      "description": "Deal 125% of attack as damage, twice. For the rest of the game, all of Yato's attack skills trigger an additional time.",
+      "description": "Deal 115% of attack as damage, twice. For the rest of the game, all of Yato's attack skills trigger an additional time.",
       "cooldown": 0,
       "type": "attack",
       "effect": {
         "type": "yato_twin_strike",
         "target": "enemy",
-        "value": 1.25,
+        "value": 1.15,
         "scaling": "attack"
       }
     }

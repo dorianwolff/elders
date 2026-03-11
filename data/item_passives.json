@@ -58,5 +58,30 @@
     "id": "communication_device_parity_link",
     "name": "Parity Link",
     "description": "If your current health is even, gain +4 ATK. Otherwise, gain -5 ATK."
+  },
+  "rimuru_sword_true_damage_proc": {
+    "id": "rimuru_sword_true_damage_proc",
+    "name": "Predator's Edge",
+    "description": "When using a skill, deal 1 true damage to the enemy."
+  },
+  "construction_shovel_rallying_grit": {
+    "id": "construction_shovel_rallying_grit",
+    "name": "Rallying Grit",
+    "description": "Each time you take damage, gain +1 ATK for 2 turns."
+  },
+  "zero_two_suit_twisted_affection": {
+    "id": "zero_two_suit_twisted_affection",
+    "name": "Twisted Affection",
+    "description": "At the start of your turn, gain 3 Heartbreak and recover the opponent's health by 3. If the opponent used an ultimate on the previous turn, gain 3 additional Heartbreak."
+  },
+  "naruto_uzumaki_cape_hokages_aegis": {
+    "id": "naruto_uzumaki_cape_hokages_aegis",
+    "name": "Hokage's Aegis",
+    "description": "When casting your ultimate, gain 10 Shield and recover 10 health."
+  },
+  "sekki_single_strike_protocol": {
+    "id": "sekki_single_strike_protocol",
+    "name": "Single-Strike Protocol",
+    "description": "Enemy multi-strike attacks instead deal a single combined hit."
   }
 }

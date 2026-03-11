@@ -220,13 +220,21 @@ GameState.prototype.useUltimate = async function (playerId) {
         }
     }
 
-    const result = await this.skillSystem.applySkillEffect(
-        player.character.ultimate.effect,
-        player.character,
-        opponent.character,
-        this,
-        playerId
-    );
+    const result = await this.skillSystem.withActionContext({
+        kind: 'ultimate',
+        attackerId: playerId,
+        skillId: player.character?.ultimate?.id,
+        skillType: 'ultimate',
+        isCounter: false
+    }, async () => {
+        return await this.skillSystem.applySkillEffect(
+            player.character.ultimate.effect,
+            player.character,
+            opponent.character,
+            this,
+            playerId
+        );
+    });
 
     result.animations = animations;
 

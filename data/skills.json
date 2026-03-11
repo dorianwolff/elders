@@ -986,7 +986,7 @@
   "darling_bite": {
     "id": "darling_bite",
     "name": "Darling Bite",
-    "description": "Deal 95% of attack as damage and apply Kiss Mark for 4 turns. While Kiss Mark is active, healing received by the target is stored.",
+    "description": "Deal 95% of attack as damage and apply Kiss Mark for 4 turns. Kiss Mark grants Heartbreak equal to target's restored health.",
     "tagWeights": {
       "parasite": 5,
       "aggro": 2
@@ -1411,7 +1411,7 @@
       "tank": 3
     },
     "type": "utility",
-    "cooldown": 2,
+    "cooldown": 3,
     "effect": {
       "type": "yato_teleportation",
       "target": "self",

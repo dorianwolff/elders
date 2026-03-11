@@ -275,6 +275,53 @@ class SkillSystem {
         } finally {
             try {
                 const active = this.getActiveActionContext();
+
+                // Yato item: Sekki => compress enemy multi-hit damage from a single skill/ultimate into one combined hit.
+                // We resolve the queued combined hit(s) first, so post-action reactions (ex: Yin Serenity)
+                // can still read the final damage from the same action context.
+                if (active && active._sekkiPendingDamageByTarget && typeof active._sekkiPendingDamageByTarget === 'object') {
+                    const attackerId = typeof active.attackerId === 'string' ? active.attackerId : null;
+                    if (attackerId) {
+                        active._sekkiBypassBatch = true;
+                        for (const [victimId, raw] of Object.entries(active._sekkiPendingDamageByTarget)) {
+                            const victimPlayerId = String(victimId);
+                            const total = Math.max(0, Math.floor(Number(raw) || 0));
+                            if (total <= 0) continue;
+                            if (victimPlayerId !== 'player1' && victimPlayerId !== 'player2') continue;
+                            if (victimPlayerId === attackerId) continue;
+                            const victim = this.getPlayerById(victimPlayerId);
+                            if (victim) {
+                                await this.applyDamageNoDomain(victim, total, victimPlayerId, attackerId);
+                            }
+                        }
+                        active._sekkiPendingDamageByTarget = {};
+                        active._sekkiBypassBatch = false;
+                    }
+                }
+
+                // Sekki follow-up: apply any queued enemy true-damage procs AFTER the combined hit.
+                // This allows effects like Rimuru sword (+1 true damage) to potentially trigger
+                // an additional immortality consumption after Yato revives to 1 HP.
+                if (active && active._sekkiPendingTrueDamageByTarget && typeof active._sekkiPendingTrueDamageByTarget === 'object') {
+                    const attackerId = typeof active.attackerId === 'string' ? active.attackerId : null;
+                    if (attackerId) {
+                        active._sekkiBypassBatch = true;
+                        for (const [victimId, raw] of Object.entries(active._sekkiPendingTrueDamageByTarget)) {
+                            const victimPlayerId = String(victimId);
+                            const total = Math.max(0, Math.floor(Number(raw) || 0));
+                            if (total <= 0) continue;
+                            if (victimPlayerId !== 'player1' && victimPlayerId !== 'player2') continue;
+                            if (victimPlayerId === attackerId) continue;
+                            const victim = this.getPlayerById(victimPlayerId);
+                            if (victim) {
+                                await this.applyTrueDamageNoDomain(victim, total, victimPlayerId, attackerId);
+                            }
+                        }
+                        active._sekkiPendingTrueDamageByTarget = {};
+                        active._sekkiBypassBatch = false;
+                    }
+                }
+
                 // Apply "after the full action" reactions before popping the context.
                 // Naruto: Yin Serenity => after taking damage during this action, gain a shield equal to a ratio of total damage taken.
                 if (active && active._damageTakenByTarget && typeof active._damageTakenByTarget === 'object') {
@@ -2555,8 +2602,34 @@ class SkillSystem {
                     const copied = caster.devourSkill;
                     if (copied && copied.effect) {
                         const tmp = { ...copied, cooldown: 0 };
-                        const first = await this.applySkillEffect(tmp.effect, caster, target, gameState, playerId, override);
-                        const second = await this.applySkillEffect(tmp.effect, caster, target, gameState, playerId, override);
+
+                        const copiedTarget = (tmp.effect && typeof tmp.effect.target === 'string') ? tmp.effect.target : null;
+                        const resolvedTarget = copiedTarget === 'self'
+                            ? caster
+                            : (copiedTarget === 'enemy' ? target : target);
+
+                        const nextOverride = {
+                            ...(override || {}),
+                            skillId: tmp.id,
+                            skillType: tmp.type
+                        };
+
+                        const outerCtx = this.getActiveActionContext();
+                        const proxyCtx = {
+                            ...(outerCtx || {}),
+                            kind: (outerCtx && outerCtx.kind) ? outerCtx.kind : 'skill',
+                            attackerId: (outerCtx && outerCtx.attackerId) ? outerCtx.attackerId : playerId,
+                            skillId: tmp.id,
+                            skillType: tmp.type,
+                            _devourProxy: true
+                        };
+
+                        const first = await this.withActionContext(proxyCtx, async () => {
+                            return await this.applySkillEffect(tmp.effect, caster, resolvedTarget, gameState, playerId, nextOverride);
+                        });
+                        const second = await this.withActionContext(proxyCtx, async () => {
+                            return await this.applySkillEffect(tmp.effect, caster, resolvedTarget, gameState, playerId, nextOverride);
+                        });
 
                         result.damage = (result.damage || 0) + (first.damage || 0) + (second.damage || 0);
                         result.healing = (result.healing || 0) + (first.healing || 0) + (second.healing || 0);
@@ -3091,6 +3164,33 @@ class SkillSystem {
                 }
             }
         }
+
+        // Yato item: Sekki => batch enemy skill/ultimate damage instances within the same action.
+        // This prevents multi-hit sequences from consuming multiple immortality interactions.
+        try {
+            const ctx = this.getActiveActionContext();
+            const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+            const shouldBatch = Boolean(
+                ctx &&
+                !ctx.isCounter &&
+                !ctx._sekkiBypassBatch &&
+                (ctx.kind === 'skill' || ctx.kind === 'ultimate') &&
+                attackerId &&
+                (attackerId === 'player1' || attackerId === 'player2') &&
+                attackerId !== playerId &&
+                target &&
+                target.id === 'yato' &&
+                target.itemId === 'sekki'
+            );
+            if (shouldBatch) {
+                const pending = Math.max(1, Math.ceil(Number(damage) || 0));
+                if (!ctx._sekkiPendingDamageByTarget || typeof ctx._sekkiPendingDamageByTarget !== 'object') {
+                    ctx._sekkiPendingDamageByTarget = {};
+                }
+                ctx._sekkiPendingDamageByTarget[playerId] = (Number(ctx._sekkiPendingDamageByTarget[playerId]) || 0) + pending;
+                return pending;
+            }
+        } catch (e) {}
 
         // Apply mark bonus damage
         const markBonus = this.getMarkBonus(playerId);
@@ -3972,18 +4072,45 @@ class SkillSystem {
             return 0;
         }
 
-        // Yato: Teleportation (true damage immunity)
+        // Sekki: delay enemy true damage procs until after the combined normal hit resolves.
+        // This keeps ordering intuitive (big hit first, then true-damage proc), and ensures
+        // Yato immortality can be consumed again by the proc if the combined hit revived him.
         try {
             const ctx = this.getActiveActionContext();
             const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
-            const isEnemyAttackSkill =
-                attackerId &&
-                attackerId !== playerId &&
+            const shouldDelay = Boolean(
                 ctx &&
+                !ctx.isCounter &&
+                !ctx._sekkiBypassBatch &&
                 (ctx.kind === 'skill' || ctx.kind === 'ultimate') &&
-                ctx.skillType === 'attack';
+                attackerId &&
+                (attackerId === 'player1' || attackerId === 'player2') &&
+                attackerId !== playerId &&
+                target &&
+                target.id === 'yato' &&
+                target.itemId === 'sekki'
+            );
+            if (shouldDelay) {
+                const pending = Math.max(0, Math.floor(Number(damage) || 0));
+                if (pending <= 0) return 0;
 
-            if (isEnemyAttackSkill && this.activeEffects && typeof this.activeEffects.entries === 'function') {
+                if (!ctx._sekkiPendingTrueDamageByTarget || typeof ctx._sekkiPendingTrueDamageByTarget !== 'object') {
+                    ctx._sekkiPendingTrueDamageByTarget = {};
+                }
+                ctx._sekkiPendingTrueDamageByTarget[playerId] = (Number(ctx._sekkiPendingTrueDamageByTarget[playerId]) || 0) + pending;
+
+                const markBonus = this.getMarkBonus(playerId);
+                return Math.max(0, Math.floor(pending * (1 + markBonus)));
+            }
+        } catch (e) {}
+
+        // Yato: Teleportation (true damage immunity)
+        try {
+            const attackerId = attackerIdOverride === undefined ? this.gameState?.currentTurn : attackerIdOverride;
+
+            const isNotSelfDamage = attackerId !== playerId;
+
+            if (isNotSelfDamage && this.activeEffects && typeof this.activeEffects.entries === 'function') {
                 for (const [, eff] of this.activeEffects.entries()) {
                     if (!eff) continue;
                     if (eff.type !== 'buff') continue;

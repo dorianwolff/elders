@@ -107,13 +107,8 @@ GameState.prototype.applyProgressiveHPLoss = async function (playerId) {
 
     const currentRound = Math.floor(this.turnCount / 2) + 1;
     const loss = Math.max(0, 5 + Math.max(0, currentRound - 10));
-    character.stats.health = Math.max(0, (Number(character.stats.health) || 0) - loss);
 
-    if (loss > 0 && this.skillSystem && typeof this.skillSystem.emitCombatText === 'function') {
-        this.skillSystem.emitCombatText('damage', loss, playerId);
-    }
-
-    if (this.skillSystem && typeof this.skillSystem.recalculateStats === 'function') {
-        this.skillSystem.recalculateStats(playerId);
+    if (loss > 0 && this.skillSystem && typeof this.skillSystem.applyTrueDamageNoDomain === 'function') {
+        await this.skillSystem.applyTrueDamageNoDomain(character, loss, playerId, null);
     }
 };

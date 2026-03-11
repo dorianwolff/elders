@@ -128,5 +128,71 @@
       "attack": 1
     },
     "passiveId": "communication_device_parity_link"
+  },
+  "rimuru_sword": {
+    "id": "rimuru_sword",
+    "name": "Rimuru's Sword",
+    "type": "signature",
+    "image": "assets/items/rimuru_sword.png",
+    "allowedCharacters": ["rimuru_tempest"],
+    "stats": {
+      "defense": 1,
+      "health": 2,
+      "maxHealth": 2
+    },
+    "passiveId": "rimuru_sword_true_damage_proc"
+  },
+  "construction_shovel": {
+    "id": "construction_shovel",
+    "name": "Construction Shovel",
+    "type": "signature",
+    "image": "assets/items/lloyd_frontera_shovel.png",
+    "allowedCharacters": ["lloyd_frontera"],
+    "stats": {
+      "attack": 1,
+      "defense": 1,
+      "health": 1,
+      "maxHealth": 1
+    },
+    "passiveId": "construction_shovel_rallying_grit"
+  },
+  "zero_two_suit": {
+    "id": "zero_two_suit",
+    "name": "Zero Two's Suit",
+    "type": "signature",
+    "image": "assets/items/zero_two_suit.png",
+    "allowedCharacters": ["zero_two"],
+    "stats": {
+      "health": 2,
+      "maxHealth": 2
+    },
+    "passiveId": "zero_two_suit_twisted_affection"
+  },
+  "naruto_uzumaki_cape": {
+    "id": "naruto_uzumaki_cape",
+    "name": "Hokage Cape",
+    "type": "signature",
+    "image": "assets/items/naruto_uzumaki_cape.png",
+    "allowedCharacters": ["naruto", "naruto_sage"],
+    "stats": {
+      "attack": 1,
+      "health": 1,
+      "maxHealth": 1
+    },
+    "passiveId": "naruto_uzumaki_cape_hokages_aegis"
+  },
+  "sekki": {
+    "id": "sekki",
+    "name": "Sekki",
+    "type": "signature",
+    "image": "assets/items/yato_sword.png",
+    "allowedCharacters": ["yato"],
+    "stats": {
+      "attack": 3,
+      "defense": -2,
+      "health": -1,
+      "maxHealth": -1
+    },
+    "passiveId": "sekki_single_strike_protocol"
   }
 }
