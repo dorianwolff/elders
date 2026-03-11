@@ -605,7 +605,7 @@
             }
 
             if (effect.type === 'kaito_ultimate') {
-                const pct = getScaledValue(effect, 'attackPctBase', 'attackPctPerRestriction', restrictionCount, 1.4, 0.4);
+                const pct = getScaledValue(effect, 'attackPctBase', 'attackPctPerRestriction', restrictionCount, 1.25, 0.4);
                 const dealt = await applyDamagePct(skillSystem, caster, target, enemyId, playerId, pct);
                 ctx.result.damage = (Number(ctx.result.damage) || 0) + dealt;
 

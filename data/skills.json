@@ -1407,6 +1407,7 @@
     "description": "Reduce the next attack skill damage to 0. Gain a buff which prevents true damage for 3 turns.",
     "tagWeights": {
       "control": 2,
+      "scaler": 3,
       "buffer": 2,
       "tank": 3
     },
@@ -1423,7 +1424,7 @@
     "name": "Divine Possession",
     "description": "Remove 1 stack of Immortality. Once your last stack of Immortality is removed, this skill becomes Last Strike.",
     "tagWeights": {
-      "aggro": 2,
+      "aggro": 4,
       "burst": 2
     },
     "type": "utility",
@@ -1763,7 +1764,7 @@
     "effect": {
       "type": "kaito_ultimate",
       "target": "enemy",
-      "attackPctBase": 1.4,
+      "attackPctBase": 1.25,
       "attackPctPerRestriction": 0.4
     }
   }

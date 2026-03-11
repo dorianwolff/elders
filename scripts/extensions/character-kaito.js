@@ -10,7 +10,17 @@
         {
             key: 'restriction_tactics',
             name: 'Restriction of Tactics',
-            description: 'Your opponent cannot be debuffed.'
+            description: 'When you use a skill, randomly use any usable skill instead.'
+        },
+        {
+            key: 'restriction_death',
+            name: 'Restriction of Death',
+            description: 'When your health falls to 10% or below, execute yourself.'
+        },
+        {
+            key: 'restriction_blindness',
+            name: 'Restriction of Blindness',
+            description: "Opponent's stats are unviewable."
         },
         {
             key: 'restriction_might',
@@ -445,6 +455,18 @@
                     if (state.kaitoWeaponUses >= 2) {
                         state.kaitoPendingRevertOnOpponentTurnEnd = true;
                         state.kaitoPendingRevertMarkedAtTurnCount = Number.isFinite(Number(gameState?.turnCount)) ? Number(gameState.turnCount) : null;
+                    }
+                }
+            }
+
+            if (eventType === 'damage_taken') {
+                const maxHp = Math.max(1, Math.floor(Number(character?.stats?.maxHealth) || 1));
+                const hp = Math.max(0, Math.floor(Number(character?.stats?.health) || 0));
+                const keys = getActiveKaitoRestrictions(skillSystem, playerId);
+                if (keys.has('restriction_death')) {
+                    if (!state._kaitoDeathExecuted && (hp / maxHp) <= 0.10) {
+                        state._kaitoDeathExecuted = true;
+                        await skillSystem.applyTrueDamageNoDomain(character, maxHp + 99999, playerId, playerId);
                     }
                 }
             }

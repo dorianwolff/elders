@@ -460,12 +460,12 @@
     },
     "images": ["kaito.webp"],
     "passiveId": "kaito_nen_restrictions",
-    "recommended_items": ["mace"],
+    "recommended_items": ["kaito_slot_clown"],
     "skillIds": ["kaito_crazy_slots", "kaito_price_of_power"],
     "ultimate": {
       "id": "kaito_ultimate",
       "name": "Final Roll",
-      "description": "Deal 140% of attack as damage (scales with restrictions) and use your current Skill 1 as a bonus effect (ignores restrictions).",
+      "description": "Deal 125% of attack as damage (scales with restrictions) and use your current Skill 1 as a bonus effect (ignores restrictions).",
       "cooldown": 5,
       "type": "attack",
       "effect": {
@@ -490,7 +490,7 @@
     },
     "images": ["emilia.png"],
     "passiveId": "frost_resonance",
-    "recommended_items": ["mace"],
+    "recommended_items": ["emilia_puck"],
     "skillIds": ["emilia_glacial_prison", "emilia_silver_blizzard", "emilia_frost_petal"],
     "ultimate": {
       "id": "emilia_absolute_zero",

@@ -1371,6 +1371,31 @@ class BattlePage extends BasePage {
     }
 
     updateHealthBars() {
+        const shouldHideOpponentInfo = (() => {
+            try {
+                if (!this.gameState || !this.gameState.skillSystem) return false;
+                const playerId = this.gameState.playerId;
+                for (const [, eff] of this.gameState.skillSystem.activeEffects.entries()) {
+                    if (!eff) continue;
+                    if (eff.type !== 'restriction') continue;
+                    if (eff.target !== playerId) continue;
+                    if (eff.key !== 'restriction_blindness') continue;
+                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        })();
+
+        try {
+            const opponentHealthText = this.querySelector('#opponent-health-bar .health-text');
+            if (opponentHealthText) opponentHealthText.style.visibility = shouldHideOpponentInfo ? 'hidden' : '';
+            const opponentStats = this.querySelector('#opponent-stats');
+            if (opponentStats) opponentStats.style.display = shouldHideOpponentInfo ? 'none' : '';
+            const opponentEffects = this.querySelector('#opponent-effects');
+            if (opponentEffects) opponentEffects.style.display = shouldHideOpponentInfo ? 'none' : '';
+        } catch (e) {}
+
         // Player HP
         const playerHealth = Number(this.gameState.player.character.stats.health) || 0;
         const playerMaxHealth = Number(this.gameState.player.character.stats.maxHealth) || 1;
@@ -1451,8 +1476,10 @@ class BattlePage extends BasePage {
         }
         this.lastHealthPercent.opponent = opponentHealthPercent;
 
-        this.updateElement('#opponent-health-current', opponentHealth);
-        this.updateElement('#opponent-health-max', opponentMaxHealth);
+        if (!shouldHideOpponentInfo) {
+            this.updateElement('#opponent-health-current', opponentHealth);
+            this.updateElement('#opponent-health-max', opponentMaxHealth);
+        }
 
         const opponentFill = this.querySelector('#opponent-health-fill');
         if (this.displayedHealthPercent.opponent === null) {
@@ -2672,6 +2699,21 @@ class BattlePage extends BasePage {
     updateStatDisplays() {
         if (!this.statDisplay || !this.gameState || !this.gameState.skillSystem) return;
 
+        const shouldHideOpponentInfo = (() => {
+            try {
+                const playerId = this.gameState.playerId;
+                for (const [, eff] of this.gameState.skillSystem.activeEffects.entries()) {
+                    if (!eff) continue;
+                    if (eff.type !== 'restriction') continue;
+                    if (eff.target !== playerId) continue;
+                    if (eff.key !== 'restriction_blindness') continue;
+                    if ((Number(eff.turnsLeft) || 0) <= 0) continue;
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        })();
+
         // Update player stats
         const playerStatsContainer = this.querySelector('#player-stats');
         if (playerStatsContainer) {
@@ -2684,7 +2726,7 @@ class BattlePage extends BasePage {
 
         // Update opponent stats (if visible)
         const opponentStatsContainer = this.querySelector('#opponent-stats');
-        if (opponentStatsContainer) {
+        if (opponentStatsContainer && !shouldHideOpponentInfo) {
             const opponentId = this.gameState.playerId === 'player1' ? 'player2' : 'player1';
             this.statDisplay.updatePlayerStats(
                 opponentId, 

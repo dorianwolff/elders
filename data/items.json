@@ -194,5 +194,28 @@
       "maxHealth": -1
     },
     "passiveId": "sekki_single_strike_protocol"
+  },
+  "emilia_puck": {
+    "id": "emilia_puck",
+    "name": "Puck",
+    "type": "signature",
+    "image": "assets/items/emila_puck.png",
+    "allowedCharacters": ["emilia"],
+    "stats": {},
+    "passiveId": "emilia_puck_frozen_companion"
+  },
+  "kaito_slot_clown": {
+    "id": "kaito_slot_clown",
+    "name": "Slot Clown",
+    "type": "signature",
+    "image": "assets/items/kaito_clown.png",
+    "allowedCharacters": ["kaito"],
+    "stats": {
+      "attack": 1,
+      "defense": 1,
+      "health": 1,
+      "maxHealth": 1
+    },
+    "passiveId": "kaito_slot_clown_loaded_slots"
   }
 }

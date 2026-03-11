@@ -25,14 +25,24 @@ class PlayerTwo {
 
             // Execute skill locally (IMMEDIATE LOGIC)
             const result = await this.gameState.useSkill('player2', skillIndex);
-            
+
+            const effectiveType = result && result._effectiveActionType ? result._effectiveActionType : 'skill';
+            const effectiveSkillIndex = (effectiveType === 'skill')
+                ? (Number.isFinite(Number(result?._effectiveSkillIndex)) ? Number(result._effectiveSkillIndex) : skillIndex)
+                : undefined;
+            const effectiveCharacter = this.gameState.players.get('player2')?.character;
+            const effectiveSkill = (effectiveType === 'skill' && effectiveCharacter && Array.isArray(effectiveCharacter.skills))
+                ? effectiveCharacter.skills[effectiveSkillIndex]
+                : null;
+
             // Notify game coordinator (IMMEDIATE SYNC)
-            await this.gameCoordinator.handlePlayerAction('player2', 'skill', {
-                skillIndex,
-                skillId: liveSkill?.id,
-                skillType: liveSkill?.type,
-                skillName: liveSkill?.name || 'Skill',
-                actorCharacterId: liveCharacter?.id,
+            await this.gameCoordinator.handlePlayerAction('player2', effectiveType === 'ultimate' ? 'ultimate' : 'skill', {
+                skillIndex: effectiveType === 'skill' ? effectiveSkillIndex : undefined,
+                skillId: effectiveType === 'skill' ? effectiveSkill?.id : undefined,
+                skillType: effectiveType === 'skill' ? effectiveSkill?.type : undefined,
+                skillName: effectiveType === 'skill' ? (effectiveSkill?.name || 'Skill') : undefined,
+                ultimateName: effectiveType === 'ultimate' ? (effectiveCharacter?.ultimate?.name || 'Ultimate') : undefined,
+                actorCharacterId: effectiveCharacter?.id || liveCharacter?.id,
                 result
             });
 
@@ -54,11 +64,24 @@ class PlayerTwo {
 
             // Execute ultimate locally (IMMEDIATE LOGIC)
             const result = await this.gameState.useUltimate('player2');
+
+            const effectiveType = result && result._effectiveActionType ? result._effectiveActionType : 'ultimate';
+            const effectiveSkillIndex = (effectiveType === 'skill')
+                ? (Number.isFinite(Number(result?._effectiveSkillIndex)) ? Number(result._effectiveSkillIndex) : 0)
+                : undefined;
+            const effectiveCharacter = this.gameState.players.get('player2')?.character;
+            const effectiveSkill = (effectiveType === 'skill' && effectiveCharacter && Array.isArray(effectiveCharacter.skills))
+                ? effectiveCharacter.skills[effectiveSkillIndex]
+                : null;
             
             // Notify game coordinator (IMMEDIATE SYNC)
-            await this.gameCoordinator.handlePlayerAction('player2', 'ultimate', {
-                ultimateName: liveCharacter?.ultimate?.name || 'Ultimate',
-                actorCharacterId,
+            await this.gameCoordinator.handlePlayerAction('player2', effectiveType === 'skill' ? 'skill' : 'ultimate', {
+                skillIndex: effectiveType === 'skill' ? effectiveSkillIndex : undefined,
+                skillId: effectiveType === 'skill' ? effectiveSkill?.id : undefined,
+                skillType: effectiveType === 'skill' ? effectiveSkill?.type : undefined,
+                skillName: effectiveType === 'skill' ? (effectiveSkill?.name || 'Skill') : undefined,
+                ultimateName: effectiveType === 'ultimate' ? (effectiveCharacter?.ultimate?.name || 'Ultimate') : undefined,
+                actorCharacterId: effectiveCharacter?.id || actorCharacterId,
                 result
             });
 

@@ -83,5 +83,15 @@
     "id": "sekki_single_strike_protocol",
     "name": "Single-Strike Protocol",
     "description": "Enemy multi-strike attacks instead deal a single combined hit."
+  },
+  "emilia_puck_frozen_companion": {
+    "id": "emilia_puck_frozen_companion",
+    "name": "Frozen Companion",
+    "description": "When you gain Frozen Queen, recover 5 health and inflict 1 Permafrost on the opponent."
+  },
+  "kaito_slot_clown_loaded_slots": {
+    "id": "kaito_slot_clown_loaded_slots",
+    "name": "Loaded Slots",
+    "description": "When using Crazy Slots, 10% chance to stun the opponent for 1 turn. Otherwise gain 5 Shield. For each restriction: +10% stun chance and +1 Shield."
   }
 }

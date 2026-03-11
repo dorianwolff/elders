@@ -236,7 +236,7 @@
 
             const playerId = gameState?.playerId;
             const r = getRestrictionCount(skillSystem, playerId);
-            const pctBase = 1.4;
+            const pctBase = 1.25;
             const pctPer = 0.4;
             const pctTotal = Math.max(0, pctBase + (pctPer * (Number(r) || 0)));
             const pctText = `${Math.round(pctTotal * 100)}%`;
