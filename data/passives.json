@@ -350,9 +350,10 @@
     "description": "Balance ranges from -3 to +3. Yang skills shifts Balance by +1, Yin skills shifts Balance by -1. Ultimate unlocks when you reach either extremity.",
     "mobileDescription": "Using skills shifts your Balance between -3 and +3. Reaching either end unlocks your ultimate.",
     "tagWeights": {
-      "control": 7,
+      "scaler": 7,
       "buffer": 4,
-      "burst": 2
+      "burst": 2,
+      "control": 3
     },
     "mission": {
       "type": "counter_extremity",
