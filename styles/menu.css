@@ -1220,6 +1220,7 @@ html.menu-metal-bg .menu-sticky {
 }
 
 .item-picker-name {
+    display: block;
     font-weight: 900;
     color: rgba(255, 255, 255, 0.96);
     font-size: clamp(0.72rem, 1.05vw, 1rem);
@@ -1228,6 +1229,7 @@ html.menu-metal-bg .menu-sticky {
     white-space: nowrap;
     min-width: 0;
     max-width: 100%;
+    transform-origin: left center;
 }
 
 .item-picker-name-row {

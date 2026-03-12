@@ -62,6 +62,8 @@ class MenuPage extends BasePage {
 
                 try {
                     el.style.fontSize = '';
+                    el.style.transform = '';
+                    el.style.letterSpacing = '';
 
                     const parent = el.parentElement;
                     if (!parent) continue;
@@ -71,7 +73,7 @@ class MenuPage extends BasePage {
 
                     const cs = window.getComputedStyle(el);
                     const startSize = Math.max(8, Math.floor(parseFloat(cs.fontSize) || 0));
-                    const minSize = 9;
+                    const minSize = this.isMobileViewport && this.isMobileViewport() ? 9 : 8;
 
                     let size = startSize;
                     let guard = 0;
@@ -82,6 +84,16 @@ class MenuPage extends BasePage {
                         if (el.scrollWidth <= maxPx) break;
                         if (size <= minSize) break;
                         size -= 1;
+                    }
+
+                    // If it still doesn't fit, gently compress horizontally so the full name is visible.
+                    if (el.scrollWidth > maxPx) {
+                        const ratio = maxPx / Math.max(1, el.scrollWidth);
+                        const sx = Math.max(0.72, Math.min(1, ratio));
+                        el.style.transform = `scaleX(${sx})`;
+                        if (sx < 0.9) {
+                            el.style.letterSpacing = '0';
+                        }
                     }
                 } catch (e) {}
             }
