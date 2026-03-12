@@ -341,6 +341,16 @@ window.BattleAssets = {
                 end: 'assets/animations/chen/chen_attack_end.png'
             };
         }
+        else if (id === 'saitama' && (skillId === 'slap')) {
+            return {
+                start: 'assets/animations/saitama/saitama_idle_1.png',
+                hits: [
+                    'assets/animations/saitama/saitama_attack_close_1.png',
+                    'assets/animations/saitama/saitama_attack_close_2.png'
+                ],
+                end: 'assets/animations/saitama/saitama_idle_1.png'
+            };
+        }
         else if (id === 'zero_two' && skillId === 'darling_bite') {
             return {
                 start: 'assets/animations/zero_two/zero_two_attack_close_start.png',
@@ -410,9 +420,10 @@ window.BattleAssets = {
     getCloseAttackTeleportMultiplierForCharacter(character) {
         const id = character && character.id;
         if (id === 'zero_two') return 0.1;
-        if (id === 'rimuru_tempest') return 0.3;
-        if (id === 'gojo_satoru') return 0.4;
-        if (id === 'trafalgar_law') return 0.5;
+        else if (id === 'saitama') return 0.4;
+        else if (id === 'rimuru_tempest') return 0.3;
+        else if (id === 'gojo_satoru') return 0.4;
+        else if (id === 'trafalgar_law') return 0.5;
         return 0.3;
     },
 
@@ -438,6 +449,26 @@ window.BattleAssets = {
         if (id === 'zero_two' && skillId === 'heartbreak_harvest') {
             return [
                 'assets/animations/zero_two/zero_two_recovery_1.png'
+            ];
+        }
+        if (id === 'saitama' && skillId === 'slap') {
+            // Slap is a recovery-type skill, but uses a close-attack style animation.
+            return [
+                'assets/animations/saitama/saitama_idle_1.png',
+                'assets/animations/saitama/saitama_attack_close_1.png',
+                'assets/animations/saitama/saitama_attack_close_2.png',
+                'assets/animations/saitama/saitama_idle_1.png'
+            ];
+        }
+        return null;
+    },
+
+    getBuffAnimationForCharacterSkill(character, skillId) {
+        const id = character && character.id;
+        if (id === 'saitama' && skillId === 'endure') {
+            return [
+                'assets/animations/saitama/saitama_buff_1.png',
+                'assets/animations/saitama/saitama_buff_2.png'
             ];
         }
         return null;
@@ -520,6 +551,10 @@ window.BattleAssets = {
 
         if (skillType === 'debuff') {
             return this.getDebuffAnimationForCharacterSkill(character, skillId);
+        }
+
+        if (skillType === 'buff') {
+            return this.getBuffAnimationForCharacterSkill(character, skillId);
         }
 
         if (skillType === 'recovery') {

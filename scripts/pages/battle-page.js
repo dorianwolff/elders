@@ -1109,6 +1109,16 @@ class BattlePage extends BasePage {
     }
 
     updateDomainIndicator() {
+        try {
+            if (this.isMobileViewport && this.isMobileViewport()) {
+                const leftDock = this.querySelector('#domain-dock-left');
+                const rightDock = this.querySelector('#domain-dock-right');
+                if (leftDock) leftDock.style.display = 'none';
+                if (rightDock) rightDock.style.display = 'none';
+                return;
+            }
+        } catch (e) {}
+
         const leftDock = this.querySelector('#domain-dock-left');
         const rightDock = this.querySelector('#domain-dock-right');
         if ((!leftDock && !rightDock) || !this.gameState || !this.gameState.skillSystem) return;
@@ -1181,6 +1191,107 @@ class BattlePage extends BasePage {
             if (leftDescEl) leftDescEl.textContent = descText;
             if (leftTurnsEl) leftTurnsEl.textContent = turnsText;
         }
+    }
+
+    updateDomainEffectIndicatorsMobile() {
+        try {
+            if (!this.gameCoordinator || !this.gameCoordinator.gameState || !this.gameCoordinator.gameState.skillSystem) return;
+            const gs = this.gameCoordinator.gameState;
+            const ss = gs.skillSystem;
+
+            const active = ss.activeEffects;
+            let domain = null;
+
+            const consider = (eff) => {
+                if (!eff || domain) return;
+                if ((eff.type === 'array_domain' || eff.type === 'room_domain' || eff.type === 'frieren_domain' || eff.type === 'construction_site_domain' || eff.type === 'alchemy_domain' || eff.type === 'kaito_recovery_zone_array') && (Number(eff.turnsLeft) || 0) > 0) {
+                    domain = eff;
+                }
+            };
+
+            if (active && typeof active.entries === 'function') {
+                for (const [, eff] of active.entries()) {
+                    consider(eff);
+                    if (domain) break;
+                }
+            } else if (Array.isArray(active)) {
+                for (const eff of active) {
+                    consider(eff);
+                    if (domain) break;
+                }
+            } else if (active && typeof active === 'object') {
+                for (const eff of Object.values(active)) {
+                    consider(eff);
+                    if (domain) break;
+                }
+            }
+
+            const upsert = (containerSel, domainEff, show) => {
+                const container = this.querySelector(containerSel);
+                if (!container) return;
+
+                const key = 'domain_mobile';
+                let el = null;
+                try {
+                    el = container.querySelector(`[data-effect-key="${key}"]`);
+                } catch (e) {
+                    el = null;
+                }
+
+                if (!show || !domainEff) {
+                    if (el) {
+                        try { el.remove(); } catch (e) {}
+                    }
+                    return;
+                }
+
+                if (!el) {
+                    el = document.createElement('div');
+                    el.dataset.effectKey = key;
+                }
+
+                el.className = 'effect-indicator domain-mobile';
+                el.textContent = '';
+
+                const turns = Number(domainEff.turnsLeft) || 0;
+                const name = domainEff.name || 'Domain';
+                const desc = domainEff.description || '';
+                el.title = `${name}: ${desc}`;
+
+                el.onclick = (e) => {
+                    try {
+                        this.showEffectTooltip(e, {
+                            effect: {
+                                name,
+                                description: desc,
+                                turnsLeft: turns
+                            }
+                        });
+                    } catch (err) {}
+                };
+
+                if (el.parentNode !== container) {
+                    container.appendChild(el);
+                } else {
+                    container.appendChild(el);
+                }
+            };
+
+            if (!domain) {
+                upsert('#player-effects', null, false);
+                upsert('#opponent-effects', null, false);
+                return;
+            }
+
+            const ownerId = domain.ownerId;
+            const currentRole = gs && typeof gs.getGameStateForPlayer === 'function'
+                ? (gs.getGameStateForPlayer(this.gameCoordinator.currentPlayerRole)?.playerId)
+                : this.gameCoordinator.currentPlayerRole;
+
+            const showOnPlayer = ownerId ? ownerId === currentRole : false;
+            upsert('#player-effects', domain, showOnPlayer);
+            upsert('#opponent-effects', domain, !showOnPlayer);
+        } catch (e) {}
     }
 
     async autoSkipIfStunned() {
@@ -2223,10 +2334,10 @@ class BattlePage extends BasePage {
             const animationPromises = [];
             animationPromises.push(this.scheduleCombatTextAnimations(adjustedActionResult));
 
-            // Character-specific attack animations (synced to combat_text delayMs).
+            // Character-specific close-attack animations (synced to combat_text delayMs).
             try {
-                if (skillType === 'attack') {
-                    const actorChar = actorId ? { id: actorId } : null;
+                if (actorId && skillId) {
+                    const actorChar = { id: actorId };
                     const hasClose = window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacterSkill === 'function'
                         ? Boolean(window.BattleAssets.getCloseAttackAnimationForCharacterSkill(actorChar, skillId))
                         : (window.BattleAssets && typeof window.BattleAssets.getCloseAttackAnimationForCharacter === 'function'
@@ -2294,6 +2405,17 @@ class BattlePage extends BasePage {
             // Character-specific utility skill animations (simple frame sequence).
             try {
                 if (skillType === 'utility' && skillId) {
+                    if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
+                        animationPromises.push(
+                            window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType)
+                        );
+                    }
+                }
+            } catch (e) {}
+
+            // Character-specific buff skill animations (simple frame sequence).
+            try {
+                if (skillType === 'buff' && skillId) {
                     if (window.BattleAnimations && typeof window.BattleAnimations.playSkillSequenceAnimationForSide === 'function') {
                         animationPromises.push(
                             window.BattleAnimations.playSkillSequenceAnimationForSide(this, actorSide, actorId, skillId, skillType)
@@ -2398,6 +2520,64 @@ class BattlePage extends BasePage {
         } catch (e) {}
 
         const desired = [];
+
+        try {
+            if (this.isMobileViewport && this.isMobileViewport()) {
+                const active = this.gameCoordinator?.gameState?.skillSystem?.activeEffects;
+                let domain = null;
+                const consider = (eff) => {
+                    if (!eff || domain) return;
+                    if ((eff.type === 'array_domain' || eff.type === 'room_domain' || eff.type === 'frieren_domain' || eff.type === 'construction_site_domain' || eff.type === 'alchemy_domain' || eff.type === 'kaito_recovery_zone_array') && (Number(eff.turnsLeft) || 0) > 0) {
+                        domain = eff;
+                    }
+                };
+
+                if (active && typeof active.entries === 'function') {
+                    for (const [, eff] of active.entries()) {
+                        consider(eff);
+                        if (domain) break;
+                    }
+                } else if (Array.isArray(active)) {
+                    for (const eff of active) {
+                        consider(eff);
+                        if (domain) break;
+                    }
+                } else if (active && typeof active === 'object') {
+                    for (const eff of Object.values(active)) {
+                        consider(eff);
+                        if (domain) break;
+                    }
+                }
+
+                if (domain && domain.ownerId && domain.ownerId === playerRole) {
+                    const name = domain.name || 'Domain';
+                    const desc = domain.description || '';
+                    const turns = Number(domain.turnsLeft) || 0;
+                    const duration = Number(domain.duration) || turns || 1;
+                    const ratio = duration > 0 ? Math.max(0, Math.min(1, turns / duration)) : 1;
+                    const elapsed = 1 - ratio;
+                    const shadeDeg = Math.round(elapsed * 360);
+                    desired.push({
+                        key: 'domain_mobile',
+                        className: 'effect-indicator domain-mobile',
+                        text: '',
+                        title: `${name}: ${desc}`,
+                        shadeDeg,
+                        onClick: (e) => {
+                            try {
+                                this.showEffectTooltip(e, {
+                                    effect: {
+                                        name,
+                                        description: desc,
+                                        turnsLeft: turns
+                                    }
+                                });
+                            } catch (err) {}
+                        }
+                    });
+                }
+            }
+        } catch (e) {}
 
         const character = this.gameCoordinator?.gameState?.players?.get(playerRole)?.character;
         const passive = character?.passive;

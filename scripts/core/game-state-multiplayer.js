@@ -96,6 +96,21 @@ GameState.prototype.buildStateSnapshot = function () {
 GameState.prototype.applyStateSnapshot = async function (snapshot) {
     if (!snapshot) return;
 
+    // Track pre-snapshot values so we can compute deltas for passives that depend on opponent events
+    // but may not be explicitly included in authoritative snapshots.
+    const prevByPlayer = {
+        player1: { health: 0, maxHealth: 0, totalHealingDone: 0 },
+        player2: { health: 0, maxHealth: 0, totalHealingDone: 0 }
+    };
+    try {
+        for (const pid of ['player1', 'player2']) {
+            const p = this.players.get(pid);
+            prevByPlayer[pid].health = Number(p?.character?.stats?.health) || 0;
+            prevByPlayer[pid].maxHealth = Number(p?.character?.stats?.maxHealth) || 0;
+            prevByPlayer[pid].totalHealingDone = Number(p?.character?.passiveState?.totalHealingDone) || 0;
+        }
+    } catch (e) {}
+
     // Preserve client-only effects that may not exist in authoritative snapshots (extensions that run only on client).
     // Example: Emilia's Permafrost/Freeze/Frozen Empress.
     let prevEffects = null;
@@ -219,6 +234,50 @@ GameState.prototype.applyStateSnapshot = async function (snapshot) {
 
     applyToPlayer('player1', snapshot.players?.player1);
     applyToPlayer('player2', snapshot.players?.player2);
+
+    // Gojo Satoru: Blossoming Emotion should charge from opponent healing.
+    // In multiplayer, the receiving client may not locally simulate all healing effects when applying
+    // authoritative state snapshots, so infer healed HP from opponent HP delta when the snapshot did not
+    // already advance the counter.
+    try {
+        const addGojoOpponentHealingFromSnapshotDelta = (gojoPid) => {
+            const gojoPlayer = this.players.get(gojoPid);
+            if (!gojoPlayer || !gojoPlayer.character) return;
+            const c = gojoPlayer.character;
+            if (c.id !== 'gojo_satoru' || !c.passive || c.passive.id !== 'blossoming_emotion') return;
+
+            const oppPid = gojoPid === 'player1' ? 'player2' : 'player1';
+            const beforeOppHp = Number(prevByPlayer?.[oppPid]?.health) || 0;
+            const beforeOppMax = Number(prevByPlayer?.[oppPid]?.maxHealth) || 0;
+
+            const oppChar = this.players.get(oppPid)?.character;
+            const afterOppHp = Number(oppChar?.stats?.health) || 0;
+            const afterOppMax = Number(oppChar?.stats?.maxHealth) || 0;
+
+            // Only count HP increases that look like healing. Some effects increase maxHealth and also
+            // increase current health by the same amount (or clamp it), which should not charge Gojo.
+            const hpDelta = Math.max(0, afterOppHp - beforeOppHp);
+            const maxHpDelta = Math.max(0, afterOppMax - beforeOppMax);
+            const healedDelta = Math.max(0, hpDelta - maxHpDelta);
+            if (healedDelta <= 0) return;
+
+            const prevTotal = Number(prevByPlayer?.[gojoPid]?.totalHealingDone) || 0;
+            const snapTotal = Number(c.passiveState?.totalHealingDone) || 0;
+
+            // If the snapshot already advanced the counter, trust it and do not infer deltas.
+            if (snapTotal > prevTotal) return;
+
+            const cap = 50;
+            const base = Math.max(prevTotal, snapTotal);
+            c.passiveState.totalHealingDone = Math.min(cap, base + healedDelta);
+            if (this.passiveSystem && typeof this.passiveSystem.updateUltimateReady === 'function') {
+                this.passiveSystem.updateUltimateReady(gojoPid);
+            }
+        };
+
+        addGojoOpponentHealingFromSnapshotDelta('player1');
+        addGojoOpponentHealingFromSnapshotDelta('player2');
+    } catch (e) {}
 
     if (this.skillSystem) {
         if (typeof this.skillSystem.loadActiveEffects === 'function') {

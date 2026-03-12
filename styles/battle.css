@@ -1112,6 +1112,12 @@ position: relative;
         display: none !important;
     }
 
+    .effect-indicator.domain-mobile {
+        background: rgba(0, 0, 0, 0.92);
+        border-color: rgba(255, 255, 255, 0.35);
+        color: rgba(255, 255, 255, 0.95);
+    }
+
     .opponent-section,
     .player-section {
         padding: 0.5rem;

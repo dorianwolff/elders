@@ -361,6 +361,7 @@ class PassiveSystem {
                         return;
                     }
 
+                    // Track raw HP restored so UI and mission value remain X/50.
                     const cap = Number(mission.value) || 50;
                     const current = Number(state.totalHealingDone) || 0;
                     const next = Math.min(cap, current + (Number(payload.amount) || 0));
