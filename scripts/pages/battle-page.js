@@ -1097,7 +1097,7 @@ class BattlePage extends BasePage {
                 } catch (e) {
                     stacks = 0;
                 }
-                descText = `When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. ${stacks}/10`;
+                descText = `When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. ${stacks}`;
             }
         };
 

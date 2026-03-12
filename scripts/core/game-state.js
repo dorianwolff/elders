@@ -67,6 +67,15 @@ class GameState {
                 : 0;
 
             if (remaining <= 0) {
+                // Naofumi: Ultimate unlocks only upon reaching the transformation shield.
+                if (character.id === 'naofumi_iwatani') {
+                    const shieldKey = character.passiveState && typeof character.passiveState.naofumiCurrentShieldKey === 'string'
+                        ? character.passiveState.naofumiCurrentShieldKey
+                        : null;
+                    if (shieldKey !== 'transformation') {
+                        return;
+                    }
+                }
                 player.ultimateReady = true;
                 if (character.passiveState) {
                     character.passiveState.ultimateReady = true;
@@ -274,8 +283,14 @@ class GameState {
                 try {
                     const cond = this.getUltimateCondition(c);
                     if (!alwaysUltimateReady && (!cond || !cond.type)) {
-                        this.players.get(pid).ultimateReady = true;
-                        if (c && c.passiveState) c.passiveState.ultimateReady = true;
+                        // Naofumi: ultimate should NOT start ready just because he has no mission.
+                        // It unlocks only when he reaches the transformation shield.
+                        if (c && c.id === 'naofumi_iwatani') {
+                            // leave ultimateReady false here
+                        } else {
+                            this.players.get(pid).ultimateReady = true;
+                            if (c && c.passiveState) c.passiveState.ultimateReady = true;
+                        }
                     }
                 } catch (e) {}
 

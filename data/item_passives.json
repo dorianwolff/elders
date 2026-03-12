@@ -17,7 +17,7 @@
   "chen_sword_cd_mastery": {
     "id": "chen_sword_cd_mastery",
     "name": "Cooldown Mastery",
-    "description": "When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff. 0/10"
+    "description": "When Ch'en reduces the cooldown of one of her skills, she gains a +1 attack buff."
   },
   "broken_sword_shattered_edge": {
     "id": "broken_sword_shattered_edge",
@@ -38,6 +38,11 @@
     "id": "wooden_shield_stance_guard",
     "name": "Stance Guard",
     "description": "While in a stance, gain +2 DEF"
+  },
+  "naofumi_buffer_shield_buffer": {
+    "id": "naofumi_buffer_shield_buffer",
+    "name": "Buffer",
+    "description": "When changing shield, gain +3 DEF for 2 turns."
   },
   "frieren_staff_spell_archive_plus": {
     "id": "frieren_staff_spell_archive_plus",

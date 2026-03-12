@@ -217,5 +217,16 @@
       "maxHealth": 1
     },
     "passiveId": "kaito_slot_clown_loaded_slots"
+  },
+  "naofumi_buffer_shield": {
+    "id": "naofumi_buffer_shield",
+    "name": "Buffer Shield",
+    "type": "signature",
+    "image": "assets/items/naofumi_iwatani_shield.png",
+    "allowedCharacters": ["naofumi_iwatani"],
+    "stats": {
+      "defense": 1
+    },
+    "passiveId": "naofumi_buffer_shield_buffer"
   }
 }

@@ -395,12 +395,12 @@
     },
     "images": ["naofumi_iwatani.jpg"],
     "passiveId": "naofumi_shield_rotation",
-    "recommended_items": ["wooden_shield"],
+    "recommended_items": ["naofumi_buffer_shield"],
     "skillIds": ["naofumi_shield_bash", "naofumi_defensive_stance"],
     "ultimate": {
       "id": "naofumi_heroic_guard",
       "name": "Heroic Guard",
-      "description": "Inflict Heal Block on the enemy for 3 turns and gain +5 defense for 5 turns.",
+      "description": "Inflict Heal Block on the enemy for 3 turns and gain +5 defense for 5 turns. Unlocks upon reaching transformation shield.",
       "cooldown": 2,
       "type": "attack",
       "effect": {

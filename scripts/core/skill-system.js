@@ -40,7 +40,7 @@ class SkillSystem {
             const curStacks = existingEff
                 ? Math.max(0, Math.floor(Number(existingEff._stackCount ?? existingEff.value) || 0))
                 : 0;
-            const nextStacks = Math.min(10, curStacks + 1);
+            const nextStacks = curStacks + 1;
             if (nextStacks === curStacks) return;
 
             if (existingEff) {

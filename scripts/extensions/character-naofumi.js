@@ -97,6 +97,10 @@
                 }
                 state.naofumiShieldLastTurnCount = turnCount;
 
+                const prevShieldKey = typeof state.naofumiCurrentShieldKey === 'string'
+                    ? state.naofumiCurrentShieldKey
+                    : null;
+
                 if (!Array.isArray(state.naofumiShieldBag) || state.naofumiShieldBag.length === 0) {
                     state.naofumiShieldBag = ['leaf', 'chimera', 'prison', 'slime', 'soul_eater'];
                 }
@@ -124,6 +128,58 @@
                     const picked = state.naofumiShieldBag.splice(idx, 1)[0];
                     state.naofumiCurrentShieldKey = picked;
                 }
+
+                // Naofumi: ultimate is locked until transformation shield is reached.
+                // Keep readiness false in all other forms, even if some generic cooldown logic marks it ready.
+                try {
+                    if (state.naofumiCurrentShieldKey !== 'transformation') {
+                        if (player) {
+                            player.ultimateReady = false;
+                        }
+                        state.ultimateReady = false;
+                        if (character && character.passiveState) {
+                            character.passiveState.ultimateReady = false;
+                        }
+                    }
+                } catch (e) {}
+
+                // Naofumi signature item: Buffer Shield
+                // When changing shield at the start of your turn, gain +3 DEF for 2 turns.
+                try {
+                    const nextShieldKey = typeof state.naofumiCurrentShieldKey === 'string'
+                        ? state.naofumiCurrentShieldKey
+                        : null;
+                    const didChange = Boolean(prevShieldKey && nextShieldKey && prevShieldKey !== nextShieldKey);
+                    if (didChange && character && character.itemId === 'naofumi_buffer_shield') {
+                        if (skillSystem && typeof skillSystem.applyBuff === 'function') {
+                            await skillSystem.applyBuff(character, { stat: 'defense', mode: 'flat', value: 3, duration: 2 }, playerId);
+                            try {
+                                const effects = skillSystem.activeEffects;
+                                const ids = [];
+                                for (const [id, eff] of effects.entries()) {
+                                    if (!eff) continue;
+                                    if (eff.type !== 'buff') continue;
+                                    if (eff.target !== playerId) continue;
+                                    if (eff.stat !== 'defense') continue;
+                                    if (eff.mode !== 'flat') continue;
+                                    if ((Number(eff.value) || 0) !== 3) continue;
+                                    if ((Number(eff.turnsLeft) || 0) !== 2) continue;
+                                    if (eff._itemPassiveId) continue;
+                                    ids.push(id);
+                                }
+                                if (ids.length > 0) {
+                                    const last = ids[ids.length - 1];
+                                    const eff = effects.get(last);
+                                    if (eff) {
+                                        eff._itemPassiveId = 'naofumi_buffer_shield_buffer';
+                                        eff.name = 'Buffer';
+                                        eff.description = '+3 DEF';
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                } catch (e) {}
 
                 state.naofumiSlimeTurnCount = null;
                 state.naofumiSoulEaterTurnCount = null;
