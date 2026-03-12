@@ -42,6 +42,50 @@ class MenuPage extends BasePage {
         this._loadoutTableMissing = false;
 
         this._infoModalOverlay = null;
+
+        this._menuPrevOverflow = null;
+        this._menuPrevBackground = null;
+        this._menuMetalBgClassApplied = false;
+        this._menuPrevContainerBg = null;
+
+        this._itemPickerResizeHandler = null;
+    }
+
+    fitItemPickerNames(rootEl) {
+        try {
+            if (!rootEl) return;
+            const names = rootEl.querySelectorAll('.item-picker-name');
+            if (!names || names.length === 0) return;
+
+            for (const el of names) {
+                if (!el) continue;
+
+                try {
+                    el.style.fontSize = '';
+
+                    const parent = el.parentElement;
+                    if (!parent) continue;
+
+                    const maxPx = parent.clientWidth;
+                    if (!maxPx || maxPx <= 0) continue;
+
+                    const cs = window.getComputedStyle(el);
+                    const startSize = Math.max(8, Math.floor(parseFloat(cs.fontSize) || 0));
+                    const minSize = 9;
+
+                    let size = startSize;
+                    let guard = 0;
+                    while (guard < 40) {
+                        guard++;
+                        el.style.fontSize = `${size}px`;
+
+                        if (el.scrollWidth <= maxPx) break;
+                        if (size <= minSize) break;
+                        size -= 1;
+                    }
+                } catch (e) {}
+            }
+        } catch (e) {}
     }
 
     async getSignedInUserId() {
@@ -165,25 +209,24 @@ class MenuPage extends BasePage {
         return `
             <div class="menu-page">
                 <div class="menu-view" id="menu-view">
-                    <div class="menu-header">
-                        <div class="menu-account" id="menu-account">
-                            <button class="menu-signin-btn" id="menu-signin-btn" type="button">Sign in</button>
-                            <button class="menu-profile" id="menu-profile" type="button" style="display:none">
-                                <span class="menu-profile-avatar">
-                                    <img id="menu-profile-avatar-img" alt="Avatar" />
-                                </span>
-                                <span class="menu-profile-name" id="menu-profile-name"></span>
-                            </button>
+                    <div class="menu-sticky">
+                        <div class="menu-header">
+                            <div class="menu-account" id="menu-account">
+                                <button class="menu-signin-btn" id="menu-signin-btn" type="button">Sign in</button>
+                                <button class="menu-profile" id="menu-profile" type="button" style="display:none">
+                                    <span class="menu-profile-avatar">
+                                        <img id="menu-profile-avatar-img" alt="Avatar" />
+                                    </span>
+                                    <span class="menu-profile-name" id="menu-profile-name"></span>
+                                </button>
+                            </div>
+                            <h1 class="game-title">ELDERS</h1>
+                            <p class="game-subtitle">Battle Arena</p>
                         </div>
-                        <h1 class="game-title">ELDERS</h1>
-                        <p class="game-subtitle">Battle Arena</p>
                     </div>
 
-                    <div class="character-selection">
-                        <h2 class="section-title">Choose Your Character</h2>
-                        <div class="characters-grid" id="characters-grid">
-                            <!-- Characters will be populated here -->
-                        </div>
+                    <div class="characters-grid" id="characters-grid">
+                        <!-- Characters will be populated here -->
                     </div>
                 </div>
 
@@ -342,6 +385,39 @@ class MenuPage extends BasePage {
     }
 
     async onPageLoad() {
+        try {
+            const pageContainer = document.querySelector('#page-container');
+            const appRoot = document.querySelector('#app');
+            this._menuPrevOverflow = {
+                html: document.documentElement ? document.documentElement.style.overflow : '',
+                body: document.body ? document.body.style.overflow : '',
+                pageContainer: pageContainer ? pageContainer.style.overflow : ''
+            };
+            if (document.documentElement) document.documentElement.style.overflow = 'auto';
+            if (document.body) document.body.style.overflow = 'auto';
+            if (pageContainer) pageContainer.style.overflow = 'auto';
+
+            // Hard reset any inline background on the app shell that might render as a "panel" behind the menu.
+            this._menuPrevContainerBg = {
+                app: appRoot ? { background: appRoot.style.background || '', backgroundColor: appRoot.style.backgroundColor || '' } : null,
+                pageContainer: pageContainer ? { background: pageContainer.style.background || '', backgroundColor: pageContainer.style.backgroundColor || '' } : null
+            };
+            if (appRoot) {
+                appRoot.style.background = 'transparent';
+                appRoot.style.backgroundColor = 'transparent';
+            }
+            if (pageContainer) {
+                pageContainer.style.background = 'transparent';
+                pageContainer.style.backgroundColor = 'transparent';
+            }
+        } catch (e) {}
+
+        try {
+            if (document.documentElement) document.documentElement.classList.add('menu-metal-bg');
+            if (document.body) document.body.classList.add('menu-metal-bg');
+            this._menuMetalBgClassApplied = true;
+        } catch (e) {}
+
         // Wait for data manager to be available
         while (!window.app || !window.app.dataManager) {
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -371,6 +447,12 @@ class MenuPage extends BasePage {
 
         await this.loadCharacters();
         await this.loadSelectedCharacter();
+
+        try {
+            if (window.MenuTitleFx && typeof window.MenuTitleFx.attach === 'function') {
+                window.MenuTitleFx.attach(this.container);
+            }
+        } catch (e) {}
     }
 
     async updateRankedMatchVisibility() {
@@ -445,6 +527,42 @@ class MenuPage extends BasePage {
             try { this._authUnsubscribe(); } catch (e) {}
             this._authUnsubscribe = null;
         }
+
+        try {
+            const pageContainer = document.querySelector('#page-container');
+            if (this._menuPrevOverflow) {
+                if (document.documentElement) document.documentElement.style.overflow = this._menuPrevOverflow.html || '';
+                if (document.body) document.body.style.overflow = this._menuPrevOverflow.body || '';
+                if (pageContainer) pageContainer.style.overflow = this._menuPrevOverflow.pageContainer || '';
+            }
+        } catch (e) {}
+        this._menuPrevOverflow = null;
+
+        try {
+            const appRoot = document.querySelector('#app');
+            const pageContainer = document.querySelector('#page-container');
+            if (this._menuPrevContainerBg) {
+                if (appRoot && this._menuPrevContainerBg.app) {
+                    appRoot.style.background = this._menuPrevContainerBg.app.background || '';
+                    appRoot.style.backgroundColor = this._menuPrevContainerBg.app.backgroundColor || '';
+                }
+                if (pageContainer && this._menuPrevContainerBg.pageContainer) {
+                    pageContainer.style.background = this._menuPrevContainerBg.pageContainer.background || '';
+                    pageContainer.style.backgroundColor = this._menuPrevContainerBg.pageContainer.backgroundColor || '';
+                }
+            }
+        } catch (e) {}
+        this._menuPrevContainerBg = null;
+
+        try {
+            if (this._menuMetalBgClassApplied) {
+                if (document.documentElement) document.documentElement.classList.remove('menu-metal-bg');
+                if (document.body) document.body.classList.remove('menu-metal-bg');
+            }
+        } catch (e) {}
+        this._menuPrevBackground = null;
+        this._menuMetalBgClassApplied = false;
+
         await super.cleanup();
     }
 
@@ -487,18 +605,17 @@ class MenuPage extends BasePage {
     }
 
     createCharacterCard(character) {
-        const card = document.createElement('div');
+        const card = document.createElement('button');
+        card.type = 'button';
         card.className = 'character-card';
         card.dataset.characterId = character.id;
         
         card.innerHTML = `
-            <div class="character-card-image">
-                <img src="assets/final/${character.images[0]}" alt="${character.name}" 
+            <div class="character-card-frame">
+                <img class="character-card-img" src="assets/final/${character.images[0]}" alt="${character.name}"
                      onerror="this.src='assets/images/characters/placeholder.png'">
-            </div>
-            <div class="character-card-info">
-                <h3 class="character-card-name">${character.name}</h3>
-                <div class="character-card-meta">Meta Points: ${character.metaPoints}</div>
+                <div class="character-card-meta-pill">${character.metaPoints}</div>
+                <div class="character-card-name">${character.name}</div>
             </div>
         `;
         
@@ -1088,11 +1205,43 @@ class MenuPage extends BasePage {
         modal.appendChild(header);
         modal.appendChild(grid);
         overlay.appendChild(modal);
+
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) overlay.remove();
         });
 
         document.body.appendChild(overlay);
+
+        try {
+            this.fitItemPickerNames(modal);
+            requestAnimationFrame(() => this.fitItemPickerNames(modal));
+            setTimeout(() => this.fitItemPickerNames(modal), 50);
+        } catch (e) {}
+
+        try {
+            if (this._itemPickerResizeHandler) {
+                window.removeEventListener('resize', this._itemPickerResizeHandler);
+                this._itemPickerResizeHandler = null;
+            }
+            this._itemPickerResizeHandler = () => {
+                try {
+                    if (!document.body.contains(overlay)) return;
+                    this.fitItemPickerNames(modal);
+                } catch (e) {}
+            };
+            window.addEventListener('resize', this._itemPickerResizeHandler);
+
+            const prevRemove = overlay.remove.bind(overlay);
+            overlay.remove = () => {
+                try {
+                    if (this._itemPickerResizeHandler) {
+                        window.removeEventListener('resize', this._itemPickerResizeHandler);
+                        this._itemPickerResizeHandler = null;
+                    }
+                } catch (e) {}
+                return prevRemove();
+            };
+        } catch (e) {}
     }
 
     formatItemStats(item) {
